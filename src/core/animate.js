@@ -11,16 +11,27 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
         const dt = clock.getDelta(); const time = clock.getElapsedTime();
 
         if (STATE.phase === 'LOADING') {
-            if (STATE.loadProgress < 100) { STATE.loadProgress += 0.5; STATE.temperature = 50.0 + Math.sin(time * 2.0) * 2.0; }
+            // Preloader updates are now handled in main.js during initialization.
+            // This loop only handles visual cooling/spin once loadProgress is 100.
             document.getElementById('progress-bar').style.width = `${STATE.loadProgress}%`;
+
             if (STATE.loadProgress >= 100) {
-                if (STATE.temperature > CONFIG.minTemp) STATE.temperature *= CONFIG.coolingRate;
-                else {
-                    STATE.temperature = CONFIG.minTemp; STATE.phase = 'HERO';
+                if (STATE.temperature > CONFIG.minTemp) {
+                    STATE.temperature *= CONFIG.coolingRate;
+                } else {
+                    STATE.temperature = CONFIG.minTemp;
+                    STATE.phase = 'HERO';
                     document.getElementById('ui-loader').style.opacity = 0;
                     setTimeout(() => document.getElementById('ui-hero').style.opacity = 1, 1000);
-                    const start = camera.position.clone(); const target = new THREE.Vector3(0, 0, 50); let tt = 0;
-                    const hLoop = () => { tt += 0.02; camera.position.lerpVectors(start, target, tt); if (tt < 1) requestAnimationFrame(hLoop); }; hLoop();
+                    const start = camera.position.clone();
+                    const target = new THREE.Vector3(0, 0, 50);
+                    let tt = 0;
+                    const hLoop = () => {
+                        tt += 0.02;
+                        camera.position.lerpVectors(start, target, tt);
+                        if (tt < 1) requestAnimationFrame(hLoop);
+                    };
+                    hLoop();
                     document.getElementById('status-display').innerText = "SYSTEM_READY";
                 }
             }
