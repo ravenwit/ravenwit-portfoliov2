@@ -1,0 +1,145 @@
+body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
+canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+
+/* --- UI LAYERS --- */
+.ui-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
+    transition: opacity 0.8s ease-in-out;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+
+#ui-loader { opacity: 1; }
+.data-readout {
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 1rem; border-left: 2px solid cyan;
+    backdrop-filter: blur(4px); margin-top: 20px;
+}
+
+#ui-hero { opacity: 0; pointer-events: none; }
+.hero-title {
+    font-size: 4rem; font-weight: 100; letter-spacing: 0.5rem;
+    color: transparent; -webkit-text-stroke: 1px cyan;
+    text-shadow: 0 0 20px rgba(0,255,255,0.5);
+    text-align: center;
+}
+.hero-prompt {
+    margin-top: 2rem; font-size: 1rem; color: #fff;
+    animation: blink 1s infinite;
+}
+
+/* --- HUD --- */
+#hud {
+    position: fixed; bottom: 30px; left: 30px;
+    color: rgba(0, 255, 255, 0.8); font-size: 13px;
+    pointer-events: none; z-index: 10;
+    background: rgba(0, 10, 20, 0.5); padding: 15px;
+    border-left: 2px solid #0ff; backdrop-filter: blur(4px);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+    opacity: 0; transition: opacity 1s ease;
+}
+.metric-row { display: flex; justify-content: space-between; width: 240px; margin-bottom: 6px; }
+.metric-label { color: #5588aa; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;}
+.metric-value { font-weight: bold; color: #ccffff; }
+
+/* --- POST FX --- */
+.scanlines {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,0,0,0.3) 3px);
+    pointer-events: none; z-index: 50; opacity: 0.15;
+}
+.vignette {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, transparent 40%, #000 150%);
+    pointer-events: none; z-index: 51;
+}
+
+#labels-container {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20;
+}
+
+/* --- HUD CARDS --- */
+.node-container {
+    position: absolute; transform: translate(-50%, -50%);
+    display: flex; align-items: center; pointer-events: auto; 
+    cursor: crosshair; transition: opacity 0.3s, transform 0.3s;
+    will-change: transform, opacity;
+}
+.node-anchor { 
+    width: 12px; height: 12px; border: 2px solid #0ff; border-radius: 50%; 
+    background: rgba(0,0,0,0.5); box-shadow: 0 0 10px #0ff; flex-shrink: 0;
+}
+.node-connector { 
+    width: 40px; height: 2px; background: linear-gradient(90deg, #0ff, transparent); flex-shrink: 0;
+    transition: width 0.4s ease;
+}
+
+.hud-card {
+    background: rgba(10, 15, 20, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-left: 2px solid #0ff;
+    padding: 0; min-width: 240px; 
+    color: #fff; font-family: 'Courier New', monospace;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    position: relative; overflow: hidden;
+    cursor: crosshair;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.node-container:hover .hud-card:not(.minimized) {
+    background: rgba(15, 30, 45, 0.95);
+    border-color: #00ffff;
+    box-shadow: 0 0 20px 2px rgba(0, 255, 255, 0.6);
+    transform: scale(1.05); z-index: 1000;
+}
+
+.hud-card.minimized {
+    min-width: 80px; background: rgba(0, 10, 20, 0.4); 
+    border-color: rgba(0, 255, 255, 0.1); border-left: 2px solid rgba(0, 255, 255, 0.3);
+    box-shadow: none; transform: scale(0.9);
+}
+.hud-card.minimized .card-body, .hud-card.minimized .card-footer, 
+.hud-card.minimized .card-mass-bar, .hud-card.minimized .card-logs { display: none; }
+
+.card-header {
+    background: rgba(0, 255, 255, 0.1); padding: 6px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+.card-id { font-size: 10px; color: #5588aa; letter-spacing: 1px; }
+.card-mass-bar { width: 60px; height: 4px; background: #334455; border-radius: 2px; overflow: hidden; }
+.card-mass-fill { height: 100%; background: #0ff; box-shadow: 0 0 5px #0ff; }
+
+.card-body { padding: 12px; padding-bottom: 8px; }
+.card-title { font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; text-shadow: 0 0 5px rgba(0,255,255,0.5); }
+.card-subtitle { font-size: 11px; color: #88ccdd; }
+
+.card-logs {
+    max-height: 0; opacity: 0; overflow: hidden;
+    background: rgba(0, 0, 0, 0.3); transition: all 0.4s ease;
+    display: flex; flex-direction: column; gap: 2px;
+}
+.hud-card.expanded .card-logs { max-height: 150px; opacity: 1; border-top: 1px dashed rgba(0,255,255,0.2); padding: 8px 12px; }
+
+.log-line { font-size: 10px; color: #0ff; white-space: nowrap; display: flex; align-items: center; opacity: 0.9; }
+.log-prefix { margin-right: 8px; opacity: 0.5; font-size: 9px; }
+
+.card-footer {
+    padding: 8px 12px; border-top: 1px solid rgba(0, 255, 255, 0.1);
+    display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #667788;
+}
+.expander-btn {
+    background: transparent; border: 1px solid rgba(0, 255, 255, 0.3);
+    color: #0ff; font-size: 9px; padding: 2px 6px; cursor: pointer; text-transform: uppercase;
+}
+.expander-btn:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 5px #0ff; }
+
+.velocity-warning {
+    color: #ff0055; text-shadow: 0 0 8px #ff0000;
+    display: none; font-weight: bold; margin-top: 5px; text-align: center;
+}
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacetime Portfolio | Organic Transition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+
+<body>
+
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <div id="canvas-container"></div>
+    <div id="labels-container"></div>
+
+    <div id="ui-loader" class="ui-layer">
+        <div class="text-center space-y-4">
+            <h1
+                class="text-2xl font-light tracking-widest uppercase mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-400">
+                System Initialization</h1>
+            <div class="w-64 h-1 bg-gray-900 rounded overflow-hidden relative mx-auto border border-gray-800">
+                <div id="progress-bar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-500 to-purple-500"
+                    style="width: 0%"></div>
+            </div>
+            <div class="data-readout text-xs text-cyan-100 opacity-90 text-left">
+                <div>k_B T (Temp): <span id="temp-display">50.000</span></div>
+                <div>Ω (Order): <span id="order-display">0.000</span></div>
+                <div>Status: <span id="status-display">ENTROPY_MAXIMIZED</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui-hero" class="ui-layer">
+        <h1 class="hero-title">SPACETIME<br>ARCHITECT</h1>
+        <div class="hero-prompt">> SCROLL TO INITIATE TRAJECTORY <<< /div>
+        </div>
+
+        <div id="hud">
+            <div class="metric-row"><span class="metric-label">COORD. TIME (t)</span> <span id="coord-time"
+                    class="metric-value">0.00</span></div>
+            <div class="metric-row"><span class="metric-label">PROPER TIME (&tau;)</span> <span id="proper-time"
+                    class="metric-value">0.00</span></div>
+            <div class="metric-row"><span class="metric-label">VELOCITY (v)</span> <span id="velocity"
+                    class="metric-value">0.00c</span></div>
+            <div class="metric-row"><span class="metric-label">LORENTZ (&gamma;)</span> <span id="lorentz"
+                    class="metric-value">1.000</span></div>
+            <div style="margin-top:10px; font-size: 10px; opacity: 0.7; color: #0ff;">SYSTEM: OPTICAL LENSING ACTIVE
+            </div>
+            <div id="velocity-alert" class="velocity-warning">CAUSALITY BREAK IMMINENT</div>
+        </div>
+
+        <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
