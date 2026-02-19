@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spacetime Portfolio | Organic Transition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/src/styles/main.css">
 </head>
 
@@ -18,15 +17,12 @@
     <div id="labels-container"></div>
 
     <div id="ui-loader" class="ui-layer">
-        <div class="text-center space-y-4">
-            <h1
-                class="text-2xl font-light tracking-widest uppercase mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-400">
-                System Initialization</h1>
-            <div class="w-64 h-1 bg-gray-900 rounded overflow-hidden relative mx-auto border border-gray-800">
-                <div id="progress-bar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-500 to-purple-500"
-                    style="width: 0%"></div>
+        <div class="loader-content">
+            <h1 class="loader-title">System Initialization</h1>
+            <div class="loader-bar-track">
+                <div id="progress-bar" class="loader-bar-fill"></div>
             </div>
-            <div class="data-readout text-xs text-cyan-100 opacity-90 text-left">
+            <div class="data-readout">
                 <div>k_B T (Temp): <span id="temp-display">50.000</span></div>
                 <div>Ω (Order): <span id="order-display">0.000</span></div>
                 <div>Status: <span id="status-display">ENTROPY_MAXIMIZED</span></div>
