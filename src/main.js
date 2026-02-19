@@ -4,9 +4,7 @@ import * as THREE from 'three';
 import { STATE } from './state.js';
 import { scene, camera, renderer, initRenderer, setupResize } from './core/scene.js';
 import { buildCameraPath } from './core/cameraPath.js';
-import { createTorus } from './components/torus.js';
-import { createGrid } from './components/grid.js';
-import { createStars } from './components/stars.js';
+import { generateGeometry } from './core/geometryManager.js';
 import { createNodes, toggleCard, startTypingInterval } from './components/nodes.js';
 import { startAnimationLoop } from './core/animate.js';
 import { initScroll } from './core/scroll.js';
@@ -24,20 +22,18 @@ async function init() {
     initRenderer();
     updateLoading('RENDERER_READY', 10);
 
-    // --- 2. CREATE TORUS (30%) ---
-    const { torusMesh, torusMat } = createTorus();
+    // --- 2-4. GENERATE GEOMETRY (WEB WORKER) ---
+    // Offload heavy particle generation to a background thread
+    const { torusMesh, torusMat, gridMesh, gridMat, starField, starsMat } = await generateGeometry((type, count) => {
+        // Map worker progress to loading percentages (10% -> 75%)
+        const map = { 'torus': 30, 'grid': 55, 'stars': 75 };
+        const stageMap = { 'torus': 'TORUS_GENERATED', 'grid': 'GRID_GENERATED', 'stars': 'STARS_GENERATED' };
+        if (map[type]) updateLoading(stageMap[type], map[type]);
+    });
+
     scene.add(torusMesh);
-    updateLoading('TORUS_READY', 40);
-
-    // --- 3. CREATE GRID (20%) ---
-    const { gridMesh, gridMat } = createGrid();
     scene.add(gridMesh);
-    updateLoading('GRID_READY', 60);
-
-    // --- 4. CREATE STARS (15%) ---
-    const { starField, starsMat } = createStars(gridMat);
     scene.add(starField);
-    updateLoading('STARS_READY', 75);
 
     // --- 5. CREATE NODES (15%) ---
     const nodeGroup = createNodes(gridMat);
