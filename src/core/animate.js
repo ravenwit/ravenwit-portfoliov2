@@ -1,14 +1,16 @@
 import * as THREE from 'three';
+import { Timer } from 'three';
 import { CONFIG, CAREER_NODES } from '../config.js';
 import { STATE } from '../state.js';
-import { scene, camera, renderer } from '../core/scene.js';
+import { scene, camera, renderer, composer } from '../core/scene.js';
 
-const clock = new THREE.Clock();
+const timer = new Timer();
 
 export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath) {
-    function animate() {
+    function animate(timestamp) {
         requestAnimationFrame(animate);
-        const dt = clock.getDelta(); const time = clock.getElapsedTime();
+        timer.update(timestamp);
+        const dt = timer.getDelta(); const time = timer.getElapsed();
 
         if (STATE.phase === 'LOADING') {
             // Preloader updates are now handled in main.js during initialization.
@@ -122,7 +124,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
         starsMat.uniforms.uCameraZ.value = camera.position.z;
         starsMat.uniforms.uSpeed.value = STATE.velocity;
         starsMat.uniforms.uCameraPos.value.copy(camera.position);
-        renderer.render(scene, camera);
+        composer.render();
     }
 
     animate();
