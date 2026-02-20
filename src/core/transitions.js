@@ -50,6 +50,24 @@ export function initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup) {
 
     const endPos = new THREE.Vector3(0, 0, 50);
 
+    nodeGroup.visible = false;
+
+    // Immediately hide any DOM node labels to prevent them from sticking to the screen
+    document.querySelectorAll('.node-container').forEach(el => {
+        el.style.display = 'none';
+
+        // Reset expanded cards just in case
+        const card = el.querySelector('.hud-card');
+        if (card) {
+            card.classList.remove('expanded');
+            card.classList.add('minimized');
+        }
+
+        // Reset button
+        const btn = el.querySelector('.expander-btn');
+        if (btn) btn.innerHTML = "[ + ]";
+    });
+
     const tl = gsap.timeline({
         onUpdate() {
             const dummy = camera.clone();
@@ -62,7 +80,6 @@ export function initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup) {
             STATE.transitioning = false;
             STATE.targetScrollY = 0;
             STATE.scrollY = 0;
-            nodeGroup.visible = false;
             gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
         }
     });
