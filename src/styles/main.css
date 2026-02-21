@@ -379,3 +379,61 @@ canvas {
         opacity: 0;
     }
 }
+
+/* --- SKILL TRACKING OVERLAYS --- */
+
+.skill-labels-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.skill-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    will-change: transform, opacity;
+    z-index: 100;
+}
+
+.node-container:hover .skill-label {
+    opacity: 1;
+}
+
+.skill-line {
+    width: 30px;
+    height: 1px;
+    background: linear-gradient(90deg, #0ff, transparent);
+    margin-right: -4px;
+}
+
+.skill-text {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0, 30, 45, 0.9);
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    padding: 3px 6px;
+    white-space: nowrap;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.node-container.is-reverse .skill-label {
+    flex-direction: row-reverse;
+}
+
+.node-container.is-reverse .skill-line {
+    background: linear-gradient(-90deg, #0ff, transparent);
+    margin-left: -4px;
+    margin-right: 0;
+}

@@ -1,26 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG, CAREER_NODES } from '../config.js';
 
-// --- Icon Texture Generator ---
-function createIconTexture(skillName) {
-    const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
-    const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, 128, 128);
-    ctx.strokeStyle = "#00ffff"; ctx.lineWidth = 4; ctx.fillStyle = "#00ffff"; ctx.shadowColor = "#00ffff"; ctx.shadowBlur = 15;
-    const cx = 64, cy = 64; const name = skillName.toLowerCase();
-    if (name.includes("react")) {
-        ctx.beginPath(); ctx.ellipse(cx, cy, 20, 50, Math.PI / 4, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(cx, cy, 20, 50, -Math.PI / 4, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(cx, cy, 20, 50, 0, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2); ctx.fill();
-    } else if (name.includes("python")) {
-        ctx.beginPath(); ctx.arc(cx, cy - 15, 15, Math.PI, 0); ctx.lineTo(cx + 15, cy + 15); ctx.arc(cx, cy + 15, 15, 0, Math.PI); ctx.lineTo(cx - 15, cy - 15); ctx.stroke();
-    } else if (name.includes("c++") || name.includes("linux") || name.includes("root") || name.includes("latex") || name.includes("tex")) {
-        ctx.font = "bold 40px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(skillName.substring(0, 3), cx, cy);
-    } else {
-        ctx.strokeRect(20, 20, 88, 88); ctx.font = "bold 40px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(skillName.substring(0, 2).toUpperCase(), cx, cy);
-    }
-    const tex = new THREE.CanvasTexture(canvas); tex.minFilter = THREE.LinearFilter; return tex;
-}
-
 // --- Glow Texture ---
 const glowTexture = (() => {
     const c = document.createElement('canvas'); c.width = 64; c.height = 64;
@@ -33,25 +13,29 @@ const glowTexture = (() => {
 // --- Shared Materials ---
 const glowMaterial = new THREE.SpriteMaterial({ map: glowTexture, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
 const coreMaterial = new THREE.SpriteMaterial({ map: glowTexture, color: 0xffffff });
-const skillCoreMat = new THREE.MeshBasicMaterial({ color: 0x001122, transparent: true, opacity: 0.9 });
-const skillShellMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.5 });
-const orbitLineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.15 });
+const skillCoreMat = new THREE.MeshBasicMaterial({ color: 0x224466, wireframe: true, transparent: true, opacity: 0.6 });
+const skillShellMat = new THREE.MeshBasicMaterial({ color: 0x4488aa, wireframe: true, transparent: true, opacity: 0.3 });
+const orbitLineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.05 });
 
 // --- Typing State ---
 export const typingState = {};
 
 // --- Toggle Card ---
 export function toggleCard(index) {
-    const card = document.getElementById(`card-${index}`);
-    const btn = document.getElementById(`btn-${index}`);
-    const logC = document.getElementById(`logs-container-${index}`);
+    try {
+        const card = document.getElementById(`card-${index}`);
+        const btn = document.getElementById(`btn-${index}`);
+        const logC = document.getElementById(`logs-container-${index}`);
 
-    if (card.classList.contains('expanded')) {
-        card.classList.remove('expanded'); btn.innerHTML = "[ + ]"; typingState[index].isTyping = false;
-    } else {
-        card.classList.remove('minimized'); card.classList.add('expanded'); btn.innerHTML = "[ - ]";
-        logC.innerHTML = "";
-        typingState[index].isTyping = true; typingState[index].lineIndex = 0; typingState[index].charIndex = 0;
+        if (card.classList.contains('expanded')) {
+            card.classList.remove('expanded'); btn.innerHTML = "[ + ]"; typingState[index].isTyping = false;
+        } else {
+            card.classList.remove('minimized'); card.classList.add('expanded'); btn.innerHTML = "[ - ]";
+            logC.innerHTML = "";
+            typingState[index].isTyping = true; typingState[index].lineIndex = 0; typingState[index].charIndex = 0;
+        }
+    } catch (e) {
+        document.querySelector('.hero-prompt').innerText = "TGL: " + e.message;
     }
 }
 
@@ -97,10 +81,9 @@ export function createNodes(gridMat) {
             node.skills.forEach((s, si) => {
                 const ang = step * si;
                 const piv = new THREE.Group(); piv.position.set(Math.cos(ang) * orbitR, 0, Math.sin(ang) * orbitR);
-                piv.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 0), skillCoreMat));
-                piv.add(new THREE.Mesh(new THREE.IcosahedronGeometry(2.5, 0), skillShellMat));
-                const icon = new THREE.Sprite(new THREE.SpriteMaterial({ map: createIconTexture(s), transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
-                icon.scale.set(2, 2, 1); piv.add(icon);
+                // Abstract crystalline geometry instead of glowing sprites
+                piv.add(new THREE.Mesh(new THREE.OctahedronGeometry(1.5, 0), skillCoreMat));
+                piv.add(new THREE.Mesh(new THREE.OctahedronGeometry(2.5, 0), skillShellMat));
                 piv.userData = { phase: Math.random() * Math.PI * 2 };
                 skillShell.add(piv);
             });
@@ -111,7 +94,16 @@ export function createNodes(gridMat) {
         // DOM
         const label = document.createElement('div'); label.className = 'node-container'; label.style.display = 'none';
         const massPct = Math.min((node.mass / 10) * 100, 100);
+
+        const skillsHTML = node.skills ? node.skills.map((s, si) => `
+            <div class="skill-label" id="skill-${index}-${si}">
+                <div class="skill-line"></div>
+                <div class="skill-text">${s}</div>
+            </div>
+        `).join('') : '';
+
         label.innerHTML = `
+            ${skillsHTML}
             <div class="node-anchor"></div><div class="node-connector"></div>
             <div class="hud-card minimized" id="card-${index}">
                 <div class="card-header"><span class="card-id">EVT-0${index + 1}</span><div class="card-mass-bar"><div class="card-mass-fill" style="width:${massPct}%"></div></div></div>
@@ -121,7 +113,15 @@ export function createNodes(gridMat) {
             </div>
         `;
         document.getElementById('labels-container').appendChild(label);
-        label.querySelector(`#card-${index}`).addEventListener('click', (e) => { e.stopPropagation(); toggleCard(index); });
+        label.querySelector(`#card-${index}`).addEventListener('click', (e) => {
+            e.stopPropagation();
+            try {
+                toggleCard(index);
+            } catch (err) {
+                const prompt = document.querySelector('.hero-prompt');
+                if (prompt) prompt.innerText = 'ERR click: ' + err.message;
+            }
+        });
         node.element = label;
     });
 

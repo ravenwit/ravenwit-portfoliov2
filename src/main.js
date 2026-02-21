@@ -19,6 +19,10 @@ async function init() {
         console.log(`[INIT] ${stage}: ${progress}%`);
     };
 
+    window.addEventListener('click', (e) => {
+        console.log("Global click registered on:", e.target, e.target.id, e.target.className);
+    });
+
     // --- 0. FETCH DATA ---
     updateLoading('FETCHING_DATA', 5);
     try {

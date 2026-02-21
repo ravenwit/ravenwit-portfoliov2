@@ -74,9 +74,14 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
             nodeGroup.children.forEach((wrapper, i) => {
                 const node = CAREER_NODES[i];
+                if (!node) return;
 
                 if (wrapper.children[0]) wrapper.children[0].scale.setScalar((12 + node.mass * 1.5) + Math.sin(time * 2 + i) * 2);
                 if (wrapper.children[2]) wrapper.children[2].rotation.z -= 0.002;
+
+                const nodePos = wrapper.position.clone(); nodePos.y += 30 + (node.mass * 2); nodePos.project(camera);
+                const x = (nodePos.x * .5 + .5) * window.innerWidth;
+                const y = -(nodePos.y * .5 - .5) * window.innerHeight;
 
                 if (wrapper.children[3]) {
                     wrapper.children[3].rotation.y -= 0.005;
@@ -86,13 +91,21 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                             child.children[0].rotation.x += 0.01;
                             child.children[0].rotation.z += 0.005;
                             child.children[1].rotation.x -= 0.02;
+
+                            // Calculate screen coords for the skill label overlay
+                            const satPos = new THREE.Vector3();
+                            child.getWorldPosition(satPos);
+                            satPos.project(camera);
+                            const sx = (satPos.x * .5 + .5) * window.innerWidth;
+                            const sy = -(satPos.y * .5 - .5) * window.innerHeight;
+
+                            const skillEl = document.getElementById(`skill-${i}-${ci - 1}`);
+                            if (skillEl) skillEl.style.transform = `translate(${sx - x}px, ${sy - y}px)`;
                         }
                     });
                 }
 
-                const nodePos = wrapper.position.clone(); nodePos.y += 30 + (node.mass * 2); nodePos.project(camera);
-                const x = (nodePos.x * .5 + .5) * window.innerWidth;
-                const y = -(nodePos.y * .5 - .5) * window.innerHeight;
+
                 const el = node.element;
                 const dist = camera.position.distanceTo(new THREE.Vector3(node.x, 0, node.z));
 
@@ -110,8 +123,15 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                         el.style.zIndex = 50; el.style.transform = `translate(${x}px, ${y}px) scale(0.8)`;
                     } else el.style.display = 'none';
 
-                    if (node.x < 0) { el.style.flexDirection = "row-reverse"; el.children[1].style.background = "linear-gradient(-90deg, #0ff, transparent)"; }
-                    else { el.style.flexDirection = "row"; el.children[1].style.background = "linear-gradient(90deg, #0ff, transparent)"; }
+                    if (node.x < 0) {
+                        el.style.flexDirection = "row-reverse";
+                        el.querySelector('.node-connector').style.background = "linear-gradient(-90deg, #0ff, transparent)";
+                        el.classList.add('is-reverse');
+                    } else {
+                        el.style.flexDirection = "row";
+                        el.querySelector('.node-connector').style.background = "linear-gradient(90deg, #0ff, transparent)";
+                        el.classList.remove('is-reverse');
+                    }
                 }
             });
         }
