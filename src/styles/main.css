@@ -502,3 +502,79 @@ canvas {
     margin-left: -4px;
     margin-right: 0;
 }
+
+/* --- QUANTUM SOCIAL LINKS --- */
+#quantum-world-line {
+    position: fixed;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 70vh;
+    width: 200px;
+    z-index: 50;
+    pointer-events: none;
+    /* Let clicks pass through empty space */
+}
+
+.trajectory-line {
+    position: absolute;
+    right: 20px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.6) 20%, rgba(0, 255, 255, 0.6) 80%, transparent);
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.quanta-node {
+    position: absolute;
+    right: 17px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    flex-direction: row-reverse;
+    text-decoration: none;
+    pointer-events: auto;
+    /* Re-enable pointer events for the links */
+}
+
+.node-core {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #0ff;
+    box-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+    transition: all 0.3s ease;
+}
+
+.quanta-node:hover .node-core,
+.quanta-node.observed .node-core {
+    transform: scale(1.5);
+    background-color: #fff;
+    box-shadow: 0 0 15px #fff, 0 0 30px #0ff;
+}
+
+.node-label-container {
+    overflow: hidden;
+    margin-right: 15px;
+    /* Space between core and text */
+    display: flex;
+    justify-content: flex-end;
+}
+
+.node-label {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #0ff;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.8);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+}
+
+.quanta-node.observed .node-label {
+    opacity: 1;
+    transform: translateX(0);
+}

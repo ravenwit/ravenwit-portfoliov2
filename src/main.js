@@ -81,9 +81,13 @@ async function init() {
     // Lenis Smooth Scroll (replaces raw wheel events)
     initScroll({ cameraPath, torusMat, gridMat, starsMat, nodeGroup });
 
-    // Initialize Fourier Canvas
+    // Initialize Fourier Canvas & Social Quanta
     import('./components/fourier.js').then(module => {
         module.initFourier('fourierCanvas');
+    });
+
+    import('./components/social.js').then(module => {
+        module.initSocialQuanta();
     });
 
     startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath);
