@@ -39,6 +39,23 @@ export function initiateTransition(cameraPath, torusMat, gridMat, starsMat, node
     tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp + 3.0, duration: 2, ease: 'power2.inOut' }, 0);
     tl.to(gridMat.uniforms.uOpacity, { value: 1, duration: 2, ease: 'power2.inOut' }, 0);
     tl.to(starsMat.uniforms.uOpacity, { value: 1, duration: 2, ease: 'power2.inOut' }, 0);
+
+    // Relativistic Spaghettification (Scale up past camera & Blur)
+    tl.to('#fourier-container', {
+        scale: 12,
+        opacity: 0,
+        filter: 'blur(20px)',
+        duration: 1.5,
+        ease: 'expo.in',
+        onComplete: () => { document.getElementById('fourier-container').style.display = 'none'; }
+    }, 0);
+
+    // Optical Warp Flash
+    tl.to('#optical-flash', { opacity: 0.8, duration: 1.0, ease: 'power2.in' }, 0.5);
+    tl.to('#optical-flash', { opacity: 0, duration: 0.5, ease: 'power2.out' }, 1.5);
+
+    tl.to('.scanlines', { opacity: 0.6, duration: 2, ease: 'power2.inOut' }, 0);
+    tl.to('.vignette', { background: 'radial-gradient(circle at center, transparent 20%, #000 120%)', duration: 2 }, 0);
 }
 
 export function initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup) {
@@ -88,4 +105,23 @@ export function initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup) {
     tl.to(torusMat.uniforms.uStretch, { value: 0, duration: 2, ease: 'power2.inOut' }, 0);
     tl.to(gridMat.uniforms.uOpacity, { value: 0, duration: 2, ease: 'power2.inOut' }, 0);
     tl.to(starsMat.uniforms.uOpacity, { value: 0, duration: 2, ease: 'power2.inOut' }, 0);
+
+    // Restore DOM Node for rendering
+    document.getElementById('fourier-container').style.display = 'block';
+
+    // HTML Reverse Spaghettification 
+    tl.to('#fourier-container', {
+        scale: 1,
+        opacity: 1,
+        filter: 'blur(0px)',
+        duration: 2.0,
+        ease: 'expo.out'
+    }, 0);
+
+    // Optical Warp Flash (Reverse)
+    tl.to('#optical-flash', { opacity: 0.8, duration: 0.4, ease: 'power2.in' }, 0);
+    tl.to('#optical-flash', { opacity: 0, duration: 1.2, ease: 'power2.out' }, 0.8);
+
+    tl.to('.scanlines', { opacity: 0.15, duration: 2, ease: 'power2.inOut' }, 0);
+    tl.to('.vignette', { background: 'radial-gradient(circle at center, transparent 40%, #000 150%)', duration: 2 }, 0);
 }

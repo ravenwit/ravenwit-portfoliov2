@@ -1,4 +1,5 @@
 export const STATE = {
+    mouse: null,
     phase: 'LOADING',
     temperature: 50.0,
     loadProgress: 0,

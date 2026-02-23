@@ -43,7 +43,20 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
         }
         else if (STATE.phase === 'HERO' && !STATE.transitioning) {
             torusMesh.rotation.z += 0.001;
-            camera.position.x = Math.sin(time * 0.5) * 1.5; camera.position.y = Math.cos(time * 0.3) * 1.5;
+
+            // Baseline passive breath
+            let targetX = Math.sin(time * 0.5) * 1.5;
+            let targetY = Math.cos(time * 0.3) * 1.5;
+
+            // Direct Mouse Parallax (same direction as mouse implies pushing deeper)
+            if (STATE.mouse) {
+                targetX += STATE.mouse.x * 8.0; // Increased from 3.0
+                targetY += STATE.mouse.y * 8.0;
+            }
+
+            // Smooth interpolation
+            camera.position.x += (targetX - camera.position.x) * 0.05;
+            camera.position.y += (targetY - camera.position.y) * 0.05;
             camera.lookAt(0, 0, 0);
         }
         else if (STATE.phase === 'TIMELINE' && !STATE.transitioning) {

@@ -81,6 +81,23 @@ async function init() {
     // Lenis Smooth Scroll (replaces raw wheel events)
     initScroll({ cameraPath, torusMat, gridMat, starsMat, nodeGroup });
 
+    // --- TRACK MOUSE FOR PARALLAX ---
+    STATE.mouse = new THREE.Vector2(0, 0);
+    const fourierContainer = document.getElementById('fourier-container');
+
+    window.addEventListener('mousemove', (event) => {
+        // Normalize coordinates to -1 to 1
+        STATE.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        STATE.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        // Foreground HTML Parallax (moves opposite to mouse)
+        if (fourierContainer) {
+            const xOffset = -STATE.mouse.x * 5; // Reduced from 20 to 5
+            const yOffset = STATE.mouse.y * 5;
+            fourierContainer.style.transform = `translate(calc(-50% + ${xOffset}px), calc(-50% + ${yOffset}px))`;
+        }
+    });
+
     // Initialize Fourier Canvas & Social Quanta
     import('./components/fourier.js').then(module => {
         module.initFourier('fourierCanvas');
