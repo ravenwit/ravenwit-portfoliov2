@@ -137,5 +137,53 @@
             "DOCUMENTING TECHNICAL WORK RESULTS",
             "CONTRIBUTING TO DETAILED PROJECT REPORTS"
         ]
+    },
+    {
+        "id": "hobby-violin",
+        "category": "hobby",
+        "title": "VIOLIN",
+        "date": "2015 - Present",
+        "persisting": true,
+        "timeRange": [
+            2015,
+            2027
+        ],
+        "description": "Playing classical and contemporary pieces."
+    },
+    {
+        "id": "hobby-rubik",
+        "category": "hobby",
+        "title": "RUBIK'S CUBE",
+        "date": "2018 - 2020",
+        "persisting": false,
+        "timeRange": [
+            2018,
+            2020
+        ],
+        "description": "Speedcubing and learning advanced algorithms."
+    },
+    {
+        "id": "hobby-astronomy",
+        "category": "hobby",
+        "title": "AMATEUR ASTRONOMY",
+        "date": "2020 - Present",
+        "persisting": true,
+        "timeRange": [
+            2020,
+            2027
+        ],
+        "description": "Stargazing and astrophotography."
+    },
+    {
+        "id": "hobby-game-dev",
+        "category": "hobby",
+        "title": "GAME DEVELOPMENT",
+        "date": "2021 - 2023",
+        "persisting": false,
+        "timeRange": [
+            2021,
+            2023
+        ],
+        "description": "Prototyping mechanics in Godot and Unity."
     }
 ]

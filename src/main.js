@@ -9,6 +9,7 @@ import { createNodes, toggleCard, startTypingInterval } from './components/nodes
 import { startAnimationLoop } from './core/animate.js';
 import { initScroll } from './core/scroll.js';
 import { CAREER_NODES } from './config.js';
+import { initEigenstates } from './components/eigenstate.js';
 
 async function init() {
     const statusDisp = document.getElementById('status-display');
@@ -29,8 +30,10 @@ async function init() {
         const res = await fetch('/data/timeline.json');
         const timelineData = await res.json();
 
+        initEigenstates(timelineData);
+
         let currentZ = -50;
-        timelineData.forEach((item, index) => {
+        timelineData.filter(item => item.category === 'career').forEach((item, index) => {
             item.x = index % 2 === 0 ? 25 : -30;
             item.y = 0;
             item.z = currentZ;

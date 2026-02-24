@@ -4,6 +4,7 @@ import { CONFIG, CAREER_NODES } from '../config.js';
 import { STATE } from '../state.js';
 import { scene, camera, renderer, composer } from '../core/scene.js';
 import { updateScroll } from '../core/scroll.js';
+import { updateEigenstateGrid } from '../components/eigenstate.js';
 
 const timer = new Timer();
 
@@ -60,6 +61,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             camera.lookAt(0, 0, 0);
         }
         else if (STATE.phase === 'TIMELINE' && !STATE.transitioning) {
+            updateEigenstateGrid();
 
             const diff = STATE.targetScrollY - STATE.scrollY;
             STATE.scrollY += diff * CONFIG.scrollDamping;
