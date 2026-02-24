@@ -72,8 +72,9 @@ function assemble(results) {
         vertexShader: gridVertexShader, fragmentShader: gridFragmentShader,
         uniforms: {
             uTime: { value: 0 }, uOpacity: { value: 0.0 },
-            uMassPositions: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
-            uMassStrengths: { value: [0, 0, 0, 0] }
+            uMassCount: { value: 0 },
+            uMassPositions: { value: Array.from({ length: 10 }, () => new THREE.Vector3()) },
+            uMassStrengths: { value: Array.from({ length: 10 }, () => 0) }
         },
         transparent: true, depthWrite: false, blending: THREE.NormalBlending
     });
@@ -88,6 +89,7 @@ function assemble(results) {
     const starsMat = new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 }, uCameraZ: { value: 0 }, uSpeed: { value: 0 }, uOpacity: { value: 0.0 },
+            uMassCount: gridMat.uniforms.uMassCount, // share uniform reference
             uMassPositions: { value: gridMat.uniforms.uMassPositions.value },
             uMassStrengths: { value: gridMat.uniforms.uMassStrengths.value },
             uCameraPos: { value: new THREE.Vector3() }, uLensing: { value: CONFIG.lensingStrength }

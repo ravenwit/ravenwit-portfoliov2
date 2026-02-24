@@ -1,10 +1,14 @@
 export const gridVertexShader = `
-    uniform float uTime; uniform vec3 uMassPositions[4]; uniform float uMassStrengths[4];
+    uniform float uTime; 
+    uniform int uMassCount;
+    uniform vec3 uMassPositions[10]; 
+    uniform float uMassStrengths[10];
     uniform float uOpacity; attribute vec3 basePos; varying float vDistortion; varying float vDepth;
     void main() {
         vec3 pos = basePos;
         float totalDisplacement = 0.0;
-        for(int i = 0; i < 4; i++) {
+        for(int i = 0; i < 10; i++) {
+            if (i >= uMassCount) break;
             float dx = pos.x - uMassPositions[i].x;
             float dz = pos.z - uMassPositions[i].z;
             float distSq = dx*dx + dz*dz;

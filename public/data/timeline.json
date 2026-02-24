@@ -1,49 +1,71 @@
 [
     {
-        "id": "luna-innovations",
+        "id": "higher-secondary",
         "category": "career",
-        "x": 30,
-        "y": 5,
-        "z": -1500,
-        "mass": 5.5,
-        "title": "WORKING STUDENT - ALGORITHMS",
-        "subtitle": "Luna Innovations Germany GmbH",
-        "date": "Oct 2022 - Present",
+        "x": -25,
+        "y": 10,
+        "z": -50,
+        "mass": 1.8,
+        "title": "HIGHER SECONDARY CERTIFICATE",
+        "subtitle": "Govt. Science College",
+        "date": "2013",
         "skills": [
-            "Python",
-            "TensorFlow",
-            "MLOps",
-            "Linux"
+            "Science",
+            "Math",
+            "IT",
+            "Club Management"
         ],
         "responsibilities": [
-            "DEVELOPING FIBER MONITORING ALGORITHMS",
-            "OPTIMIZING DATA ANALYSIS FOR ACOUSTIC SENSING",
-            "IMPLEMENTING MODELS WITH SCIKIT-LEARN & TENSORFLOW",
-            "REFACTORING CODE FOR MAINTAINABILITY",
-            "AUTOMATING WORKFLOW TOOLING & USABILITY"
+            "SECRETARY OF COLLEGE SCIENCE CLUB",
+            "EXCELLING IN NATIONAL SCIENCE CURRICULUM",
+            "DEVELOPING CORE MATHEMATICAL FOUNDATIONS",
+            "PARTICIPATING IN NATIONAL SCIENCE FESTIVALS"
         ]
     },
     {
-        "id": "masters-physics",
+        "id": "bachelors-physics",
         "category": "career",
-        "x": -35,
-        "y": -10,
-        "z": -1100,
-        "mass": 5.0,
-        "title": "MASTER OF SCIENCE PHYSICS",
-        "subtitle": "University of Cologne",
-        "date": "2024 - 2027",
+        "x": -30,
+        "y": 0,
+        "z": -200,
+        "mass": 4.5,
+        "title": "BACHELOR OF SCIENCE PHYSICS",
+        "subtitle": "Shahjalal University of Science and Technology",
+        "date": "April 2015 - April 2019",
         "skills": [
-            "Physics",
-            "LaTeX",
-            "Research",
-            "MATLAB"
+            "Python",
+            "MATLAB",
+            "SymPy",
+            "SciPy"
         ],
         "responsibilities": [
-            "ADVANCING THEORETICAL PHYSICS FRAMEWORKS",
-            "CONDUCTING ADVANCED RESEARCH AT COLOGNE",
-            "DOCUMENTING TECHNICAL WORK RESULTS",
-            "CONTRIBUTING TO DETAILED PROJECT REPORTS"
+            "SIMULATING NEUTRINO OSCILLATIONS VIA MONTE CARLO",
+            "STUDYING RELATIVISTIC DYNAMICS OF TWO-BODY SYSTEMS",
+            "ANALYZING ELECTROMAGNETIC FIELD EQUATIONS",
+            "PRESENTING RESEARCH AT NATIONAL CONFERENCES"
+        ]
+    },
+    {
+        "id": "hexit-sysadmin",
+        "category": "career",
+        "x": 40,
+        "y": -5,
+        "z": -500,
+        "mass": 2.5,
+        "title": "SYSTEM ADMINISTRATOR",
+        "subtitle": "HEXit",
+        "date": "March 2017 - Sept 2017",
+        "skills": [
+            "Linux",
+            "MySQL",
+            "Apache",
+            "Security"
+        ],
+        "responsibilities": [
+            "ADMINISTERING APACHE & MYSQL SERVERS",
+            "ADDRESSING POTENTIAL SYSTEM INTRUSIONS",
+            "MONITORING SYSTEM PERFORMANCE REGULARLY",
+            "MITIGATING SYSTEM VULNERABILITIES"
         ]
     },
     {
@@ -70,72 +92,50 @@
         ]
     },
     {
-        "id": "bachelors-physics",
+        "id": "luna-innovations",
         "category": "career",
-        "x": -30,
-        "y": 0,
-        "z": -500,
-        "mass": 4.5,
-        "title": "BACHELOR OF SCIENCE PHYSICS",
-        "subtitle": "Shahjalal University of Science and Technology",
-        "date": "April 2015 - April 2019",
+        "x": 30,
+        "y": 5,
+        "z": -1100,
+        "mass": 5.5,
+        "title": "WORKING STUDENT - ALGORITHMS",
+        "subtitle": "Luna Innovations Germany GmbH",
+        "date": "Oct 2022 - Present",
         "skills": [
             "Python",
-            "MATLAB",
-            "SymPy",
-            "SciPy"
+            "TensorFlow",
+            "MLOps",
+            "Linux"
         ],
         "responsibilities": [
-            "SIMULATING NEUTRINO OSCILLATIONS VIA MONTE CARLO",
-            "STUDYING RELATIVISTIC DYNAMICS OF TWO-BODY SYSTEMS",
-            "ANALYZING ELECTROMAGNETIC FIELD EQUATIONS",
-            "PRESENTING RESEARCH AT NATIONAL CONFERENCES"
+            "DEVELOPING FIBER MONITORING ALGORITHMS",
+            "OPTIMIZING DATA ANALYSIS FOR ACOUSTIC SENSING",
+            "IMPLEMENTING MODELS WITH SCIKIT-LEARN & TENSORFLOW",
+            "REFACTORING CODE FOR MAINTAINABILITY",
+            "AUTOMATING WORKFLOW TOOLING & USABILITY"
         ]
     },
     {
-        "id": "hexit-sysadmin",
+        "id": "masters-physics",
         "category": "career",
-        "x": 40,
-        "y": -5,
-        "z": -200,
-        "mass": 2.5,
-        "title": "SYSTEM ADMINISTRATOR",
-        "subtitle": "HEXit",
-        "date": "March 2017 - Sept 2017",
+        "x": -35,
+        "y": -10,
+        "z": -1500,
+        "mass": 5.0,
+        "title": "MASTER OF SCIENCE PHYSICS",
+        "subtitle": "University of Cologne",
+        "date": "2024 - 2027",
         "skills": [
-            "Linux",
-            "MySQL",
-            "Apache",
-            "Security"
+            "Physics",
+            "LaTeX",
+            "Research",
+            "MATLAB"
         ],
         "responsibilities": [
-            "ADMINISTERING APACHE & MYSQL SERVERS",
-            "ADDRESSING POTENTIAL SYSTEM INTRUSIONS",
-            "MONITORING SYSTEM PERFORMANCE REGULARLY",
-            "MITIGATING SYSTEM VULNERABILITIES"
-        ]
-    },
-    {
-        "id": "higher-secondary",
-        "category": "career",
-        "x": -25,
-        "y": 10,
-        "z": -50,
-        "mass": 1.8,
-        "title": "HIGHER SECONDARY CERTIFICATE",
-        "subtitle": "Govt. Science College",
-        "date": "2013",
-        "skills": [
-            "Science",
-            "Math",
-            "IT",
-            "Club Management"
-        ],
-        "responsibilities": [
-            "SECRETARY OF COLLEGE SCIENCE CLUB",
-            "EXCELLING IN NATIONAL SCIENCE CURRICULUM",
-            "DEVELOPING CORE MATHEMATICAL FOUNDATIONS",
-            "PARTICIPATING IN NATIONAL SCIENCE FESTIVALS"
+            "ADVANCING THEORETICAL PHYSICS FRAMEWORKS",
+            "CONDUCTING ADVANCED RESEARCH AT COLOGNE",
+            "DOCUMENTING TECHNICAL WORK RESULTS",
+            "CONTRIBUTING TO DETAILED PROJECT REPORTS"
         ]
     }
 ]

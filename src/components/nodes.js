@@ -46,8 +46,11 @@ export function createNodes(gridMat) {
 
     CAREER_NODES.forEach((node, index) => {
         typingState[index] = { lineIndex: 0, charIndex: 0, isTyping: false };
-        gridMat.uniforms.uMassPositions.value[index] = new THREE.Vector3(node.x, 0, node.z);
-        gridMat.uniforms.uMassStrengths.value[index] = node.mass * CONFIG.massStrength;
+        if (index < 10) {
+            gridMat.uniforms.uMassPositions.value[index] = new THREE.Vector3(node.x, 0, node.z);
+            gridMat.uniforms.uMassStrengths.value[index] = node.mass * CONFIG.massStrength;
+        }
+        gridMat.uniforms.uMassCount.value = Math.min(CAREER_NODES.length, 10);
 
         const wrapper = new THREE.Group();
         wrapper.position.set(node.x, -(node.mass * CONFIG.massStrength) * 0.4, node.z);
