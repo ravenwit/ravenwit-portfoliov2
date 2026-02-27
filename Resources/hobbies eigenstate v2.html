@@ -14,7 +14,6 @@
             /* MICRO SIZE SETTINGS */
             --cell-size: 45px;
             --gap: 5px;
-            --grid-dim: 6;
         }
 
         body {
@@ -107,11 +106,31 @@
             transition: height 0.1s linear;
         }
 
-        #matrix-container {
+        #triptych {
+            display: flex;
+            gap: 60px;
+            align-items: center;
+            transform-style: preserve-3d;
+            animation: eigen-float 10s ease-in-out infinite;
+            transform: rotateX(10deg);
+        }
+
+        .matrix-wrapper {
             position: relative;
             transform-style: preserve-3d;
-            transform: rotateX(10deg);
-            animation: eigen-float 10s ease-in-out infinite;
+        }
+
+        /* Subtle angling for the outer monitors */
+        #wrapper-areas {
+            transform: rotateY(15deg) translateZ(-20px);
+        }
+
+        #wrapper-tools {
+            transform: rotateY(-15deg) translateZ(-20px);
+        }
+
+        #wrapper-categories {
+            transform: translateZ(20px);
         }
 
         .bracket {
@@ -134,12 +153,33 @@
             border-left: none;
         }
 
-        #matrix {
+        .matrix {
             display: grid;
-            grid-template-columns: repeat(var(--grid-dim), var(--cell-size));
-            grid-template-rows: repeat(var(--grid-dim), var(--cell-size));
             gap: var(--gap);
             transform-style: preserve-3d;
+        }
+
+        .matrix-6x6 {
+            grid-template-columns: repeat(6, var(--cell-size));
+            grid-template-rows: repeat(6, var(--cell-size));
+        }
+
+        .matrix-7x7 {
+            grid-template-columns: repeat(7, var(--cell-size));
+            grid-template-rows: repeat(7, var(--cell-size));
+        }
+
+        /* Title labels for each matrix */
+        .matrix-title {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: rgba(0, 243, 255, 0.7);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            white-space: nowrap;
         }
 
         @keyframes eigen-float {
@@ -207,6 +247,12 @@
             transform: translateZ(12px);
         }
 
+        #matrix-areas .item-icon,
+        #matrix-tools .item-icon {
+            width: 2.6rem;
+            height: 2.6rem;
+        }
+
         .item span {
             position: absolute;
             top: -35px;
@@ -223,15 +269,15 @@
             transition: opacity 0.2s;
             pointer-events: none;
             box-shadow: 0 0 10px currentColor;
-            z-index: 100;
-            transform: translateZ(60px);
+            z-index: 10000;
+            transform: translateZ(160px);
         }
 
         .item:hover {
-            transform: translateZ(30px);
+            transform: translateZ(100px);
             background: rgba(20, 20, 30, 0.95);
             box-shadow: inset 0 0 15px currentColor;
-            z-index: 50;
+            z-index: 9999;
         }
 
         .item:hover .item-icon {
@@ -257,7 +303,7 @@
             color: #60a5fa;
         }
 
-        .cat-ai {
+        .cat-ml_data {
             border-color: rgba(248, 113, 113, 0.6);
             color: #ff7272;
             --icon-stroke-width: 0.5px;
@@ -277,6 +323,12 @@
         .cat-arts {
             border-color: rgba(244, 114, 182, 0.6);
             color: #ffd65c;
+            --icon-stroke-width: 0.5px;
+        }
+
+        .cat-music {
+            border-color: rgba(147, 197, 253, 0.6);
+            color: #93c5fd;
             --icon-stroke-width: 0.5px;
         }
 
@@ -380,108 +432,47 @@
     </div>
 
     <div id="viewport">
-        <div id="matrix-container">
-            <div class="bracket left"></div>
-            <div class="bracket right"></div>
-            <div id="matrix"></div>
+        <div id="triptych">
+            <!-- Left Matrix: Areas -->
+            <div class="matrix-wrapper" id="wrapper-areas">
+                <div class="matrix-title">STATE // AREAS</div>
+                <div class="bracket left"></div>
+                <div class="bracket right"></div>
+                <div id="matrix-areas" class="matrix matrix-6x6"></div>
+            </div>
+
+            <!-- Center Matrix: Categories -->
+            <div class="matrix-wrapper" id="wrapper-categories">
+                <div class="matrix-title">DOMAINS</div>
+                <div class="bracket left" style="border-width: 3px;"></div>
+                <div class="bracket right" style="border-width: 3px;"></div>
+                <div id="matrix-categories" class="matrix matrix-7x7"></div>
+            </div>
+
+            <!-- Right Matrix: Tools -->
+            <div class="matrix-wrapper" id="wrapper-tools">
+                <div class="matrix-title">OPERAND // TOOLS</div>
+                <div class="bracket left"></div>
+                <div class="bracket right"></div>
+                <div id="matrix-tools" class="matrix matrix-6x6"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- DATA ---
-        const RAW_DATA = [
-            {
-                "id": "physics", "items": [
-                    { "name": "AdS/CFT", "start": 2021, "end": 9999 },
-                    { "name": "Holography", "start": 2021, "end": 9999 },
-                    { "name": "Gravitational Waves", "start": 2021, "end": 9999 },
-                    { "name": "Quantum Error Corr.", "start": 2025, "end": 9999 },
-                    { "name": "Phase Trans.", "start": 2024, "end": 9999 },
-                    { "name": "Renormalization", "start": 2024, "end": 9999 }
-                ]
-            },
-            {
-                "id": "math", "items": [
-                    { "name": "Category Theory", "start": 2020, "end": 9999 },
-                    { "name": "Elliptic Curves", "start": 2017, "end": 9999 },
-                    { "name": "Sympy", "start": 2018, "end": 2021 },
-                    { "name": "Sagemath", "start": 2019, "end": 2021 }
-                ]
-            },
-            {
-                "id": "ai", "items": [
-                    { "name": "GANs", "start": 2021, "end": 9999 },
-                    { "name": "Neural Nets", "start": 2020, "end": 9999 },
-                    { "name": "Keras", "start": 2020, "end": 9999 },
-                    { "name": "TensorFlow", "start": 2020, "end": 9999 },
-                    { "name": "Scipy", "start": 2019, "end": 9999 },
-                    { "name": "Numpy", "start": 2019, "end": 9999 },
-                    { "name": "Pandas", "start": 2019, "end": 9999 },
-                    { "name": "Scikit-learn", "start": 2019, "end": 9999 },
-                    { "name": "OpenCV", "start": 2017, "end": 2021 },
-                    { "name": "Matplotlib", "start": 2017, "end": 9999 }
-                ]
-            },
-            {
-                "id": "security", "items": [
-                    { "name": "Cryptography", "start": 2016, "end": 2020 },
-                    { "name": "Metasploit", "start": 2016, "end": 2018 },
-                    { "name": "Wireshark", "start": 2016, "end": 2018 },
-                    { "name": "Linux Admin", "start": 2013, "end": 2017 },
-                    { "name": "Aircrack-ng", "start": 2016, "end": 2018 },
-                    { "name": "Ettercap", "start": 2016, "end": 2018 },
-                    { "name": "BeEF", "start": 2016, "end": 2018 },
-                    { "name": "Hexdump", "start": 2016, "end": 2018 }
-                ]
-            },
-            {
-                "id": "dev", "items": [
-                    { "name": "Node.js", "start": 2022, "end": 2023 },
-                    { "name": "Gatsby", "start": 2022, "end": 2023 },
-                    { "name": "HTML", "start": 2012, "end": 2015 },
-                    { "name": "JavaScript", "start": 2012, "end": 2016 },
-                    { "name": "PHP", "start": 2013, "end": 2019 },
-                    { "name": "Laravel", "start": 2015, "end": 2019 },
-                    { "name": ".NET", "start": 2012, "end": 2016 },
-                    { "name": "C", "start": 2011, "end": 2013 },
-                    { "name": "C++", "start": 2011, "end": 2020 },
-                    { "name": "Qt", "start": 2016, "end": 2019 },
-                    { "name": "Arduino", "start": 2013, "end": 2017 },
-                    { "name": "Git", "start": 2017, "end": 9999 },
-                    { "name": "LaTeX", "start": 2018, "end": 9999 },
-                    { "name": "VS Code", "start": 2022, "end": 9999 },
-                    { "name": "Arch Linux", "start": 2018, "end": 2020 },
-                    { "name": "Ubuntu", "start": 2016, "end": 2022 }
-                ]
-            },
-            {
-                "id": "arts", "items": [
-                    { "name": "Violin", "start": 2013, "end": 2014 },
-                    { "name": "Origami", "start": 2012, "end": 9999 },
-                    { "name": "Kirigami", "start": 2024, "end": 9999 },
-                    { "name": "Paper Crafts", "start": 2004, "end": 9999 },
-                    { "name": "Rubik's Cube", "start": 2012, "end": 9999 },
-                    { "name": "Photoshop", "start": 2012, "end": 2021 },
-                    { "name": "Music", "start": 2004, "end": 9999 },
-                    { "name": "Movies", "start": 2007, "end": 9999 },
-                    { "name": "Kalimba", "start": 2023, "end": 9999 }
-                ]
-            }
-        ];
-
         const ICON_MAP = {
-            'AdS/CFT': '../public/icons/AdS_CFT_Correspondence.svg',
-            'Holography': '../public/icons/Holographic_Principle.svg',
+            'AdS/CFT Correspondence': '../public/icons/AdS_CFT_Correspondence.svg',
+            'Holographic Principle': '../public/icons/Holographic_Principle.svg',
             'Gravitational Waves': '../public/icons/Gravitational_Waves.svg',
-            'Quantum Error Corr.': '../public/icons/Quantum_Error_Correction.svg',
-            'Phase Trans.': '../public/icons/Phase_Transitions.svg',
+            'Quantum Error Correction': '../public/icons/Quantum_Error_Correction.svg',
+            'Phase Transitions': '../public/icons/Phase_Transitions.svg',
             'Renormalization': '../public/icons/Renormalization.svg',
             'Category Theory': '../public/icons/Category_Theory.svg',
             'Elliptic Curves': '../public/icons/Elliptic_Curves.svg',
             'Sympy': '../public/icons/Sympy.svg',
             'Sagemath': '../public/icons/Sagemath.svg',
-            'GANs': '../public/icons/Adversarial_Generative_Networks__GANs_.svg',
-            'Neural Nets': '../public/icons/Neural_Networks.svg',
+            'Adversarial Generative Networks (GANs)': '../public/icons/Adversarial_Generative_Networks__GANs_.svg',
+            'Neural Networks': '../public/icons/Neural_Networks.svg',
             'Keras': '../public/icons/Keras.svg',
             'TensorFlow': '../public/icons/TensorFlow.svg',
             'Scipy': '../public/icons/Scipy.svg',
@@ -493,7 +484,7 @@
             'Cryptography': '../public/icons/Cryptography.svg',
             'Metasploit': '../public/icons/Metasploit.svg',
             'Wireshark': '../public/icons/Wireshark.svg',
-            'Linux Admin': '../public/icons/Linux_Server_Administration.svg',
+            'Linux Server Administration': '../public/icons/Linux_Server_Administration.svg',
             'Aircrack-ng': '../public/icons/Aircrack_ng.svg',
             'BeEF': '../public/icons/BeEF.svg',
             'Ettercap': '../public/icons/Ettercap.svg',
@@ -504,11 +495,11 @@
             'JavaScript': '../public/icons/JavaScript.svg',
             'PHP': '../public/icons/PHP.svg',
             'Laravel': '../public/icons/Laravel.svg',
-            '.NET': '../public/icons/_NET_Framework.svg',
+            '.NET Framework': '../public/icons/_NET_Framework.svg',
             'C': '../public/icons/C.svg',
             'C++': '../public/icons/C__.svg',
-            'Qt': '../public/icons/Qt_Framework.svg',
-            'Arduino': '../public/icons/Arduino_IDE.svg',
+            'Qt Framework': '../public/icons/Qt_Framework.svg',
+            'Arduino IDE': '../public/icons/Arduino_IDE.svg',
             'Git': '../public/icons/Git.svg',
             'LaTeX': '../public/icons/LaTeX.svg',
             'VS Code': '../public/icons/VS_Code.svg',
@@ -519,78 +510,89 @@
             'Kirigami': '../public/icons/Kirigami.svg',
             'Paper Crafts': '../public/icons/Paper_Crafts.svg',
             'Rubik\'s Cube': '../public/icons/Rubik_s_Cube.svg',
-            'Photoshop': '../public/icons/Adobe_Photoshop.svg',
+            'Adobe Photoshop': '../public/icons/Adobe_Photoshop.svg',
             'Music': '../public/icons/Music.svg',
             'Movies': '../public/icons/Movies.svg',
-            'Kalimba': '../public/icons/Kalimba.svg'
+            'Kalimba': '../public/icons/Kalimba.svg',
+            'Arpspoof': '../public/icons/Arpspoof.svg',
+            'CentOS': '../public/icons/CentOS.svg',
+            'Debian': '../public/icons/Debian.svg',
+            'Dnsspoof': '../public/icons/Dnsspoof.svg',
+            'Gdb': '../public/icons/Gdb.svg',
+            'Manjaro': '../public/icons/Manjaro.svg',
+            'Red Hat Linux': '../public/icons/Red_Hat_Linux.svg',
+            'Robotics': '../public/icons/Robotics.svg',
+            'jQuery': '../public/icons/jQuery.svg',
+            'MATLAB': '../public/icons/MATLAB.svg',
+            'Microsoft Visual Basic 6.0': '../public/icons/Microsoft_Visual_Basic_6_0.svg',
+            'MS Office Suite': '../public/icons/MS_Office_Suite.svg',
+            'PyCharm': '../public/icons/PyCharm.svg',
+            'Visual Studio': '../public/icons/Visual_Studio.svg',
+            'Cardistry': '../public/icons/Cardistry.svg',
+            'Adobe Lightroom': '../public/icons/Adobe_Lightroom.svg',
+            'Adobe Premiere Pro': '../public/icons/Adobe_Premiere_Pro.svg',
+            'Figma': '../public/icons/Figma.svg',
+            // --- NEW CATEGORY ICONS ---
+            'THEORETICAL PHYSICS': '../public/icons/category_physics.svg',
+            'PURE MATHEMATICS': '../public/icons/category_math.svg',
+            'MACHINE LEARNING & DATA SCIENCE': '../public/icons/category_ml_data.svg',
+            'SECURITY & SYSTEMS': '../public/icons/category_security.svg',
+            'SOFTWARE DEVELOPMENT': '../public/icons/category_dev.svg',
+            'ARTS': '../public/icons/category_arts.svg',
+            'MUSIC': '../public/icons/category_music.svg'
         };
 
         const getIcon = (name) => ICON_MAP[name] || '';
         const getCatClass = (catId) => `cat-${catId}`;
 
-        const COLLAPSE_MAP = {
-            'Violin': 'Music',
-            'Metasploit': 'Cryptography', 'Wireshark': 'Cryptography',
-            'Aircrack-ng': 'Cryptography', 'BeEF': 'Cryptography',
-            'Ettercap': 'Cryptography', 'Hexdump': 'Cryptography',
-            'Cryptography': 'Elliptic Curves',
-            'Linux Admin': 'Arch Linux', 'Ubuntu': 'Arch Linux',
-            'Arch Linux': 'Phase Trans.',
-            'OpenCV': 'Neural Nets',
-            'Photoshop': 'Kirigami',
-            'HTML': 'JavaScript', 'C': 'C++'
-        };
-
-        let allHobbies = [];
-        RAW_DATA.forEach(cat => {
-            cat.items.forEach(item => {
-                allHobbies.push({ ...item, catId: cat.id, duration: (item.end === 9999 ? 2026 : item.end) - item.start });
-            });
-        });
+        let allAreas = [];
+        let allTools = [];
+        let rootCategories = [];
 
         const START_YEAR = 2004;
         const END_YEAR = 2027;
-        const GRID_DIM = 6;
 
         // --- GRID INIT ---
-        const matrixEl = document.getElementById('matrix');
-        const gridState = Array(GRID_DIM * GRID_DIM).fill(null);
+        const matrixAreasEl = document.getElementById('matrix-areas');
+        const matrixToolsEl = document.getElementById('matrix-tools');
+        const matrixCatEl = document.getElementById('matrix-categories');
 
-        for (let i = 0; i < GRID_DIM * GRID_DIM; i++) {
-            let cell = document.createElement('div');
-            cell.className = 'cell';
-            matrixEl.appendChild(cell);
+        const gridStateAreas = Array(36).fill(null);
+        const gridStateTools = Array(36).fill(null);
+        const gridStateCat = Array(49).fill(null);
+
+        for (let i = 0; i < 36; i++) {
+            let c1 = document.createElement('div'); c1.className = 'cell'; matrixAreasEl.appendChild(c1);
+            let c2 = document.createElement('div'); c2.className = 'cell'; matrixToolsEl.appendChild(c2);
+        }
+        for (let i = 0; i < 49; i++) {
+            let c3 = document.createElement('div'); c3.className = 'cell'; matrixCatEl.appendChild(c3);
         }
 
-        const activeItems = {};
+        const activeAreas = {};
+        const activeTools = {};
+        const activeCategories = {};
 
         // --- DIAGONAL LOGIC ---
-        const DIAGONAL_PRIORITY = [
-            'AdS/CFT', 'Holography', 'Gravitational Waves',
-            'Renormalization', 'Category Theory', 'Elliptic Curves', 'GANs'
-        ];
-        // 6x6 matrix: exactly 7 cells corresponding to priority elements
-        const DIAGONAL_INDICES = [0, 7, 14, 21, 28, 35, 5];
+        // 6x6 main diagonal indices: [0, 7, 14, 21, 28, 35]
+        const DIAG_6x6 = [0, 7, 14, 21, 28, 35];
+        // 7x7 main diagonal indices: [0, 8, 16, 24, 32, 40, 48]
+        const DIAG_7x7 = [0, 8, 16, 24, 32, 40, 48];
 
-        function getAvailableCell(hobbyName) {
-            const available = gridState.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+        // Categories must ONLY go on the 7x7 main diagonal.
+        function getAvailableCatCell() {
+            const available = gridStateCat.map((val, idx) => val === null ? idx : null)
+                .filter(idx => idx !== null && DIAG_7x7.includes(idx));
             if (available.length === 0) return null;
+            return available[Math.floor(Math.random() * available.length)];
+        }
 
-            const isPriority = DIAGONAL_PRIORITY.includes(hobbyName);
-
-            if (isPriority) {
-                const availableDiagonals = available.filter(idx => DIAGONAL_INDICES.includes(idx));
-                if (availableDiagonals.length > 0) {
-                    return availableDiagonals[Math.floor(Math.random() * availableDiagonals.length)];
-                }
-            } else {
-                const availableNonDiagonals = available.filter(idx => !DIAGONAL_INDICES.includes(idx));
-                if (availableNonDiagonals.length > 0) {
-                    return availableNonDiagonals[Math.floor(Math.random() * availableNonDiagonals.length)];
-                }
-            }
-
-            // Fallback if preferred zones are full
+        // Areas/Tools must AVOID the 6x6 main diagonal.
+        function getAvailableItemCell(gridState, is6x6) {
+            const forbiddenDiags = is6x6 ? DIAG_6x6 : [];
+            const available = gridState.map((val, idx) => val === null ? idx : null)
+                .filter(idx => idx !== null && !forbiddenDiags.includes(idx));
+            if (available.length === 0) return null;
             return available[Math.floor(Math.random() * available.length)];
         }
 
@@ -602,122 +604,121 @@
             const progressPct = ((year - START_YEAR) / totalYears) * 100;
             document.getElementById('timeline-progress').style.height = `${progressPct}%`;
 
-            const itemsShouldBeActive = allHobbies.filter(h => year >= h.start && year <= h.end);
-
-            itemsShouldBeActive.forEach(hobby => {
-                if (!activeItems[hobby.name]) {
-                    const cellIdx = getAvailableCell(hobby.name);
-                    if (cellIdx !== null) spawnItem(hobby, cellIdx);
+            // 1. Process Areas
+            const activeAreasItems = allAreas.filter(h => year >= h.start && year <= h.end);
+            activeAreasItems.forEach(item => {
+                if (!activeAreas[item.name]) {
+                    const idx = getAvailableItemCell(gridStateAreas, true);
+                    if (idx !== null) spawnItem(item, idx, gridStateAreas, activeAreas, matrixAreasEl, 6);
+                }
+            });
+            Object.keys(activeAreas).forEach(name => {
+                if (!activeAreasItems.find(h => h.name === name)) {
+                    mergeAndRemove(name, activeAreas, gridStateAreas, 6);
                 }
             });
 
-            Object.keys(activeItems).forEach(name => {
-                const itemObj = activeItems[name];
-                const stillActive = itemsShouldBeActive.find(h => h.name === name);
-                if (!stillActive) mergeAndRemove(name);
+            // 2. Process Tools
+            const activeToolsItems = allTools.filter(h => year >= h.start && year <= h.end);
+            activeToolsItems.forEach(item => {
+                if (!activeTools[item.name]) {
+                    const idx = getAvailableItemCell(gridStateTools, true);
+                    if (idx !== null) spawnItem(item, idx, gridStateTools, activeTools, matrixToolsEl, 6);
+                }
+            });
+            Object.keys(activeTools).forEach(name => {
+                if (!activeToolsItems.find(h => h.name === name)) {
+                    mergeAndRemove(name, activeTools, gridStateTools, 6);
+                }
+            });
+
+            // 3. Process Categories
+            // A category is active if ANY of its items (area or tool) are active
+            const currentlyActiveIds = new Set();
+            [...activeAreasItems, ...activeToolsItems].forEach(item => currentlyActiveIds.add(item.catId));
+
+            rootCategories.forEach(cat => {
+                const isActive = currentlyActiveIds.has(cat.id);
+                if (isActive) {
+                    if (!activeCategories[cat.name]) {
+                        const idx = getAvailableCatCell();
+                        if (idx !== null) spawnItem(cat, idx, gridStateCat, activeCategories, matrixCatEl, 7);
+                    }
+                } else {
+                    if (activeCategories[cat.name]) {
+                        mergeAndRemove(cat.name, activeCategories, gridStateCat, 7);
+                    }
+                }
             });
         }
 
-        function spawnItem(hobby, cellIndex) {
+        function spawnItem(itemDef, cellIndex, gridState, trackingDict, matrixEl, dim) {
             const cell = matrixEl.children[cellIndex];
-            const isShortTerm = hobby.duration < 3 && hobby.end !== 9999;
-            const typeClass = isShortTerm ? 'short-term' : 'long-term';
+            const typeClass = itemDef.isShortTerm ? 'short-term' : 'long-term';
 
             const div = document.createElement('div');
-            div.className = `item spawning ${getCatClass(hobby.catId)} ${typeClass}`;
-            div.innerHTML = `<span>${hobby.name}</span>`;
+            div.className = `item spawning ${getCatClass(itemDef.catId)} ${typeClass}`;
+            div.innerHTML = `<span>${itemDef.name}</span>`;
 
-            // Fetch and inline SVG so it inherits the dynamic category color
-            // Handle both python HTTP server and Vite dev server paths
-            let iconPath = getIcon(hobby.name);
-            if (!iconPath) return;
+            let iconPath = getIcon(itemDef.name);
+            if (!iconPath) {
+                // If it's a category and has no explicit icon mapped, fallback to generic
+                if (dim === 7) {
+                    console.log('Missing category icon for', itemDef.name);
+                }
+            }
 
-            // In Vite, assets in /public are served at root
-            // If we are on Vite, the path should be '/icons/X.svg'. 
-            // We can try to fetch the native path, and if it fails or returns HTML, fallback.
+            if (iconPath) {
+                fetch(iconPath)
+                    .then(res => {
+                        if (!res.ok) throw new Error("Not found");
+                        return res.text();
+                    })
+                    .then(svgCode => {
+                        if (!svgCode.includes('<svg')) return;
+                        let recoloredSvg = svgCode.replace(/stroke="[^"]+"/g, match => {
+                            return match.includes('none') ? match : 'stroke="currentColor"';
+                        }).replace(/fill="[^"]+"/g, match => {
+                            return match.includes('none') ? match : 'fill="currentColor"';
+                        });
 
-            fetch(iconPath)
-                .then(res => {
-                    if (!res.ok) throw new Error("Not found");
-                    return res.text();
-                })
-                .then(svgCode => {
-                    if (!svgCode.includes('<svg')) {
-                        console.error('Fetched content is not an SVG for', hobby.name);
-                        return;
-                    }
-                    let recoloredSvg = svgCode.replace(/stroke="[^"]+"/g, match => {
-                        return match.includes('none') ? match : 'stroke="currentColor"';
-                    }).replace(/fill="[^"]+"/g, match => {
-                        return match.includes('none') ? match : 'fill="currentColor"';
-                    });
+                        recoloredSvg = recoloredSvg.replace(/stroke-width="[^"]+"/g, 'stroke-width="var(--icon-stroke-width, 2.5px)"');
+                        recoloredSvg = recoloredSvg.replace(/<path/g, '<path vector-effect="non-scaling-stroke"');
 
-                    // Allow CSS variable to control stroke width dynamically
-                    recoloredSvg = recoloredSvg.replace(/stroke-width="[^"]+"/g, 'stroke-width="var(--icon-stroke-width, 2.5px)"');
-
-                    // Apply mathematical normalization to strokes across all SVGs!
-                    recoloredSvg = recoloredSvg.replace(/<path/g, '<path vector-effect="non-scaling-stroke"');
-
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(recoloredSvg, "image/svg+xml");
-                    const svgEl = doc.documentElement;
-                    svgEl.classList.add('item-icon');
-                    div.prepend(svgEl);
-                })
-                .catch(err => console.error("Error loading icon:", err));
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(recoloredSvg, "image/svg+xml");
+                        const svgEl = doc.documentElement;
+                        svgEl.classList.add('item-icon');
+                        div.prepend(svgEl);
+                    })
+                    .catch(e => { });
+            }
 
             cell.appendChild(div);
-            gridState[cellIndex] = hobby.name;
-            activeItems[hobby.name] = {
+            gridState[cellIndex] = itemDef.name;
+            trackingDict[itemDef.name] = {
                 element: div,
                 cellIndex: cellIndex,
-                isShortTerm: isShortTerm,
-                name: hobby.name
+                isShortTerm: itemDef.isShortTerm,
+                name: itemDef.name
             };
         }
 
-        function mergeAndRemove(name) {
-            const itemObj = activeItems[name];
+        function mergeAndRemove(name, trackingDict, gridState, dim) {
+            const itemObj = trackingDict[name];
             if (!itemObj || itemObj.isExiting) return;
 
             itemObj.isExiting = true;
             const el = itemObj.element;
             const currentIdx = itemObj.cellIndex;
 
-            let targetName = null;
-            if (COLLAPSE_MAP[name] && activeItems[COLLAPSE_MAP[name]]) {
-                targetName = COLLAPSE_MAP[name];
-            } else {
-                const potentialTargets = Object.values(activeItems).filter(i => !i.isShortTerm && i.name !== name && !i.isExiting);
-                if (potentialTargets.length > 0) {
-                    targetName = potentialTargets[Math.floor(Math.random() * potentialTargets.length)].name;
-                }
-            }
-            const targetObj = targetName ? activeItems[targetName] : null;
-
-            // Updated Stride for 45px cell + 5px gap
-            const stride = 50;
-            const cRow = Math.floor(currentIdx / GRID_DIM);
-            const cCol = currentIdx % GRID_DIM;
-
-            let tx = 0, ty = -100;
-            let scaleEnd = 0;
-
-            if (targetObj) {
-                const tRow = Math.floor(targetObj.cellIndex / GRID_DIM);
-                const tCol = targetObj.cellIndex % GRID_DIM;
-                tx = (tCol - cCol) * stride;
-                ty = (tRow - cRow) * stride;
-                scaleEnd = 0.2;
-            }
-
+            // Simple shrink out animation since cross-grid merging is too complex
             el.classList.add('merging');
             el.classList.remove('short-term', 'long-term');
-
             el.style.transition = 'all 0.5s ease-in';
 
             requestAnimationFrame(() => {
-                el.style.transform = `translate(${tx}px, ${ty}px) scale(${scaleEnd})`;
+                el.style.transform = `translate(0px, -50px) scale(0)`;
                 el.style.opacity = '0';
                 el.style.filter = 'blur(10px) brightness(3)';
             });
@@ -725,18 +726,58 @@
             setTimeout(() => {
                 if (el.parentNode) el.parentNode.removeChild(el);
                 gridState[currentIdx] = null;
-                delete activeItems[name];
+                delete trackingDict[name];
             }, 500);
         }
 
-        window.addEventListener('scroll', () => {
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const progress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
-            const currentYear = Math.floor(START_YEAR + (progress * (END_YEAR - START_YEAR)));
-            update(currentYear);
-        });
+        // --- FETCH DATA ---
+        fetch('../public/data/hobbies.json')
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(cat => {
+                    rootCategories.push({
+                        name: cat.category,
+                        id: cat.id,
+                        catId: cat.id,
+                        isShortTerm: false
+                    });
 
-        update(START_YEAR);
+                    if (cat.items) {
+                        cat.items.forEach(item => {
+                            const start = parseInt(item.time_range.start) || START_YEAR;
+                            const end = item.time_range.end === "Present" ? 9999 : parseInt(item.time_range.end);
+                            const parsedItem = {
+                                name: item.name,
+                                catId: cat.id,
+                                start: start,
+                                end: end,
+                                duration: (end === 9999 ? 2026 : end) - start,
+                                isShortTerm: ((end === 9999 ? 2026 : end) - start) < 3 && end !== 9999
+                            };
+
+                            if (item.type === 'area') {
+                                allAreas.push(parsedItem);
+                            } else if (item.type === 'tool') {
+                                allTools.push(parsedItem);
+                            }
+                        });
+                    }
+                });
+
+                // Init view
+                update(START_YEAR);
+
+                window.addEventListener('scroll', () => {
+                    const maxScroll = document.body.scrollHeight - window.innerHeight;
+                    const progress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+                    const currentYear = Math.floor(START_YEAR + (progress * (END_YEAR - START_YEAR)));
+                    update(currentYear);
+                });
+            })
+            .catch(err => {
+                console.error("Failed to load hobbies.json:", err);
+            });
+
     </script>
 </body>
 

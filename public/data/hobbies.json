@@ -1,15 +1,57 @@
-const PORTFOLIO_HOBBY_DATA = [
+[
   {
     "category": "THEORETICAL PHYSICS",
     "id": "physics",
     "description": "Fundamental Laws & Quantum Mechanics",
     "items": [
-      { "name": "AdS/CFT Correspondence", "time_range": { "start": "2021", "end": "Present" } },
-      { "name": "Holographic Principle", "time_range": { "start": "2021", "end": "Present" } },
-      { "name": "Gravitational Waves", "time_range": { "start": "2021", "end": "Present" } },
-      { "name": "Quantum Error Correction", "time_range": { "start": "2025", "end": "Present" } },
-      { "name": "Phase Transitions", "time_range": { "start": "2024", "end": "Present" } },
-      { "name": "Renormalization", "time_range": { "start": "2024", "end": "Present" } }
+      {
+        "name": "AdS/CFT Correspondence",
+        "time_range": {
+          "start": "2021",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Gravitational Waves",
+        "time_range": {
+          "start": "2021",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Holographic Principle",
+        "time_range": {
+          "start": "2021",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Phase Transitions",
+        "time_range": {
+          "start": "2024",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Quantum Error Correction",
+        "time_range": {
+          "start": "2025",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Renormalization",
+        "time_range": {
+          "start": "2024",
+          "end": "Present"
+        },
+        "type": "area"
+      }
     ]
   },
   {
@@ -17,45 +59,268 @@ const PORTFOLIO_HOBBY_DATA = [
     "id": "math",
     "description": "Logic, Algebra & Rigor",
     "items": [
-      { "name": "Category Theory", "time_range": { "start": "2020", "end": "Present" } },
-      { "name": "Elliptic Curves", "time_range": { "start": "2017", "end": "Present" } },
-      { "name": "Sympy", "time_range": { "start": "2018", "end": "2021" } },
-      { "name": "Sagemath", "time_range": { "start": "2019", "end": "2021" } }
+      {
+        "name": "Category Theory",
+        "time_range": {
+          "start": "2020",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Elliptic Curves",
+        "time_range": {
+          "start": "2017",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Sagemath",
+        "time_range": {
+          "start": "2019",
+          "end": "2021"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Sympy",
+        "time_range": {
+          "start": "2018",
+          "end": "2021"
+        },
+        "type": "tool"
+      }
     ]
   },
   {
-    "category": "ARTIFICIAL INTELLIGENCE & DATA",
-    "id": "ai_data",
+    "category": "MACHINE LEARNING & DATA SCIENCE",
+    "id": "ml_data",
     "description": "Machine Learning & Computational Science",
     "items": [
-      { "name": "Adversarial Generative Networks (GANs)", "time_range": { "start": "2021", "end": "Present" } },
-      { "name": "Neural Networks", "time_range": { "start": "2020", "end": "Present" } },
-      { "name": "Keras", "time_range": { "start": "2020", "end": "Present" } },
-      { "name": "TensorFlow", "time_range": { "start": "2020", "end": "Present" } },
-      { "name": "Scipy", "time_range": { "start": "2019", "end": "Present" } },
-      { "name": "Numpy", "time_range": { "start": "2019", "end": "Present" } },
-      { "name": "Pandas", "time_range": { "start": "2019", "end": "Present" } },
-      { "name": "Scikit-learn", "time_range": { "start": "2019", "end": "Present" } },
-      { "name": "OpenCV", "time_range": { "start": "2017", "end": "2021" } },
-      { "name": "Matplotlib", "time_range": { "start": "2017", "end": "Present" } }
+      {
+        "name": "Adversarial Generative Networks (GANs)",
+        "time_range": {
+          "start": "2021",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Neural Networks",
+        "time_range": {
+          "start": "2020",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Keras",
+        "time_range": {
+          "start": "2020",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Matplotlib",
+        "time_range": {
+          "start": "2017",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Numpy",
+        "time_range": {
+          "start": "2019",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "OpenCV",
+        "time_range": {
+          "start": "2017",
+          "end": "2021"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Pandas",
+        "time_range": {
+          "start": "2019",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Scikit-learn",
+        "time_range": {
+          "start": "2019",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Scipy",
+        "time_range": {
+          "start": "2019",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "TensorFlow",
+        "time_range": {
+          "start": "2020",
+          "end": "Present"
+        },
+        "type": "tool"
+      }
     ]
   },
   {
-    "category": "CYBERSECURITY & NETWORKING",
+    "category": "SECURITY & SYSTEMS",
     "id": "security",
-    "description": "Offensive Security & Network Analysis",
+    "description": "Offensive Security & Infrastructure",
     "items": [
-      { "name": "Cryptography", "time_range": { "start": "2016", "end": "2020" } },
-      { "name": "Metasploit", "time_range": { "start": "2016", "end": "2018" } },
-      { "name": "Wireshark", "time_range": { "start": "2016", "end": "2018" } },
-      { "name": "Linux Server Administration", "time_range": { "start": "2013", "end": "2017" } },
-      { "name": "Aircrack-ng", "time_range": { "start": "2016", "end": "2018" } },
-      { "name": "Ettercap", "time_range": { "start": "2016", "end": "2018" } },
-      { "name": "BeEF", "time_range": { "start": "2016", "end": "2018" } },
-      { "name": "Dnsspoof", "time_range": { "start": "2016", "end": "2018" } },
-      { "name": "Arpspoof", "time_range": { "start": "2016", "end": "2018" } },
-      { "name": "Gdb", "time_range": { "start": "2016", "end": "2018" } },
-      { "name": "Hexdump", "time_range": { "start": "2016", "end": "2018" } }
+      {
+        "name": "Cryptography",
+        "time_range": {
+          "start": "2016",
+          "end": "2020"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Linux Server Administration",
+        "time_range": {
+          "start": "2013",
+          "end": "2017"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Aircrack-ng",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Arch Linux",
+        "time_range": {
+          "start": "2018",
+          "end": "2020"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Arpspoof",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "BeEF",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "CentOS",
+        "time_range": {
+          "start": "2017",
+          "end": "2017"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Debian",
+        "time_range": {
+          "start": "2015",
+          "end": "2022"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Dnsspoof",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Ettercap",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Gdb",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Hexdump",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Manjaro",
+        "time_range": {
+          "start": "2016",
+          "end": "2022"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Metasploit",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Red Hat Linux",
+        "time_range": {
+          "start": "2010",
+          "end": "2013"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Ubuntu",
+        "time_range": {
+          "start": "2016",
+          "end": "2022"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Wireshark",
+        "time_range": {
+          "start": "2016",
+          "end": "2018"
+        },
+        "type": "tool"
+      }
     ]
   },
   {
@@ -63,60 +328,284 @@ const PORTFOLIO_HOBBY_DATA = [
     "id": "dev",
     "description": "Full Stack, Embedded & Application Dev",
     "items": [
-      { "name": "Node.js", "time_range": { "start": "2022", "end": "2023" } },
-      { "name": "Gatsby", "time_range": { "start": "2022", "end": "2023" } },
-      { "name": "HTML", "time_range": { "start": "2012", "end": "2015" } },
-      { "name": "JavaScript", "time_range": { "start": "2012", "end": "2016" } },
-      { "name": "PHP", "time_range": { "start": "2013", "end": "2019" } },
-      { "name": "Laravel", "time_range": { "start": "2015", "end": "2019" } },
-      { "name": ".NET Framework", "time_range": { "start": "2012", "end": "2016" } },
-      { "name": "C", "time_range": { "start": "2011", "end": "2013" } },
-      { "name": "C++", "time_range": { "start": "2011", "end": "2020" } },
-      { "name": "Qt Framework", "time_range": { "start": "2016", "end": "2019" } },
-      { "name": "jQuery", "time_range": { "start": "2013", "end": "2014" } },
-      { "name": "Microsoft Visual Basic 6.0", "time_range": { "start": "2010", "end": "2012" } },
-      { "name": "Robotics", "time_range": { "start": "2014", "end": "2017" } },
-      { "name": "Arduino IDE", "time_range": { "start": "2013", "end": "2017" } }
+      {
+        "name": "Robotics",
+        "time_range": {
+          "start": "2014",
+          "end": "2017"
+        },
+        "type": "area"
+      },
+      {
+        "name": ".NET Framework",
+        "time_range": {
+          "start": "2012",
+          "end": "2016"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Arduino IDE",
+        "time_range": {
+          "start": "2013",
+          "end": "2017"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "C",
+        "time_range": {
+          "start": "2011",
+          "end": "2013"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "C++",
+        "time_range": {
+          "start": "2011",
+          "end": "2020"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Gatsby",
+        "time_range": {
+          "start": "2022",
+          "end": "2023"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Git",
+        "time_range": {
+          "start": "2017",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "HTML",
+        "time_range": {
+          "start": "2012",
+          "end": "2015"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "JavaScript",
+        "time_range": {
+          "start": "2012",
+          "end": "2016"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "jQuery",
+        "time_range": {
+          "start": "2013",
+          "end": "2014"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Laravel",
+        "time_range": {
+          "start": "2015",
+          "end": "2019"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "LaTeX",
+        "time_range": {
+          "start": "2018",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "MATLAB",
+        "time_range": {
+          "start": "2018",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Microsoft Visual Basic 6.0",
+        "time_range": {
+          "start": "2010",
+          "end": "2012"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "MS Office Suite",
+        "time_range": {
+          "start": "2010",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Node.js",
+        "time_range": {
+          "start": "2022",
+          "end": "2023"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "PHP",
+        "time_range": {
+          "start": "2013",
+          "end": "2019"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "PyCharm",
+        "time_range": {
+          "start": "2019",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Qt Framework",
+        "time_range": {
+          "start": "2016",
+          "end": "2019"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Visual Studio",
+        "time_range": {
+          "start": "2011",
+          "end": "2016"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "VS Code",
+        "time_range": {
+          "start": "2022",
+          "end": "Present"
+        },
+        "type": "tool"
+      }
     ]
   },
   {
-    "category": "OS & DEV TOOLS",
-    "id": "tools",
-    "description": "Environments & Productivity",
-    "items": [
-      { "name": "Arch Linux", "time_range": { "start": "2018", "end": "2020" } },
-      { "name": "Red Hat Linux", "time_range": { "start": "2010", "end": "2013" } },
-      { "name": "Debian", "time_range": { "start": "2015", "end": "2022" } },
-      { "name": "CentOS", "time_range": { "start": "2017", "end": "2017" } },
-      { "name": "Ubuntu", "time_range": { "start": "2016", "end": "2022" } },
-      { "name": "Manjaro", "time_range": { "start": "2016", "end": "2022" } },
-      { "name": "Git", "time_range": { "start": "2017", "end": "Present" } },
-      { "name": "LaTeX", "time_range": { "start": "2018", "end": "Present" } },
-      { "name": "MATLAB", "time_range": { "start": "2018", "end": "Present" } },
-      { "name": "VS Code", "time_range": { "start": "2022", "end": "Present" } },
-      { "name": "PyCharm", "time_range": { "start": "2019", "end": "Present" } },
-      { "name": "Visual Studio", "time_range": { "start": "2011", "end": "2016" } },
-      { "name": "MS Office Suite", "time_range": { "start": "2010", "end": "Present" } }
-    ]
-  },
-  {
-    "category": "ARTS, DESIGN & HOBBIES",
+    "category": "ARTS",
     "id": "arts",
     "description": "Creative Expression & Dexterity",
     "items": [
-      { "name": "Violin", "time_range": { "start": "2013", "end": "2014" } },
-      { "name": "Origami", "time_range": { "start": "2012", "end": "Present" } },
-      { "name": "Kirigami", "time_range": { "start": "2024", "end": "Present" } },
-      { "name": "Paper Crafts", "time_range": { "start": "2004", "end": "Present" } },
-      { "name": "Cardistry", "time_range": { "start": "2014", "end": "2016" } },
-      { "name": "Rubik's Cube", "time_range": { "start": "2012", "end": "Present" } },
-      { "name": "Adobe Photoshop", "time_range": { "start": "2012", "end": "2021" } },
-      { "name": "Adobe Lightroom", "time_range": { "start": "2019", "end": "Present" } },
-      { "name": "Adobe Premiere Pro", "time_range": { "start": "2016", "end": "2023" } },
-      { "name": "Figma", "time_range": { "start": "2020", "end": "2023" } },
-      { "name": "Kalimba", "time_range": { "start": "2023", "end": "Present" } },
-      { "name": "Music", "time_range": { "start": "2004", "end": "Present" } },
-      { "name": "Movies", "time_range": { "start": "2007", "end": "Present" } }
+      {
+        "name": "Cardistry",
+        "time_range": {
+          "start": "2014",
+          "end": "2016"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Kirigami",
+        "time_range": {
+          "start": "2024",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Movies",
+        "time_range": {
+          "start": "2007",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Origami",
+        "time_range": {
+          "start": "2012",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Paper Crafts",
+        "time_range": {
+          "start": "2004",
+          "end": "Present"
+        },
+        "type": "area"
+      },
+      {
+        "name": "Rubik's Cube",
+        "time_range": {
+          "start": "2012",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Adobe Lightroom",
+        "time_range": {
+          "start": "2019",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Adobe Photoshop",
+        "time_range": {
+          "start": "2012",
+          "end": "2021"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Adobe Premiere Pro",
+        "time_range": {
+          "start": "2016",
+          "end": "2023"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Figma",
+        "time_range": {
+          "start": "2020",
+          "end": "2023"
+        },
+        "type": "tool"
+      }
     ]
   },
-];
+  {
+    "category": "MUSIC",
+    "id": "music",
+    "description": "Aural Expression & Instruments",
+    "items": [
+      {
+        "name": "Kalimba",
+        "time_range": {
+          "start": "2023",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
+        "name": "Violin",
+        "time_range": {
+          "start": "2013",
+          "end": "2014"
+        },
+        "type": "tool"
+      }
+    ]
+  }
+]
