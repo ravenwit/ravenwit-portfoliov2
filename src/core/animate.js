@@ -84,6 +84,53 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             document.getElementById('velocity').innerText = v_norm.toFixed(2) + "c";
             document.getElementById('lorentz').innerText = (1.0 / Math.sqrt(1.0 - v_norm * v_norm)).toFixed(3);
 
+            // Interpolate Current Year based on Camera Z position traversing CAREER_NODES
+            if (CAREER_NODES.length > 1) {
+                let currentYear = 2025; // Default fallback
+
+                // Helper to parse dates fallback into a target year Number
+                // We'll use the "start" date for the node's temporal anchor
+                const parseYear = (dateStr) => {
+                    if (!dateStr) return 2025;
+                    if (dateStr.toString().toLowerCase().includes('present')) return new Date().getFullYear();
+                    const yearNum = parseInt(dateStr, 10);
+                    return isNaN(yearNum) ? 2025 : yearNum;
+                };
+
+                const camZ = camera.position.z;
+
+                // Check edge cases (beyond first or last node)
+                if (camZ >= CAREER_NODES[0].z) {
+                    currentYear = parseYear(CAREER_NODES[0].time_range ? CAREER_NODES[0].time_range.start : CAREER_NODES[0].date);
+                } else if (camZ <= CAREER_NODES[CAREER_NODES.length - 1].z) {
+                    currentYear = parseYear(CAREER_NODES[CAREER_NODES.length - 1].time_range ? CAREER_NODES[CAREER_NODES.length - 1].time_range.start : CAREER_NODES[CAREER_NODES.length - 1].date);
+                } else {
+                    // Find which segment the camera is in
+                    for (let i = 0; i < CAREER_NODES.length - 1; i++) {
+                        const nodeA = CAREER_NODES[i];
+                        const nodeB = CAREER_NODES[i + 1];
+
+                        // Z values are negative and decreasing: nodeA.z > nodeB.z
+                        if (camZ <= nodeA.z && camZ > nodeB.z) {
+                            const totalDistance = nodeB.z - nodeA.z;
+                            const currentDistance = camZ - nodeA.z;
+                            const progress = currentDistance / totalDistance;
+
+                            const yrAStr = nodeA.time_range ? nodeA.time_range.start : nodeA.date;
+                            const yrBStr = nodeB.time_range ? nodeB.time_range.start : nodeB.date;
+
+                            const yearA = parseYear(yrAStr);
+                            const yearB = parseYear(yrBStr);
+
+                            currentYear = yearA + (yearB - yearA) * progress;
+                            break;
+                        }
+                    }
+                }
+                const yearEl = document.getElementById('current-year');
+                if (yearEl) yearEl.innerText = Math.floor(currentYear);
+            }
+
             if (v_norm > 0.9) { document.getElementById('velocity-alert').style.display = 'block'; camera.position.x += (Math.random() - 0.5) * 0.5; }
             else document.getElementById('velocity-alert').style.display = 'none';
 

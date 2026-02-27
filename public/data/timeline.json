@@ -9,6 +9,10 @@
         "title": "HIGHER SECONDARY CERTIFICATE",
         "subtitle": "Govt. Science College",
         "date": "2013",
+        "time_range": {
+            "start": "2011",
+            "end": "2013"
+        },
         "skills": [
             "Science",
             "Math",
@@ -32,6 +36,10 @@
         "title": "BACHELOR OF SCIENCE PHYSICS",
         "subtitle": "Shahjalal University of Science and Technology",
         "date": "April 2015 - April 2019",
+        "time_range": {
+            "start": "2015",
+            "end": "2019"
+        },
         "skills": [
             "Python",
             "MATLAB",
@@ -55,6 +63,10 @@
         "title": "SYSTEM ADMINISTRATOR",
         "subtitle": "HEXit",
         "date": "March 2017 - Sept 2017",
+        "time_range": {
+            "start": "2017",
+            "end": "2017"
+        },
         "skills": [
             "Linux",
             "MySQL",
@@ -78,6 +90,10 @@
         "title": "SUBJECT MATTER EXPERT",
         "subtitle": "Shikho Technologies Bangladesh Ltd",
         "date": "Sept 2021 - Dec 2022",
+        "time_range": {
+            "start": "2021",
+            "end": "2022"
+        },
         "skills": [
             "Education",
             "Animation",
@@ -101,6 +117,10 @@
         "title": "WORKING STUDENT - ALGORITHMS",
         "subtitle": "Luna Innovations Germany GmbH",
         "date": "Oct 2022 - Present",
+        "time_range": {
+            "start": "2022",
+            "end": "Present"
+        },
         "skills": [
             "Python",
             "TensorFlow",
@@ -125,6 +145,10 @@
         "title": "MASTER OF SCIENCE PHYSICS",
         "subtitle": "University of Cologne",
         "date": "2024 - 2027",
+        "time_range": {
+            "start": "2024",
+            "end": "2027"
+        },
         "skills": [
             "Physics",
             "LaTeX",

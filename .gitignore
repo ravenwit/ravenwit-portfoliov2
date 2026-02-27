@@ -6,3 +6,6 @@ dist
 skills.txt
 .agent
 
+output_vectors/
+icons_demo/
+

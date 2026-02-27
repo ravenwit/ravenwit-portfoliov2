@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eigenmatrix Micro-HUD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-purple: #bc13fe;
+            --bg-color: #020204;
+            /* MICRO SIZE SETTINGS */
+            --cell-size: 45px;
+            --gap: 5px;
+            --grid-dim: 6;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: hidden;
+            height: 600vh;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 10;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(0, 243, 255, 0.1) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanline {
+            0% {
+                bottom: 100%;
+            }
+
+            100% {
+                bottom: -100px;
+            }
+        }
+
+        #viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1200px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        #hud-ui {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        #year-display {
+            font-size: 4rem;
+            font-weight: 100;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #year-label {
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: -10px;
+        }
+
+        #timeline-bar {
+            width: 4px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            position: absolute;
+            left: -15px;
+            top: 10px;
+        }
+
+        #timeline-progress {
+            width: 100%;
+            background: var(--neon-cyan);
+            height: 0%;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            transition: height 0.1s linear;
+        }
+
+        #matrix-container {
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(10deg);
+            animation: eigen-float 10s ease-in-out infinite;
+        }
+
+        .bracket {
+            position: absolute;
+            top: -10px;
+            bottom: -10px;
+            width: 15px;
+            border: 2px solid rgba(0, 243, 255, 0.4);
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+
+        .bracket.left {
+            left: -20px;
+            border-right: none;
+        }
+
+        .bracket.right {
+            right: -20px;
+            border-left: none;
+        }
+
+        #matrix {
+            display: grid;
+            grid-template-columns: repeat(var(--grid-dim), var(--cell-size));
+            grid-template-rows: repeat(var(--grid-dim), var(--cell-size));
+            gap: var(--gap);
+            transform-style: preserve-3d;
+        }
+
+        @keyframes eigen-float {
+            0% {
+                transform: rotateX(10deg) rotateY(0deg);
+            }
+
+            50% {
+                transform: rotateX(15deg) rotateY(2deg);
+            }
+
+            100% {
+                transform: rotateX(10deg) rotateY(0deg);
+            }
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.01) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .cell::after {
+            content: '';
+            width: 1.5px;
+            height: 1.5px;
+            background: rgba(255, 255, 255, 0.15);
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        /* --- ITEM --- */
+        .item {
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(4px);
+            box-shadow: inset 0 0 8px rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            transform-style: preserve-3d;
+            transform: translateZ(0px);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 2px;
+            /* Default fallback stroke width */
+            --icon-stroke-width: 1.5px;
+        }
+
+        .item-icon {
+            width: 2.2rem;
+            height: 2.2rem;
+            filter: drop-shadow(0 0 3px currentColor);
+            transition: transform 0.3s, filter 0.3s;
+            will-change: transform;
+            transform: translateZ(12px);
+        }
+
+        .item span {
+            position: absolute;
+            top: -35px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid currentColor;
+            color: white;
+            padding: 3px 6px;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            box-shadow: 0 0 10px currentColor;
+            z-index: 100;
+            transform: translateZ(60px);
+        }
+
+        .item:hover {
+            transform: translateZ(30px);
+            background: rgba(20, 20, 30, 0.95);
+            box-shadow: inset 0 0 15px currentColor;
+            z-index: 50;
+        }
+
+        .item:hover .item-icon {
+            transform: translateZ(15px) scale(1.15);
+            filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 4px rgba(255, 255, 255, 1));
+        }
+
+
+        .item:hover span {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Categories */
+        .cat-physics {
+            border-color: rgba(216, 180, 254, 0.6);
+            color: #d8b4fe;
+            --icon-stroke-width: 0.5px;
+        }
+
+        .cat-math {
+            border-color: rgba(96, 165, 250, 0.6);
+            color: #60a5fa;
+        }
+
+        .cat-ai {
+            border-color: rgba(248, 113, 113, 0.6);
+            color: #ff7272;
+            --icon-stroke-width: 0.5px;
+        }
+
+        .cat-security {
+            border-color: rgba(74, 222, 128, 0.6);
+            color: #4ade80;
+        }
+
+        .cat-dev {
+            border-color: rgba(251, 191, 36, 0.6);
+            color: #fbbf24;
+            --icon-stroke-width: 1px;
+        }
+
+        .cat-arts {
+            border-color: rgba(244, 114, 182, 0.6);
+            color: #ffd65c;
+            --icon-stroke-width: 0.5px;
+        }
+
+        /* Animations */
+        @keyframes coherence {
+            0% {
+                opacity: 0;
+                transform: scale(0.1);
+                filter: blur(5px);
+            }
+
+            60% {
+                opacity: 0.8;
+                transform: scale(1.1);
+                filter: blur(0px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .spawning {
+            animation: coherence 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .long-term {
+            animation: eigen-pulse 4s infinite ease-in-out;
+        }
+
+        @keyframes eigen-pulse {
+
+            0%,
+            100% {
+                opacity: 0.9;
+            }
+
+            50% {
+                opacity: 1;
+                filter: brightness(1.3);
+            }
+        }
+
+        .short-term .item-icon {
+            animation: icon-uncertainty 0.2s infinite;
+        }
+
+        @keyframes icon-uncertainty {
+            0% {
+                transform: translateZ(12px) translate(0, 0) skew(0deg);
+                filter: drop-shadow(0 0 8px currentColor);
+            }
+
+            20% {
+                transform: translateZ(12px) translate(-1px, 1px) skew(-2deg);
+                filter: drop-shadow(1px 0 var(--neon-cyan)) drop-shadow(-1px 0 var(--neon-purple));
+            }
+
+            40% {
+                transform: translateZ(12px) translate(1px, -1px) skew(2deg);
+                filter: drop-shadow(-1px 0 var(--neon-cyan)) drop-shadow(1px 0 var(--neon-purple));
+            }
+
+            60% {
+                transform: translateZ(12px) translate(0, 0) skew(0deg);
+                filter: drop-shadow(0 0 8px currentColor);
+            }
+
+            80% {
+                transform: translateZ(12px) translate(1px, 0) skew(-1deg);
+                filter: drop-shadow(1px 0 var(--neon-cyan));
+            }
+
+            100% {
+                transform: translateZ(12px) translate(0, 0) skew(0deg);
+                filter: drop-shadow(0 0 8px currentColor);
+            }
+        }
+
+
+        .merging {
+            z-index: 999;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="scanline"></div>
+
+    <div id="hud-ui">
+        <div id="timeline-bar">
+            <div id="timeline-progress"></div>
+        </div>
+        <div style="margin-left: 20px;">
+            <div id="year-label">System State</div>
+            <div id="year-display">2004</div>
+        </div>
+    </div>
+
+    <div id="viewport">
+        <div id="matrix-container">
+            <div class="bracket left"></div>
+            <div class="bracket right"></div>
+            <div id="matrix"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const RAW_DATA = [
+            {
+                "id": "physics", "items": [
+                    { "name": "AdS/CFT", "start": 2021, "end": 9999 },
+                    { "name": "Holography", "start": 2021, "end": 9999 },
+                    { "name": "Gravitational Waves", "start": 2021, "end": 9999 },
+                    { "name": "Quantum Error Corr.", "start": 2025, "end": 9999 },
+                    { "name": "Phase Trans.", "start": 2024, "end": 9999 },
+                    { "name": "Renormalization", "start": 2024, "end": 9999 }
+                ]
+            },
+            {
+                "id": "math", "items": [
+                    { "name": "Category Theory", "start": 2020, "end": 9999 },
+                    { "name": "Elliptic Curves", "start": 2017, "end": 9999 },
+                    { "name": "Sympy", "start": 2018, "end": 2021 },
+                    { "name": "Sagemath", "start": 2019, "end": 2021 }
+                ]
+            },
+            {
+                "id": "ai", "items": [
+                    { "name": "GANs", "start": 2021, "end": 9999 },
+                    { "name": "Neural Nets", "start": 2020, "end": 9999 },
+                    { "name": "Keras", "start": 2020, "end": 9999 },
+                    { "name": "TensorFlow", "start": 2020, "end": 9999 },
+                    { "name": "Scipy", "start": 2019, "end": 9999 },
+                    { "name": "Numpy", "start": 2019, "end": 9999 },
+                    { "name": "Pandas", "start": 2019, "end": 9999 },
+                    { "name": "Scikit-learn", "start": 2019, "end": 9999 },
+                    { "name": "OpenCV", "start": 2017, "end": 2021 },
+                    { "name": "Matplotlib", "start": 2017, "end": 9999 }
+                ]
+            },
+            {
+                "id": "security", "items": [
+                    { "name": "Cryptography", "start": 2016, "end": 2020 },
+                    { "name": "Metasploit", "start": 2016, "end": 2018 },
+                    { "name": "Wireshark", "start": 2016, "end": 2018 },
+                    { "name": "Linux Admin", "start": 2013, "end": 2017 },
+                    { "name": "Aircrack-ng", "start": 2016, "end": 2018 },
+                    { "name": "Ettercap", "start": 2016, "end": 2018 },
+                    { "name": "BeEF", "start": 2016, "end": 2018 },
+                    { "name": "Hexdump", "start": 2016, "end": 2018 }
+                ]
+            },
+            {
+                "id": "dev", "items": [
+                    { "name": "Node.js", "start": 2022, "end": 2023 },
+                    { "name": "Gatsby", "start": 2022, "end": 2023 },
+                    { "name": "HTML", "start": 2012, "end": 2015 },
+                    { "name": "JavaScript", "start": 2012, "end": 2016 },
+                    { "name": "PHP", "start": 2013, "end": 2019 },
+                    { "name": "Laravel", "start": 2015, "end": 2019 },
+                    { "name": ".NET", "start": 2012, "end": 2016 },
+                    { "name": "C", "start": 2011, "end": 2013 },
+                    { "name": "C++", "start": 2011, "end": 2020 },
+                    { "name": "Qt", "start": 2016, "end": 2019 },
+                    { "name": "Arduino", "start": 2013, "end": 2017 },
+                    { "name": "Git", "start": 2017, "end": 9999 },
+                    { "name": "LaTeX", "start": 2018, "end": 9999 },
+                    { "name": "VS Code", "start": 2022, "end": 9999 },
+                    { "name": "Arch Linux", "start": 2018, "end": 2020 },
+                    { "name": "Ubuntu", "start": 2016, "end": 2022 }
+                ]
+            },
+            {
+                "id": "arts", "items": [
+                    { "name": "Violin", "start": 2013, "end": 2014 },
+                    { "name": "Origami", "start": 2012, "end": 9999 },
+                    { "name": "Kirigami", "start": 2024, "end": 9999 },
+                    { "name": "Paper Crafts", "start": 2004, "end": 9999 },
+                    { "name": "Rubik's Cube", "start": 2012, "end": 9999 },
+                    { "name": "Photoshop", "start": 2012, "end": 2021 },
+                    { "name": "Music", "start": 2004, "end": 9999 },
+                    { "name": "Movies", "start": 2007, "end": 9999 },
+                    { "name": "Kalimba", "start": 2023, "end": 9999 }
+                ]
+            }
+        ];
+
+        const ICON_MAP = {
+            'AdS/CFT': '../public/icons/AdS_CFT_Correspondence.svg',
+            'Holography': '../public/icons/Holographic_Principle.svg',
+            'Gravitational Waves': '../public/icons/Gravitational_Waves.svg',
+            'Quantum Error Corr.': '../public/icons/Quantum_Error_Correction.svg',
+            'Phase Trans.': '../public/icons/Phase_Transitions.svg',
+            'Renormalization': '../public/icons/Renormalization.svg',
+            'Category Theory': '../public/icons/Category_Theory.svg',
+            'Elliptic Curves': '../public/icons/Elliptic_Curves.svg',
+            'Sympy': '../public/icons/Sympy.svg',
+            'Sagemath': '../public/icons/Sagemath.svg',
+            'GANs': '../public/icons/Adversarial_Generative_Networks__GANs_.svg',
+            'Neural Nets': '../public/icons/Neural_Networks.svg',
+            'Keras': '../public/icons/Keras.svg',
+            'TensorFlow': '../public/icons/TensorFlow.svg',
+            'Scipy': '../public/icons/Scipy.svg',
+            'Numpy': '../public/icons/Numpy.svg',
+            'Pandas': '../public/icons/Pandas.svg',
+            'Scikit-learn': '../public/icons/Scikit_learn.svg',
+            'OpenCV': '../public/icons/OpenCV.svg',
+            'Matplotlib': '../public/icons/Matplotlib.svg',
+            'Cryptography': '../public/icons/Cryptography.svg',
+            'Metasploit': '../public/icons/Metasploit.svg',
+            'Wireshark': '../public/icons/Wireshark.svg',
+            'Linux Admin': '../public/icons/Linux_Server_Administration.svg',
+            'Aircrack-ng': '../public/icons/Aircrack_ng.svg',
+            'BeEF': '../public/icons/BeEF.svg',
+            'Ettercap': '../public/icons/Ettercap.svg',
+            'Hexdump': '../public/icons/Hexdump.svg',
+            'Node.js': '../public/icons/Node_js.svg',
+            'Gatsby': '../public/icons/Gatsby.svg',
+            'HTML': '../public/icons/HTML.svg',
+            'JavaScript': '../public/icons/JavaScript.svg',
+            'PHP': '../public/icons/PHP.svg',
+            'Laravel': '../public/icons/Laravel.svg',
+            '.NET': '../public/icons/_NET_Framework.svg',
+            'C': '../public/icons/C.svg',
+            'C++': '../public/icons/C__.svg',
+            'Qt': '../public/icons/Qt_Framework.svg',
+            'Arduino': '../public/icons/Arduino_IDE.svg',
+            'Git': '../public/icons/Git.svg',
+            'LaTeX': '../public/icons/LaTeX.svg',
+            'VS Code': '../public/icons/VS_Code.svg',
+            'Arch Linux': '../public/icons/Arch_Linux.svg',
+            'Ubuntu': '../public/icons/Ubuntu.svg',
+            'Violin': '../public/icons/Violin.svg',
+            'Origami': '../public/icons/Origami.svg',
+            'Kirigami': '../public/icons/Kirigami.svg',
+            'Paper Crafts': '../public/icons/Paper_Crafts.svg',
+            'Rubik\'s Cube': '../public/icons/Rubik_s_Cube.svg',
+            'Photoshop': '../public/icons/Adobe_Photoshop.svg',
+            'Music': '../public/icons/Music.svg',
+            'Movies': '../public/icons/Movies.svg',
+            'Kalimba': '../public/icons/Kalimba.svg'
+        };
+
+        const getIcon = (name) => ICON_MAP[name] || '';
+        const getCatClass = (catId) => `cat-${catId}`;
+
+        const COLLAPSE_MAP = {
+            'Violin': 'Music',
+            'Metasploit': 'Cryptography', 'Wireshark': 'Cryptography',
+            'Aircrack-ng': 'Cryptography', 'BeEF': 'Cryptography',
+            'Ettercap': 'Cryptography', 'Hexdump': 'Cryptography',
+            'Cryptography': 'Elliptic Curves',
+            'Linux Admin': 'Arch Linux', 'Ubuntu': 'Arch Linux',
+            'Arch Linux': 'Phase Trans.',
+            'OpenCV': 'Neural Nets',
+            'Photoshop': 'Kirigami',
+            'HTML': 'JavaScript', 'C': 'C++'
+        };
+
+        let allHobbies = [];
+        RAW_DATA.forEach(cat => {
+            cat.items.forEach(item => {
+                allHobbies.push({ ...item, catId: cat.id, duration: (item.end === 9999 ? 2026 : item.end) - item.start });
+            });
+        });
+
+        const START_YEAR = 2004;
+        const END_YEAR = 2027;
+        const GRID_DIM = 6;
+
+        // --- GRID INIT ---
+        const matrixEl = document.getElementById('matrix');
+        const gridState = Array(GRID_DIM * GRID_DIM).fill(null);
+
+        for (let i = 0; i < GRID_DIM * GRID_DIM; i++) {
+            let cell = document.createElement('div');
+            cell.className = 'cell';
+            matrixEl.appendChild(cell);
+        }
+
+        const activeItems = {};
+
+        // --- DIAGONAL LOGIC ---
+        const DIAGONAL_PRIORITY = [
+            'AdS/CFT', 'Holography', 'Gravitational Waves',
+            'Renormalization', 'Category Theory', 'Elliptic Curves', 'GANs'
+        ];
+        // 6x6 matrix: exactly 7 cells corresponding to priority elements
+        const DIAGONAL_INDICES = [0, 7, 14, 21, 28, 35, 5];
+
+        function getAvailableCell(hobbyName) {
+            const available = gridState.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+            if (available.length === 0) return null;
+
+            const isPriority = DIAGONAL_PRIORITY.includes(hobbyName);
+
+            if (isPriority) {
+                const availableDiagonals = available.filter(idx => DIAGONAL_INDICES.includes(idx));
+                if (availableDiagonals.length > 0) {
+                    return availableDiagonals[Math.floor(Math.random() * availableDiagonals.length)];
+                }
+            } else {
+                const availableNonDiagonals = available.filter(idx => !DIAGONAL_INDICES.includes(idx));
+                if (availableNonDiagonals.length > 0) {
+                    return availableNonDiagonals[Math.floor(Math.random() * availableNonDiagonals.length)];
+                }
+            }
+
+            // Fallback if preferred zones are full
+            return available[Math.floor(Math.random() * available.length)];
+        }
+
+        // --- UPDATE LOOP ---
+        function update(year) {
+            document.getElementById('year-display').innerText = year;
+
+            const totalYears = END_YEAR - START_YEAR;
+            const progressPct = ((year - START_YEAR) / totalYears) * 100;
+            document.getElementById('timeline-progress').style.height = `${progressPct}%`;
+
+            const itemsShouldBeActive = allHobbies.filter(h => year >= h.start && year <= h.end);
+
+            itemsShouldBeActive.forEach(hobby => {
+                if (!activeItems[hobby.name]) {
+                    const cellIdx = getAvailableCell(hobby.name);
+                    if (cellIdx !== null) spawnItem(hobby, cellIdx);
+                }
+            });
+
+            Object.keys(activeItems).forEach(name => {
+                const itemObj = activeItems[name];
+                const stillActive = itemsShouldBeActive.find(h => h.name === name);
+                if (!stillActive) mergeAndRemove(name);
+            });
+        }
+
+        function spawnItem(hobby, cellIndex) {
+            const cell = matrixEl.children[cellIndex];
+            const isShortTerm = hobby.duration < 3 && hobby.end !== 9999;
+            const typeClass = isShortTerm ? 'short-term' : 'long-term';
+
+            const div = document.createElement('div');
+            div.className = `item spawning ${getCatClass(hobby.catId)} ${typeClass}`;
+            div.innerHTML = `<span>${hobby.name}</span>`;
+
+            // Fetch and inline SVG so it inherits the dynamic category color
+            // Handle both python HTTP server and Vite dev server paths
+            let iconPath = getIcon(hobby.name);
+            if (!iconPath) return;
+
+            // In Vite, assets in /public are served at root
+            // If we are on Vite, the path should be '/icons/X.svg'. 
+            // We can try to fetch the native path, and if it fails or returns HTML, fallback.
+
+            fetch(iconPath)
+                .then(res => {
+                    if (!res.ok) throw new Error("Not found");
+                    return res.text();
+                })
+                .then(svgCode => {
+                    if (!svgCode.includes('<svg')) {
+                        console.error('Fetched content is not an SVG for', hobby.name);
+                        return;
+                    }
+                    let recoloredSvg = svgCode.replace(/stroke="[^"]+"/g, match => {
+                        return match.includes('none') ? match : 'stroke="currentColor"';
+                    }).replace(/fill="[^"]+"/g, match => {
+                        return match.includes('none') ? match : 'fill="currentColor"';
+                    });
+
+                    // Allow CSS variable to control stroke width dynamically
+                    recoloredSvg = recoloredSvg.replace(/stroke-width="[^"]+"/g, 'stroke-width="var(--icon-stroke-width, 2.5px)"');
+
+                    // Apply mathematical normalization to strokes across all SVGs!
+                    recoloredSvg = recoloredSvg.replace(/<path/g, '<path vector-effect="non-scaling-stroke"');
+
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(recoloredSvg, "image/svg+xml");
+                    const svgEl = doc.documentElement;
+                    svgEl.classList.add('item-icon');
+                    div.prepend(svgEl);
+                })
+                .catch(err => console.error("Error loading icon:", err));
+
+            cell.appendChild(div);
+            gridState[cellIndex] = hobby.name;
+            activeItems[hobby.name] = {
+                element: div,
+                cellIndex: cellIndex,
+                isShortTerm: isShortTerm,
+                name: hobby.name
+            };
+        }
+
+        function mergeAndRemove(name) {
+            const itemObj = activeItems[name];
+            if (!itemObj || itemObj.isExiting) return;
+
+            itemObj.isExiting = true;
+            const el = itemObj.element;
+            const currentIdx = itemObj.cellIndex;
+
+            let targetName = null;
+            if (COLLAPSE_MAP[name] && activeItems[COLLAPSE_MAP[name]]) {
+                targetName = COLLAPSE_MAP[name];
+            } else {
+                const potentialTargets = Object.values(activeItems).filter(i => !i.isShortTerm && i.name !== name && !i.isExiting);
+                if (potentialTargets.length > 0) {
+                    targetName = potentialTargets[Math.floor(Math.random() * potentialTargets.length)].name;
+                }
+            }
+            const targetObj = targetName ? activeItems[targetName] : null;
+
+            // Updated Stride for 45px cell + 5px gap
+            const stride = 50;
+            const cRow = Math.floor(currentIdx / GRID_DIM);
+            const cCol = currentIdx % GRID_DIM;
+
+            let tx = 0, ty = -100;
+            let scaleEnd = 0;
+
+            if (targetObj) {
+                const tRow = Math.floor(targetObj.cellIndex / GRID_DIM);
+                const tCol = targetObj.cellIndex % GRID_DIM;
+                tx = (tCol - cCol) * stride;
+                ty = (tRow - cRow) * stride;
+                scaleEnd = 0.2;
+            }
+
+            el.classList.add('merging');
+            el.classList.remove('short-term', 'long-term');
+
+            el.style.transition = 'all 0.5s ease-in';
+
+            requestAnimationFrame(() => {
+                el.style.transform = `translate(${tx}px, ${ty}px) scale(${scaleEnd})`;
+                el.style.opacity = '0';
+                el.style.filter = 'blur(10px) brightness(3)';
+            });
+
+            setTimeout(() => {
+                if (el.parentNode) el.parentNode.removeChild(el);
+                gridState[currentIdx] = null;
+                delete activeItems[name];
+            }, 500);
+        }
+
+        window.addEventListener('scroll', () => {
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+            const currentYear = Math.floor(START_YEAR + (progress * (END_YEAR - START_YEAR)));
+            update(currentYear);
+        });
+
+        update(START_YEAR);
+    </script>
+</body>
+
+</html>
