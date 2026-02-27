@@ -12,8 +12,8 @@
             --neon-purple: #bc13fe;
             --bg-color: #020204;
             /* MICRO SIZE SETTINGS */
-            --cell-size: 45px;
-            --gap: 5px;
+            --cell-size: 25px;
+            --gap: 3px;
         }
 
         body {
@@ -108,7 +108,7 @@
 
         #triptych {
             display: flex;
-            gap: 60px;
+            gap: 20px;
             align-items: center;
             transform-style: preserve-3d;
             animation: eigen-float 10s ease-in-out infinite;
@@ -172,10 +172,10 @@
         /* Title labels for each matrix */
         .matrix-title {
             position: absolute;
-            top: -40px;
+            top: -25px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 0.75rem;
+            font-size: 0.55rem;
             color: rgba(0, 243, 255, 0.7);
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -239,8 +239,8 @@
         }
 
         .item-icon {
-            width: 2.2rem;
-            height: 2.2rem;
+            width: 1.2rem;
+            height: 1.2rem;
             filter: drop-shadow(0 0 3px currentColor);
             transition: transform 0.3s, filter 0.3s;
             will-change: transform;
@@ -249,13 +249,13 @@
 
         #matrix-areas .item-icon,
         #matrix-tools .item-icon {
-            width: 2.6rem;
-            height: 2.6rem;
+            width: 1.3rem;
+            height: 1.3rem;
         }
 
         .item span {
             position: absolute;
-            top: -35px;
+            top: -40px;
             background: rgba(0, 0, 0, 0.95);
             border: 1px solid currentColor;
             color: white;
@@ -270,11 +270,11 @@
             pointer-events: none;
             box-shadow: 0 0 10px currentColor;
             z-index: 10000;
-            transform: translateZ(160px);
+            transform: translateZ(90px);
         }
 
         .item:hover {
-            transform: translateZ(100px);
+            transform: translateZ(50px);
             background: rgba(20, 20, 30, 0.95);
             box-shadow: inset 0 0 15px currentColor;
             z-index: 9999;
@@ -373,40 +373,46 @@
             }
         }
 
-        .short-term .item-icon {
-            animation: icon-uncertainty 0.2s infinite;
+        .short-term {
+            animation: container-uncertainty 0.2s infinite;
         }
 
-        @keyframes icon-uncertainty {
+        @keyframes container-uncertainty {
             0% {
-                transform: translateZ(12px) translate(0, 0) skew(0deg);
-                filter: drop-shadow(0 0 8px currentColor);
+                transform: translateZ(0) translate(0, 0) skew(0deg);
+                box-shadow: inset 0 0 8px currentColor;
             }
 
             20% {
-                transform: translateZ(12px) translate(-1px, 1px) skew(-2deg);
-                filter: drop-shadow(1px 0 var(--neon-cyan)) drop-shadow(-1px 0 var(--neon-purple));
+                transform: translateZ(0) translate(-1px, 1px) skew(-2deg);
+                box-shadow: inset 1px 0 var(--neon-cyan), inset -1px 0 var(--neon-purple);
             }
 
             40% {
-                transform: translateZ(12px) translate(1px, -1px) skew(2deg);
-                filter: drop-shadow(-1px 0 var(--neon-cyan)) drop-shadow(1px 0 var(--neon-purple));
+                transform: translateZ(0) translate(1px, -1px) skew(2deg);
+                box-shadow: inset -1px 0 var(--neon-cyan), inset 1px 0 var(--neon-purple);
             }
 
             60% {
-                transform: translateZ(12px) translate(0, 0) skew(0deg);
-                filter: drop-shadow(0 0 8px currentColor);
+                transform: translateZ(0) translate(0, 0) skew(0deg);
+                box-shadow: inset 0 0 8px currentColor;
             }
 
             80% {
-                transform: translateZ(12px) translate(1px, 0) skew(-1deg);
-                filter: drop-shadow(1px 0 var(--neon-cyan));
+                transform: translateZ(0) translate(1px, 0) skew(-1deg);
+                box-shadow: inset 1px 0 var(--neon-cyan);
             }
 
             100% {
-                transform: translateZ(12px) translate(0, 0) skew(0deg);
-                filter: drop-shadow(0 0 8px currentColor);
+                transform: translateZ(0) translate(0, 0) skew(0deg);
+                box-shadow: inset 0 0 8px currentColor;
             }
+        }
+
+        /* Cancel uncertainty on hover so the tooltip and item remain solid */
+        .short-term:hover {
+            animation: none;
+            transform: translateZ(50px);
         }
 
 
