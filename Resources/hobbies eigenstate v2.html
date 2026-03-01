@@ -6,6 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eigenmatrix Micro-HUD</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Jersey 10 Charted Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+10+Charted&display=swap" rel="stylesheet">
+
+    <!-- Micro 5 Charted Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&display=swap" rel="stylesheet">
+
+    <!-- Sixtyfour Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&family=Sixtyfour&display=swap"
+        rel="stylesheet">
+
+    <!-- Doto Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Micro+5+Charted&family=Sixtyfour&display=swap"
+        rel="stylesheet">
+
     <style>
         :root {
             --neon-cyan: #00f3ff;
@@ -106,13 +130,61 @@
             transition: height 0.1s linear;
         }
 
+        #triptych-container {
+            /* Protect the 3D space of all children */
+            transform-style: preserve-3d;
+            perspective: 1000px;
+
+            /* Smooth transition for when mouse leaves */
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
         #triptych {
+            position: relative;
+            /* Anchor for absolute title */
             display: flex;
-            gap: 20px;
+            gap: 45px;
             align-items: center;
             transform-style: preserve-3d;
             animation: eigen-float 10s ease-in-out infinite;
             transform: rotateX(10deg);
+        }
+
+        #triptych:hover {
+            transform: rotateX(0deg);
+            animation: none;
+        }
+
+        /* Master unified title */
+        .triptych-master-title {
+            position: absolute;
+            top: -65px;
+            /* Nudged up slightly since Charted tends to render taller */
+            left: 50%;
+            transform: translateX(-50%) translateZ(25px);
+            /* Lift title elegantly over matrices */
+            font-family: 'Doto', sans-serif;
+            font-size: 1rem;
+            /* Scaled up to counteract charted wireframe thinness */
+            color: rgba(0, 243, 255, 0.9);
+            letter-spacing: 4px;
+            white-space: nowrap;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.4), 0 0 20px rgba(0, 243, 255, 0.2);
+            pointer-events: none;
+            /* Extra Kaizen UI flair to fit the military/retro-future aesthetic */
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .triptych-master-title::before,
+        .triptych-master-title::after {
+            content: '';
+            display: block;
+            width: 30px;
+            height: 2px;
+            background: rgba(255, 100, 255, 0.6);
+            box-shadow: 0 0 5px rgba(0, 243, 255, 0.4);
         }
 
         .matrix-wrapper {
@@ -122,15 +194,15 @@
 
         /* Subtle angling for the outer monitors */
         #wrapper-areas {
-            transform: rotateY(15deg) translateZ(-20px);
+            transform: rotateY(-10deg) translateZ(20px);
         }
 
         #wrapper-tools {
-            transform: rotateY(-15deg) translateZ(-20px);
+            transform: rotateY(10deg) translateZ(20px);
         }
 
         #wrapper-categories {
-            transform: translateZ(20px);
+            transform: translateZ(25px);
         }
 
         .bracket {
@@ -138,7 +210,7 @@
             top: -10px;
             bottom: -10px;
             width: 15px;
-            border: 2px solid rgba(0, 243, 255, 0.4);
+            border: 2px solid rgba(255, 100, 0, 0.4);
             pointer-events: none;
             box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
         }
@@ -184,15 +256,15 @@
 
         @keyframes eigen-float {
             0% {
-                transform: rotateX(10deg) rotateY(0deg);
+                transform: rotateX(7deg) rotateY(0deg);
             }
 
             50% {
-                transform: rotateX(15deg) rotateY(2deg);
+                transform: rotateX(17deg) rotateY(4deg);
             }
 
             100% {
-                transform: rotateX(10deg) rotateY(0deg);
+                transform: rotateX(7deg) rotateY(0deg);
             }
         }
 
@@ -215,6 +287,12 @@
             background: rgba(255, 255, 255, 0.15);
             position: absolute;
             border-radius: 50%;
+        }
+
+        /* Elevate the ENTIRE cell on hover to defeat backdrop-filter 3D clipping bugs */
+        .cell:hover {
+            z-index: 9999;
+            transform: translateZ(12px);
         }
 
         /* --- ITEM --- */
@@ -242,7 +320,7 @@
             width: 1.2rem;
             height: 1.2rem;
             filter: drop-shadow(0 0 3px currentColor);
-            transition: transform 0.3s, filter 0.3s;
+            transition: transform 0.2s, filter 0.3s;
             will-change: transform;
             transform: translateZ(12px);
         }
@@ -255,33 +333,41 @@
 
         .item span {
             position: absolute;
-            top: -40px;
-            background: rgba(0, 0, 0, 0.95);
+            bottom: calc(100% + 5px);
+            left: 50%;
+            transform: translateX(-50%) translateZ(0px);
+            background: rgba(5, 5, 10, 0.95);
             border: 1px solid currentColor;
             color: white;
-            padding: 3px 6px;
+            padding: 4px 8px;
             font-size: 0.65rem;
             letter-spacing: 1px;
             text-transform: uppercase;
             white-space: nowrap;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
             pointer-events: none;
-            box-shadow: 0 0 10px currentColor;
-            z-index: 10000;
-            transform: translateZ(90px);
+            box-shadow: 0 0 10px currentColor, 0 4px 15px rgba(0, 0, 0, 0.8);
+            border-radius: 3px;
         }
 
         .item:hover {
-            transform: translateZ(50px);
-            background: rgba(20, 20, 30, 0.95);
+            transform: translateZ(0px);
+            background: rgba(30, 30, 45, 1);
+            backdrop-filter: none;
             box-shadow: inset 0 0 15px currentColor;
-            z-index: 9999;
+        }
+
+        .item:hover span {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateZ(20px);
         }
 
         .item:hover .item-icon {
-            transform: translateZ(15px) scale(1.15);
+            /* transform: translateZ(10px) scale(1.15); */
+            transform: scale(1.15);
             filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 4px rgba(255, 255, 255, 1));
         }
 
@@ -312,6 +398,7 @@
         .cat-security {
             border-color: rgba(74, 222, 128, 0.6);
             color: #4ade80;
+            --icon-stroke-width: 0.5px;
         }
 
         .cat-dev {
@@ -337,12 +424,12 @@
             0% {
                 opacity: 0;
                 transform: scale(0.1);
-                filter: blur(5px);
+                filter: blur(3px);
             }
 
             60% {
-                opacity: 0.8;
-                transform: scale(1.1);
+                opacity: 0.7;
+                transform: scale(1.4);
                 filter: blur(0px);
             }
 
@@ -357,19 +444,19 @@
         }
 
         .long-term {
-            animation: eigen-pulse 4s infinite ease-in-out;
+            animation: eigen-pulse 3s infinite ease-in-out;
         }
 
         @keyframes eigen-pulse {
 
             0%,
             100% {
-                opacity: 0.9;
+                opacity: 0.7;
             }
 
             50% {
                 opacity: 1;
-                filter: brightness(1.3);
+                filter: brightness(1.4);
             }
         }
 
@@ -379,32 +466,26 @@
 
         @keyframes container-uncertainty {
             0% {
-                transform: translateZ(0) translate(0, 0) skew(0deg);
                 box-shadow: inset 0 0 8px currentColor;
             }
 
             20% {
-                transform: translateZ(0) translate(-1px, 1px) skew(-2deg);
                 box-shadow: inset 1px 0 var(--neon-cyan), inset -1px 0 var(--neon-purple);
             }
 
             40% {
-                transform: translateZ(0) translate(1px, -1px) skew(2deg);
                 box-shadow: inset -1px 0 var(--neon-cyan), inset 1px 0 var(--neon-purple);
             }
 
             60% {
-                transform: translateZ(0) translate(0, 0) skew(0deg);
                 box-shadow: inset 0 0 8px currentColor;
             }
 
             80% {
-                transform: translateZ(0) translate(1px, 0) skew(-1deg);
                 box-shadow: inset 1px 0 var(--neon-cyan);
             }
 
             100% {
-                transform: translateZ(0) translate(0, 0) skew(0deg);
                 box-shadow: inset 0 0 8px currentColor;
             }
         }
@@ -412,7 +493,8 @@
         /* Cancel uncertainty on hover so the tooltip and item remain solid */
         .short-term:hover {
             animation: none;
-            transform: translateZ(50px);
+            transform: translateZ(3px);
+            z-index: 9999;
         }
 
 
@@ -438,29 +520,35 @@
     </div>
 
     <div id="viewport">
-        <div id="triptych">
-            <!-- Left Matrix: Areas -->
-            <div class="matrix-wrapper" id="wrapper-areas">
-                <div class="matrix-title">STATE // AREAS</div>
-                <div class="bracket left"></div>
-                <div class="bracket right"></div>
-                <div id="matrix-areas" class="matrix matrix-6x6"></div>
-            </div>
+        <div id="triptych-container">
+            <div id="triptych">
 
-            <!-- Center Matrix: Categories -->
-            <div class="matrix-wrapper" id="wrapper-categories">
-                <div class="matrix-title">DOMAINS</div>
-                <div class="bracket left" style="border-width: 3px;"></div>
-                <div class="bracket right" style="border-width: 3px;"></div>
-                <div id="matrix-categories" class="matrix matrix-7x7"></div>
-            </div>
+                <!-- Master Interface Title -->
+                <div class="triptych-master-title">INTERESTS / TOYS</div>
 
-            <!-- Right Matrix: Tools -->
-            <div class="matrix-wrapper" id="wrapper-tools">
-                <div class="matrix-title">OPERAND // TOOLS</div>
-                <div class="bracket left"></div>
-                <div class="bracket right"></div>
-                <div id="matrix-tools" class="matrix matrix-6x6"></div>
+                <!-- Left Matrix: Areas -->
+                <div class="matrix-wrapper" id="wrapper-areas">
+                    <!-- <div class="matrix-title">STATE // AREAS</div> -->
+                    <div class="bracket left"></div>
+                    <div class="bracket right"></div>
+                    <div id="matrix-areas" class="matrix matrix-6x6"></div>
+                </div>
+
+                <!-- Center Matrix: Categories -->
+                <div class="matrix-wrapper" id="wrapper-categories">
+                    <!-- <div class="matrix-title">DOMAINS</div> -->
+                    <div class="bracket left" style="border-width: 3px;"></div>
+                    <div class="bracket right" style="border-width: 3px;"></div>
+                    <div id="matrix-categories" class="matrix matrix-7x7"></div>
+                </div>
+
+                <!-- Right Matrix: Tools -->
+                <div class="matrix-wrapper" id="wrapper-tools">
+                    <!-- <div class="matrix-title">OPERAND // TOOLS</div> -->
+                    <div class="bracket left"></div>
+                    <div class="bracket right"></div>
+                    <div id="matrix-tools" class="matrix matrix-6x6"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -491,6 +579,7 @@
             'Metasploit': '../public/icons/Metasploit.svg',
             'Wireshark': '../public/icons/Wireshark.svg',
             'Linux Server Administration': '../public/icons/Linux_Server_Administration.svg',
+            'bash': '../public/icons/bash.svg',
             'Aircrack-ng': '../public/icons/Aircrack_ng.svg',
             'BeEF': '../public/icons/BeEF.svg',
             'Ettercap': '../public/icons/Ettercap.svg',
@@ -656,6 +745,12 @@
                     }
                 }
             });
+
+            // DEBUG LOGGING THE DOM
+            const debugItem = document.querySelector('.item.spawning');
+            if (debugItem) {
+                console.log("DEBUG DOM OUTER HTML:", debugItem.outerHTML);
+            }
         }
 
         function spawnItem(itemDef, cellIndex, gridState, trackingDict, matrixEl, dim) {
@@ -777,12 +872,40 @@
                     const maxScroll = document.body.scrollHeight - window.innerHeight;
                     const progress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
                     const currentYear = Math.floor(START_YEAR + (progress * (END_YEAR - START_YEAR)));
-                    update(currentYear);
+                    requestAnimationFrame(() => update(currentYear));
                 });
             })
             .catch(err => {
                 console.error("Failed to load hobbies.json:", err);
             });
+
+        // --- MAGNETIC PARALLAX EFFECT ---
+        const triptychContainer = document.getElementById('triptych-container');
+
+        triptychContainer.addEventListener('mousemove', (e) => {
+            // Kaizen: Only compute layout bounds when needed, calculate normalized state
+            const rect = triptychContainer.getBoundingClientRect();
+
+            // Normalize origin to center (-1 to 1) 
+            const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+
+            const maxTilt = 6; // Max 4 degrees for subtle industrial feel
+
+            // Magnetic effect: Edge pulls towards screen
+            const tiltX = y * maxTilt;
+            const tiltY = -x * maxTilt;
+
+            // Disable CSS transition during rapid mouse move for instant tactile feel
+            triptychContainer.style.transition = 'none';
+            triptychContainer.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+        });
+
+        triptychContainer.addEventListener('mouseleave', () => {
+            // Restore smooth transition and return to dead center gracefully
+            triptychContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            triptychContainer.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        });
 
     </script>
 </body>

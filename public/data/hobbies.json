@@ -202,6 +202,14 @@
         "type": "area"
       },
       {
+        "name": "bash",
+        "time_range": {
+          "start": "2012",
+          "end": "Present"
+        },
+        "type": "tool"
+      },
+      {
         "name": "Aircrack-ng",
         "time_range": {
           "start": "2016",
