@@ -4,7 +4,7 @@ import { CONFIG, CAREER_NODES } from '../config.js';
 import { STATE } from '../state.js';
 import { scene, camera, renderer, composer } from '../core/scene.js';
 import { updateScroll } from '../core/scroll.js';
-import { updateEigenstateGrid } from '../components/eigenstate.js';
+import { updateHobbies } from '../components/hobbies.js';
 
 const timer = new Timer();
 
@@ -61,8 +61,6 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             camera.lookAt(0, 0, 0);
         }
         else if (STATE.phase === 'TIMELINE' && !STATE.transitioning) {
-            updateEigenstateGrid();
-
             const diff = STATE.targetScrollY - STATE.scrollY;
             STATE.scrollY += diff * CONFIG.scrollDamping;
             STATE.velocity = diff * CONFIG.scrollDamping;
@@ -129,6 +127,8 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                 }
                 const yearEl = document.getElementById('current-year');
                 if (yearEl) yearEl.innerText = Math.floor(currentYear);
+
+                updateHobbies(Math.floor(currentYear));
             }
 
             if (v_norm > 0.9) { document.getElementById('velocity-alert').style.display = 'block'; camera.position.x += (Math.random() - 0.5) * 0.5; }

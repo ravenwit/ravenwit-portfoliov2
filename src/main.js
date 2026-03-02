@@ -9,7 +9,7 @@ import { createNodes, toggleCard, startTypingInterval } from './components/nodes
 import { startAnimationLoop } from './core/animate.js';
 import { initScroll } from './core/scroll.js';
 import { CAREER_NODES } from './config.js';
-import { initEigenstates } from './components/eigenstate.js';
+import { initHobbies } from './components/hobbies.js';
 
 async function init() {
     const statusDisp = document.getElementById('status-display');
@@ -29,8 +29,6 @@ async function init() {
     try {
         const res = await fetch('/data/timeline.json');
         const timelineData = await res.json();
-
-        initEigenstates(timelineData);
 
         let currentZ = -50;
         timelineData.filter(item => item.category === 'career').forEach((item, index) => {
@@ -109,6 +107,8 @@ async function init() {
     import('./components/social.js').then(module => {
         module.initSocialQuanta();
     });
+
+    initHobbies();
 
     startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath);
 }

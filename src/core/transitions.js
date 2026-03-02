@@ -30,6 +30,7 @@ export function initiateTransition(cameraPath, torusMat, gridMat, starsMat, node
             STATE.phase = 'TIMELINE';
             STATE.transitioning = false;
             gsap.to('#hud', { opacity: 1, duration: 0.5 });
+            gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5 });
         }
     });
 
@@ -64,6 +65,7 @@ export function initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup) {
     STATE.transitioning = true;
 
     gsap.to('#hud', { opacity: 0, duration: 0.4 });
+    gsap.to('#hobbies-ui-layer', { opacity: 0, duration: 0.4 });
 
     const endPos = new THREE.Vector3(0, 0, 50);
 

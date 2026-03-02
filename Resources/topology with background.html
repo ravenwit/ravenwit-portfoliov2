@@ -456,46 +456,177 @@
         const R = 3.0, segmentsU = 150, segmentsV = 60;
         const geometry = new THREE.BufferGeometry();
         const vertices = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 3);
+        const uvs = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 2);
         const indices = [];
+        let index3 = 0, index2 = 0;
+        for (let i = 0; i <= segmentsU; i++) {
+            for (let j = 0; j <= segmentsV; j++) {
+                vertices[index3++] = 0; vertices[index3++] = 0; vertices[index3++] = 0;
+                uvs[index2++] = i / segmentsU; uvs[index2++] = j / segmentsV;
+            }
+        }
         for (let i = 0; i < segmentsU; i++) {
             for (let j = 0; j < segmentsV; j++) {
                 let a = i * (segmentsV + 1) + j, b = a + (segmentsV + 1), c = a + 1, d = b + 1;
                 indices.push(a, b, d); indices.push(a, d, c);
             }
         }
-        geometry.setIndex(indices); geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-        const material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.1, metalness: 0.8, side: THREE.DoubleSide, transparent: true, opacity: 0.8, wireframe: true });
+        geometry.setIndex(indices);
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
+        // Prevent frustum culling since vertices are calculated in shader
+        geometry.computeBoundingSphere();
+        geometry.boundingSphere.radius = 10;
+
+        const materialUniforms = { uScroll: { value: 0.0 } };
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xaaaaaa, roughness: 0.1, metalness: 0.8,
+            side: THREE.DoubleSide, transparent: true, opacity: 0.8, wireframe: true
+        });
+        material.defines = { 'USE_UV': '' };
+
+        material.onBeforeCompile = (shader) => {
+            shader.uniforms.uScroll = materialUniforms.uScroll;
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <common>',
+                `#include <common>
+                uniform float uScroll;
+
+                vec3 evaluateMasterEquation(float u_norm, float v_norm, float T_val) {
+                    float u = u_norm * 2.0 * PI;
+                    float geomT = min(T_val, 4.0);
+                    
+                    // Divide 4.0 scroll units into 2 main phases (Flatten, then Twist)
+                    float phase = floor(geomT / 2.0);
+                    if (phase >= 2.0) phase = 1.0;
+                    
+                    // Normalize lambda scale 0->1 per 2.0 duration phase
+                    float rawLambda = (geomT - phase * 2.0) / 2.0;
+                    if (geomT >= 4.0) rawLambda = 1.0;
+                    float lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda); // smoothstep
+
+                    // Kaizen Phase: Inflate as a non-orientable topology
+                    float inflateLambda = 0.0;
+                    if (T_val > 9.0) {
+                        float rawInflate = min((T_val - 9.0) / 2.0, 1.0);
+                        inflateLambda = rawInflate * rawInflate * (3.0 - 2.0 * rawInflate);
+                    }
+
+                    float f1, f2, tau;
+                    float vmax = 2.0 * PI; // Vmax is locked to 2*PI permanently
+                    float v = v_norm * vmax;
+                    
+                    if (phase < 0.5) { // Phase 0 (0-2.0): Flatten the Tube to a Ribbon
+                        f1 = (1.0 - lambda) * cos(v) + lambda * sin(v); 
+                        f2 = sin(v); 
+                        tau = 0.0;
+                    } else { // Phase 1 (2.0-4.0): Perform the Half Twist
+                        f1 = mix(sin(v), cos(v), inflateLambda); // Inflates back to cos(v) between S=9 and S=11
+                        f2 = sin(v); 
+                        tau = 0.5 * lambda;
+                    }
+
+                    float twistAngle = tau * u;
+                    float x_prime = f1 * cos(twistAngle) - f2 * sin(twistAngle);
+                    float z_prime = f1 * sin(twistAngle) + f2 * cos(twistAngle);
+                    
+                    float R = 3.0;
+                    return vec3((R + x_prime) * cos(u), z_prime, -(R + x_prime) * sin(u));
+                }
+
+                vec3 calculateNormal(float u_norm, float v_norm, float T_val, vec3 pos) {
+                    float d = 0.001;
+                    // finite difference approximation for tangents
+                    vec3 pU = evaluateMasterEquation(u_norm + d, v_norm, T_val);
+                    vec3 pV = evaluateMasterEquation(u_norm, v_norm + d, T_val);
+                    vec3 Tu = pU - pos;
+                    vec3 Tv = pV - pos;
+                    return normalize(cross(Tu, Tv));
+                }
+                `
+            );
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <beginnormal_vertex>',
+                `
+                vec3 computedPos = evaluateMasterEquation(uv.x, uv.y, uScroll);
+                vec3 objectNormal = calculateNormal(uv.x, uv.y, uScroll, computedPos);
+                #ifdef USE_TANGENT
+                    vec3 objectTangent = vec3( tangent.xyz );
+                #endif
+                `
+            );
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `
+                vec3 transformed = computedPos; 
+                `
+            );
+        };
         const mesh = new THREE.Mesh(geometry, material); scene.add(mesh);
 
-        const particle = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF3300 })); scene.add(particle);
-        const normalArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1.5, 0xFF3300, 0.3, 0.2); scene.add(normalArrow);
+        const particle = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF3300 })); mesh.add(particle);
+        const normalArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1.5, 0xFF3300, 0.3, 0.2); mesh.add(normalArrow);
         particle.visible = false; normalArrow.visible = false;
 
-        // --- 3. UNIFIED SCROLL & TIME STATE ---
+        // --- 3. CINEMATIC SCROLL EXPERIENCE ---
         let targetScroll = 0.0;
         let currentScroll = 0.0;
+        let scrollVelocity = 0.0;
 
         const clock = new THREE.Clock();
         let autonomousParticleU = 0.0;
         const particleOmega = 0.25;
 
+        // Cinematic wheel normalization (Trackpads & Mouse Wheels smoothed identically)
         window.addEventListener('wheel', (event) => {
-            targetScroll += event.deltaY * 0.002;
-            targetScroll = Math.max(0, Math.min(targetScroll, 9.0));
-        });
+            let delta = event.deltaY;
+
+            // Normalize distinct scrolling metrics (pixels vs lines/pages)
+            if (event.deltaMode === 1) delta *= 40;
+            if (event.deltaMode === 2) delta *= window.innerHeight;
+
+            // Bounded impulse addition gives aggressive mouse wheels butter-smooth momentum
+            const impulse = Math.sign(delta) * Math.min(Math.abs(delta), 100);
+            scrollVelocity += impulse * 0.0006;
+        }, { passive: true });
 
         function evaluateMasterEquation(u_norm, v_norm, T_val) {
             const u = u_norm * 2.0 * Math.PI;
             const geomT = Math.min(T_val, 4.0);
-            const phase = Math.floor(geomT) === 4 ? 3 : Math.floor(geomT);
-            let rawLambda = geomT - phase; if (geomT >= 4.0) rawLambda = 1.0;
+
+            // Divide 4.0 scroll units into 2 main phases (Flatten, then Twist)
+            let phase = Math.floor(geomT / 2.0);
+            if (phase >= 2.0) phase = 1.0;
+
+            // Normalize lambda scale 0->1 per 2.0 duration phase
+            let rawLambda = (geomT - phase * 2.0) / 2.0;
+            if (geomT >= 4.0) rawLambda = 1.0;
             const lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda);
 
-            let f1, f2, v, tau, vmax;
-            if (phase === 0) { vmax = 2.0 * Math.PI; v = v_norm * vmax; f1 = (1.0 - lambda) * Math.cos(v) + lambda * Math.sin(v); f2 = Math.sin(v); tau = 0.0; }
-            else if (phase === 1) { vmax = Math.PI * (2.0 - lambda); v = v_norm * vmax; f1 = Math.sin(v); f2 = Math.sin(v); tau = 0.0; }
-            else if (phase === 2) { vmax = Math.PI; v = v_norm * vmax; f1 = Math.sin(v); f2 = Math.sin(v); tau = 0.5 * lambda; }
-            else if (phase === 3) { vmax = Math.PI * (1.0 + lambda); v = v_norm * vmax; f1 = Math.sin(v); f2 = Math.sin(v); tau = 0.5; }
+            // Kaizen Phase: Inflate as a non-orientable topology
+            let inflateLambda = 0.0;
+            if (T_val > 9.0) {
+                let rawInflate = Math.min((T_val - 9.0) / 2.0, 1.0);
+                inflateLambda = rawInflate * rawInflate * (3.0 - 2.0 * rawInflate);
+            }
+
+            let f1, f2, tau;
+            const vmax = 2.0 * Math.PI; // Vmax is locked to 2*PI permanently
+            const v = v_norm * vmax;
+
+            if (phase === 0) { // Phase 0 (0-2.0): Flatten the Tube to a Ribbon
+                f1 = (1.0 - lambda) * Math.cos(v) + lambda * Math.sin(v);
+                f2 = Math.sin(v);
+                tau = 0.0;
+            } else { // Phase 1 (2.0-4.0): Perform the Half Twist
+                f1 = (1.0 - inflateLambda) * Math.sin(v) + inflateLambda * Math.cos(v);
+                f2 = Math.sin(v);
+                tau = 0.5 * lambda;
+            }
 
             const twistAngle = tau * u;
             const x_prime = f1 * Math.cos(twistAngle) - f2 * Math.sin(twistAngle);
@@ -508,23 +639,54 @@
             requestAnimationFrame(animate);
 
             const dt = clock.getDelta();
-            currentScroll += (targetScroll - currentScroll) * 0.08;
 
-            // --- TOPOLOGY UPDATE ---
-            const positions = geometry.attributes.position.array;
-            let index = 0;
-            for (let i = 0; i <= segmentsU; i++) {
-                for (let j = 0; j <= segmentsV; j++) {
-                    const data = evaluateMasterEquation(i / segmentsU, j / segmentsV, currentScroll);
-                    positions[index++] = data.pos.x; positions[index++] = data.pos.y; positions[index++] = data.pos.z;
-                }
+            // --- SCROLL INERTIA & DAMPENING ---
+            targetScroll += scrollVelocity;
+            scrollVelocity *= 0.92; // Fluid friction
+            if (Math.abs(scrollVelocity) < 0.0001) scrollVelocity = 0;
+
+            // Hard boundaries
+            if (targetScroll < 0) { targetScroll = 0; scrollVelocity = 0; }
+            if (targetScroll > 11.0) { targetScroll = 11.0; scrollVelocity = 0; }
+
+            // Frame-rate independent critically damped spring lerp
+            const decay = 5.0;
+            currentScroll += (targetScroll - currentScroll) * (1.0 - Math.exp(-decay * dt));
+
+            // --- TOPOLOGY UPDATE (NOW ON GPU) ---
+            materialUniforms.uScroll.value = currentScroll;
+
+            // Add subtle continuous rotation so the artifact feels "alive" (Kaizen)
+            // You can change these velocity constants to make it spin faster or slower!
+            const rotVelocityY = 0.02;
+            const rotVelocityX = 0.007;
+
+            mesh.rotation.y += rotVelocityY * dt;
+            mesh.rotation.x += rotVelocityX * dt;
+            mesh.rotation.z = Math.sin(clock.getElapsedTime() * 0.3) * 0.05;
+
+            // Kaizen Cinematic Panning: Bring the manifold to screen center as particles vanish
+            let panProgress = 0;
+            if (currentScroll > 8.0) {
+                panProgress = Math.min(1.0, currentScroll - 8.0);
             }
-            geometry.attributes.position.needsUpdate = true;
-            geometry.computeVertexNormals();
+            // Continuous Improvement: Apply an explicit cubic ease (smoothstep) so the motion decelerates and feels incredibly fluid.
+            let easedPan = panProgress * panProgress * (3.0 - 2.0 * panProgress);
+            // leftHemi width is 50vw. To center it perfectly in a 100vw space, we translate it linearly to 25.0vw.
+            leftHemi.style.transform = `translateX(${easedPan * 25}vw)`;
 
             // --- AUTONOMOUS PARTICLE PHYSICS ---
-            if (currentScroll >= 4.0) {
+            if (currentScroll >= 4.0 && currentScroll < 9.5) { // Safe bound to allow it to reach scale 0 cleanly
                 particle.visible = true; normalArrow.visible = true;
+
+                // Kaizen Improvement: Graceful decay of the particle rather than abrupt pop-out
+                let particleScale = 1.0;
+                if (currentScroll > 8.0) {
+                    particleScale = Math.max(0, 1.0 - (currentScroll - 8.0));
+                }
+                particle.scale.set(particleScale, particleScale, particleScale);
+                // Safe length minimum to avoid ThreeJS ArrowHelper zero-length assertions
+                normalArrow.setLength(Math.max(0.01, 1.5 * particleScale), 0.3 * particleScale, 0.2 * particleScale);
 
                 autonomousParticleU = (autonomousParticleU + particleOmega * dt) % 2.0;
                 let pu = autonomousParticleU;
@@ -539,7 +701,7 @@
                 normalArrow.position.copy(pData.pos);
                 normalArrow.setDirection(new THREE.Vector3().crossVectors(Tu, Tv).normalize());
 
-                document.getElementById('hud-omega').innerText = particleOmega.toFixed(2) + " rad/s";
+                document.getElementById('hud-omega').innerText = (particleOmega * particleScale).toFixed(2) + " rad/s";
             } else {
                 particle.visible = false; normalArrow.visible = false;
                 autonomousParticleU = 0.0;
@@ -594,7 +756,10 @@
 
             // Update HUD
             document.getElementById('hud-s').innerText = currentScroll.toFixed(2);
-            document.getElementById('hud-phase').innerText = currentScroll < 4.0 ? "MORPHING" : "MÖBIUS MANIFOLD";
+            let phaseText = "MORPHING";
+            if (currentScroll >= 4.0 && currentScroll < 9.0) phaseText = "MÖBIUS MANIFOLD";
+            else if (currentScroll >= 9.0) phaseText = "KLEIN TOPOLOGY";
+            document.getElementById('hud-phase').innerText = phaseText;
 
             controls.update();
             renderer.render(scene, camera);

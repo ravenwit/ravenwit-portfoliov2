@@ -6,6 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spacetime Portfolio | Organic Transition</title>
     <link rel="stylesheet" href="/src/styles/main.css">
+    <!-- Jersey 10 Charted Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+10+Charted&display=swap" rel="stylesheet">
+    <!-- Micro 5 Charted Google Font for industrial aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&display=swap" rel="stylesheet">
+    <!-- Sixtyfour Google Font for industrial aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&family=Sixtyfour&display=swap"
+        rel="stylesheet">
+    <!-- Doto Google Font for industrial aesthetic -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Micro+5+Charted&family=Sixtyfour&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
@@ -16,8 +29,30 @@
 
     <div id="canvas-container"></div>
     <div id="labels-container"></div>
-    <div id="eigenstate-grid-container" class="eigenstate-layer">
-        <div id="eigenstate-grid"></div>
+
+    <div id="hobbies-ui-layer" class="ui-layer">
+        <div id="hobbies-viewport">
+            <div id="triptych-container">
+                <div id="triptych">
+                    <div class="triptych-master-title">INTERESTS / TOYS</div>
+                    <div class="matrix-wrapper" id="wrapper-areas">
+                        <div class="bracket left"></div>
+                        <div class="bracket right"></div>
+                        <div id="matrix-areas" class="matrix matrix-6x6"></div>
+                    </div>
+                    <div class="matrix-wrapper" id="wrapper-categories">
+                        <div class="bracket left" style="border-width: 3px;"></div>
+                        <div class="bracket right" style="border-width: 3px;"></div>
+                        <div id="matrix-categories" class="matrix matrix-7x7"></div>
+                    </div>
+                    <div class="matrix-wrapper" id="wrapper-tools">
+                        <div class="bracket left"></div>
+                        <div class="bracket right"></div>
+                        <div id="matrix-tools" class="matrix matrix-6x6"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="ui-loader" class="ui-layer">
