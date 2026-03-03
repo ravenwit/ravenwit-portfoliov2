@@ -109,10 +109,23 @@ export function createNodes(gridMat) {
             ${skillsHTML}
             <div class="node-anchor"></div><div class="node-connector"></div>
             <div class="hud-card minimized" id="card-${index}">
-                <div class="card-header"><span class="card-id">EVT-0${index + 1}</span><div class="card-mass-bar"><div class="card-mass-fill" style="width:${massPct}%"></div></div></div>
+                <div class="card-header">
+                    <span class="card-id">EVT-0${index + 1}</span>
+                    <div class="card-time-range">
+                        <span class="time-value">${node.time_range ? node.time_range.start : ''}</span>
+                        <span class="time-separator">⟶</span>
+                        <span class="time-value">${node.time_range ? node.time_range.end : ''}</span>
+                    </div>
+                </div>
                 <div class="card-body"><div class="card-title">${node.title}</div><div class="card-subtitle">${node.subtitle}</div></div>
                 <div class="card-logs" id="logs-container-${index}"></div>
-                <div class="card-footer"><span>G-POTENTIAL: ${node.mass.toFixed(2)}</span><button class="expander-btn" id="btn-${index}">[ + ]</button></div>
+                <div class="card-footer">
+                    <div class="card-location">
+                        <span class="loc-icon">⌖</span>
+                        <span class="loc-text">${node.location || 'ORBITAL STATION'}</span>
+                    </div>
+                    <button class="expander-btn" id="btn-${index}">[ + ]</button>
+                </div>
             </div>
         `;
         document.getElementById('labels-container').appendChild(label);

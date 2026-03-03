@@ -387,18 +387,30 @@ canvas {
     letter-spacing: 1px;
 }
 
-.card-mass-bar {
-    width: 60px;
-    height: 4px;
-    background: #334455;
-    border-radius: 2px;
-    overflow: hidden;
+.card-time-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-family: 'Sixtyfour', 'Courier New', monospace;
+    font-size: 8px;
+    letter-spacing: 1px;
 }
 
-.card-mass-fill {
-    height: 100%;
-    background: #0ff;
-    box-shadow: 0 0 5px #0ff;
+.time-value {
+    color: #0ff;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.time-separator {
+    color: #ff0055;
+    text-shadow: 0 0 8px #ff0055;
+    font-size: 10px;
+    font-family: sans-serif;
+    margin-top: -1px;
 }
 
 .card-body {
@@ -458,8 +470,27 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 10px;
-    color: #667788;
+}
+
+.card-location {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Courier New', monospace;
+}
+
+.loc-icon {
+    color: #0ff;
+    font-size: 12px;
+    text-shadow: 0 0 5px #0ff;
+    margin-top: -1px;
+}
+
+.loc-text {
+    font-size: 9px;
+    color: #88ccdd;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .expander-btn {
@@ -720,8 +751,8 @@ canvas {
     font-family: 'Courier New', monospace;
     font-size: 11px;
     letter-spacing: 2px;
-    color: #0ff;
-    text-shadow: 0 0 5px rgba(0, 255, 255, 0.8);
+    color: #ffffff;
+    text-shadow: 0 0 5px #ff0055, 0 0 10px #ff0055;
     white-space: nowrap;
     opacity: 0;
     transform: translateX(20px);
@@ -966,7 +997,7 @@ canvas {
     pointer-events: none;
     box-shadow: 0 0 10px currentColor, 0 4px 15px rgba(0, 0, 0, 0.8);
     border-radius: 3px;
-    z-index: 999;
+    z-index: 99999 !important;
 }
 
 .item:hover {

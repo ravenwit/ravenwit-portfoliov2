@@ -106,7 +106,16 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                 if (camZ >= CAREER_NODES[0].z) {
                     currentYear = parseYear(CAREER_NODES[0].time_range ? CAREER_NODES[0].time_range.start : CAREER_NODES[0].date);
                 } else if (camZ <= CAREER_NODES[CAREER_NODES.length - 1].z) {
-                    currentYear = parseYear(CAREER_NODES[CAREER_NODES.length - 1].time_range ? CAREER_NODES[CAREER_NODES.length - 1].time_range.start : CAREER_NODES[CAREER_NODES.length - 1].date);
+                    const lastNode = CAREER_NODES[CAREER_NODES.length - 1];
+                    const lastYear = parseYear(lastNode.time_range ? lastNode.time_range.start : lastNode.date);
+
+                    // We established 1 Year = -100 Z units previously in timeline.json
+                    const zUnitsPerYear = 100;
+                    const distancePastFinalNode = Math.abs(camZ - lastNode.z);
+                    const extrapolatedYear = lastYear + (distancePastFinalNode / zUnitsPerYear);
+
+                    // User explicitly requested a hard limit at 2027
+                    currentYear = Math.min(extrapolatedYear, 2027);
                 } else {
                     // Find which segment the camera is in
                     for (let i = 0; i < CAREER_NODES.length - 1; i++) {
@@ -191,9 +200,12 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                     } else el.style.display = 'none';
 
                     if (node.x < 0) {
-                        el.style.flexDirection = "row-reverse";
-                        el.querySelector('.node-connector').style.background = "linear-gradient(-90deg, #0ff, transparent)";
-                        el.classList.add('is-reverse');
+                        // el.style.flexDirection = "row-reverse";
+                        // el.querySelector('.node-connector').style.background = "linear-gradient(-90deg, #0ff, transparent)";
+                        // el.classList.add('is-reverse');
+                        el.style.flexDirection = "row";
+                        el.querySelector('.node-connector').style.background = "linear-gradient(90deg, #0ff, transparent)";
+                        el.classList.remove('is-reverse');
                     } else {
                         el.style.flexDirection = "row";
                         el.querySelector('.node-connector').style.background = "linear-gradient(90deg, #0ff, transparent)";
