@@ -83,19 +83,28 @@
     </div>
 
     <div id="hud">
-        <div class="metric-row"><span class="metric-label">CURRENT YEAR (y)</span> <span id="current-year"
-                class="metric-value">2025</span></div>
-        <div class="metric-row"><span class="metric-label">COORD. TIME (t)</span> <span id="coord-time"
-                class="metric-value">0.00</span></div>
-        <div class="metric-row"><span class="metric-label">PROPER TIME (&tau;)</span> <span id="proper-time"
-                class="metric-value">0.00</span></div>
-        <div class="metric-row"><span class="metric-label">VELOCITY (v)</span> <span id="velocity"
-                class="metric-value">0.00c</span></div>
-        <div class="metric-row"><span class="metric-label">LORENTZ (&gamma;)</span> <span id="lorentz"
-                class="metric-value">1.000</span></div>
-        <div style="margin-top:10px; font-size: 10px; opacity: 0.7; color: #0ff;">SYSTEM: OPTICAL LENSING ACTIVE
+        <div class="telemetry-grid">
+            <div class="telemetry-cell">
+                <span class="telemetry-label">YEAR</span>
+                <span id="current-year" class="telemetry-value">2025</span>
+            </div>
+            <div class="telemetry-cell">
+                <span class="telemetry-label">t</span>
+                <span id="coord-time" class="telemetry-value">0.00</span>
+            </div>
+            <div class="telemetry-cell" style="border-right: none;">
+                <span class="telemetry-label">&tau;</span>
+                <span id="proper-time" class="telemetry-value">0.00</span>
+            </div>
+            <div class="speedo-container">
+                <div class="speedometer-arc"></div>
+                <div id="speedo-needle" class="needle"></div>
+            </div>
         </div>
-        <div id="velocity-alert" class="velocity-warning">CAUSALITY BREAK IMMINENT</div>
+
+        <div class="telemetry-footer">
+            <span id="velocity-alert" class="velocity-warning">CAUSALITY BREAK IMMINENT</span>
+        </div>
     </div>
 
     <!-- QUANTUM SOCIAL LINKS -->

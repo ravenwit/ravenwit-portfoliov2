@@ -79,8 +79,13 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             STATE.coordinateTime += dt; STATE.properTime += dt / (1.0 / Math.sqrt(1.0 - v_norm * v_norm));
             document.getElementById('coord-time').innerText = STATE.coordinateTime.toFixed(2);
             document.getElementById('proper-time').innerText = STATE.properTime.toFixed(2);
-            document.getElementById('velocity').innerText = v_norm.toFixed(2) + "c";
-            document.getElementById('lorentz').innerText = (1.0 / Math.sqrt(1.0 - v_norm * v_norm)).toFixed(3);
+
+            // Speedometer logic: Map 0-1 v_norm to -90 to +90 degrees
+            const needle = document.getElementById('speedo-needle');
+            if (needle) {
+                const angle = (v_norm * 180) - 90;
+                needle.style.transform = `rotate(${angle}deg)`;
+            }
 
             // Interpolate Current Year based on Camera Z position traversing CAREER_NODES
             if (CAREER_NODES.length > 1) {

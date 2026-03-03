@@ -13,8 +13,8 @@ const glowTexture = (() => {
 // --- Shared Materials ---
 const glowMaterial = new THREE.SpriteMaterial({ map: glowTexture, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
 const coreMaterial = new THREE.SpriteMaterial({ map: glowTexture, color: 0xffffff });
-const skillCoreMat = new THREE.MeshBasicMaterial({ color: 0x224466, wireframe: true, transparent: true, opacity: 0.6 });
-const skillShellMat = new THREE.MeshBasicMaterial({ color: 0x4488aa, wireframe: true, transparent: true, opacity: 0.3 });
+const skillCoreMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.8 });
+const skillShellMat = new THREE.MeshBasicMaterial({ color: 0x88ccff, wireframe: true, transparent: true, opacity: 0.5 });
 const orbitLineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.05 });
 
 // --- Typing State ---
