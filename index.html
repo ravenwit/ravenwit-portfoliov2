@@ -19,6 +19,10 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Micro+5+Charted&family=Sixtyfour&display=swap"
         rel="stylesheet">
+    <!-- Fonts for the Research Phase Dimension -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
@@ -127,6 +131,23 @@
             <div class="node-core"></div>
             <div class="node-label-container"><span class="node-label"></span></div>
         </a>
+    </div>
+    <!-- RESEARCH PHASE UI -->
+    <div id="ui-research" class="ui-layer" style="display: none; opacity: 0;">
+        <div id="noise-overlay"></div>
+        <canvas id="research-bg-canvas"></canvas>
+        <div id="left-hemi"></div>
+        <div id="right-hemi">
+            <div id="research-cards-container"></div>
+        </div>
+        <div id="research-hud-overlay">
+            <div class="stat-col"><span class="stat-label">TOPOLOGY PHASE</span><span id="hud-phase"
+                    class="stat-value hud-accent">INITIALIZING</span></div>
+            <div class="stat-col"><span class="stat-label">S-COORDINATE</span><span id="hud-s"
+                    class="stat-value">0.00</span></div>
+            <div class="stat-col"><span class="stat-label">PARTICLE Ω</span><span id="hud-omega" class="stat-value">0.00
+                    rad/s</span></div>
+        </div>
     </div>
 
     <script type="module" src="/src/main.js"></script>

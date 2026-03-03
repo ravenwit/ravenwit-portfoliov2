@@ -5,6 +5,7 @@ export const STATE = {
     loadProgress: 0,
     loadStage: 'INITIALIZING',
     scrollY: 0, targetScrollY: 0, velocity: 0,
+    researchScrollY: 0, researchVelocity: 0,
     transitioning: false,
     coordinateTime: 0, properTime: 0
 };

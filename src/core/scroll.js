@@ -6,7 +6,7 @@
 // actual page scrolling will benefit from it.
 
 import { STATE } from '../state.js';
-import { initiateTransition, initiateBackToHero } from './transitions.js';
+import { initiateTransition, initiateBackToHero, initiateResearchTransition, initiateTimelineReturn } from './transitions.js';
 import { toggleCard } from '../components/nodes.js';
 
 let transitionDeps = null;
@@ -14,15 +14,23 @@ let transitionDeps = null;
 // Momentum state
 let targetY = 0;
 let currentY = 0;
-const LERP = 0.08;           // 0.05 = heavy momentum, 0.15 = responsive
+const LERP = 0.095;           // 0.05 = heavy momentum, 0.15 = responsive
 const WHEEL_SCALE = 0.25;    // Raw delta → virtual scroll units
 const MAX_SCROLL = 8000;     // Total virtual scroll range
+
+export function setScrollTargetY(val) {
+    currentY = val;
+    targetY = val;
+}
 
 export function initScroll(deps) {
     transitionDeps = deps;
 
     window.addEventListener('wheel', (e) => {
         e.preventDefault();
+
+        // Critical block: Prevent input leaking during cinematic animations
+        if (STATE.transitioning) return;
 
         if (STATE.phase === 'HERO') {
             if (e.deltaY > 0) {
@@ -47,12 +55,29 @@ export function initScroll(deps) {
             // Accumulate target — actual movement is lerped per frame
             targetY += e.deltaY * WHEEL_SCALE;
             targetY = Math.max(0, Math.min(targetY, MAX_SCROLL));
+        } else if (STATE.phase === 'RESEARCH' && !STATE.transitioning) {
+            // Check for exit bound
+            if (STATE.researchScrollY <= 0.1 && e.deltaY < -20) {
+                const { cameraPath, torusMat, gridMat, starsMat, nodeGroup, researchMesh } = transitionDeps;
+                initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, researchMesh, cameraPath);
+                return;
+            }
+
+            // Cinematic wheel normalization
+            let delta = e.deltaY;
+            if (e.deltaMode === 1) delta *= 40;
+            if (e.deltaMode === 2) delta *= window.innerHeight;
+
+            const impulse = Math.sign(delta) * Math.min(Math.abs(delta), 100);
+            STATE.researchVelocity += impulse * 0.0006;
         }
     }, { passive: false });
 }
 
 /** Call once per frame — applies momentum lerp to STATE.targetScrollY */
 export function updateScroll(_time) {
-    currentY += (targetY - currentY) * LERP;
-    STATE.targetScrollY = currentY;
+    if (STATE.phase !== 'RESEARCH') {
+        currentY += (targetY - currentY) * LERP;
+        STATE.targetScrollY = currentY;
+    }
 }

@@ -1,14 +1,20 @@
 import * as THREE from 'three';
 import { Timer } from 'three';
-import { CONFIG, CAREER_NODES } from '../config.js';
+import { CAREER_NODES, CONFIG } from '../config.js';
 import { STATE } from '../state.js';
 import { scene, camera, renderer, composer } from '../core/scene.js';
 import { updateScroll } from '../core/scroll.js';
 import { updateHobbies } from '../components/hobbies.js';
+import { initiateResearchTransition } from './transitions.js';
+import { researchMaterialUniforms, evaluateResearchParticleMath, researchParticle, researchNormalArrow, baseResearchMesh, researchLights } from '../components/researchTopology.js';
+import { animateResearchBG, researchMouse } from '../components/researchBackground.js';
+import { updateResearchCards } from '../components/researchCards.js';
 
 const timer = new Timer();
+let autonomousParticleU = 0.0;
+const particleOmega = 0.25;
 
-export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath) {
+export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath, researchMesh) {
     function animate(timestamp) {
         requestAnimationFrame(animate);
         timer.update(timestamp);
@@ -66,6 +72,13 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             STATE.velocity = diff * CONFIG.scrollDamping;
 
             const pathProgress = Math.min(Math.max(STATE.scrollY / 8000, 0), 1.0);
+
+            // Trigger research transition earlier: ~0.82 corresponds to Z=-1460,
+            // which is immediately after passing the final 2026 career node (Z=-1400).
+            if (pathProgress > 0.75) {
+                initiateResearchTransition(torusMat, gridMat, starsMat, nodeGroup, researchMesh);
+                return;
+            }
             const camPos = cameraPath.getPointAt(pathProgress);
             const lookPos = cameraPath.getPointAt(Math.min(pathProgress + 0.01, 1.0));
 
@@ -215,11 +228,70 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             });
         }
 
-        if (torusMat.visible !== false) {
+        if (torusMat.visible !== false && STATE.phase !== 'RESEARCH') {
             torusMat.uniforms.uNoiseTime.value += dt * (0.1 + STATE.temperature * 0.05);
             torusMat.uniforms.uTemperature.value = STATE.temperature;
             torusMat.uniforms.uTime.value = time;
         }
+
+        if (STATE.phase === 'RESEARCH' && !STATE.transitioning) {
+            // --- SCROLL INERTIA & DAMPENING ---
+            STATE.researchScrollY += STATE.researchVelocity;
+            STATE.researchVelocity *= 0.92; // Fluid friction
+            if (Math.abs(STATE.researchVelocity) < 0.0001) STATE.researchVelocity = 0;
+
+            const targetScroll = Math.max(0, Math.min(STATE.researchScrollY, 11.0));
+            const decay = 5.0;
+            STATE.researchScrollY += (targetScroll - STATE.researchScrollY) * (1.0 - Math.exp(-decay * dt));
+
+            // Update Topology Shader
+            researchMaterialUniforms.uScroll.value = STATE.researchScrollY;
+
+            // Kaizen: Subtle rotation
+            researchMesh.rotation.y += 0.02 * dt;
+            researchMesh.rotation.x += 0.007 * dt;
+            researchMesh.rotation.z = Math.sin(time * 0.3) * 0.05;
+
+            // Autonomous Particle Physics
+            if (STATE.researchScrollY >= 4.0 && STATE.researchScrollY < 9.5) {
+                researchParticle.visible = true; researchNormalArrow.visible = true;
+
+                let particleScale = 1.0;
+                if (STATE.researchScrollY > 8.0) particleScale = Math.max(0, 1.0 - (STATE.researchScrollY - 8.0));
+
+                researchParticle.scale.set(particleScale, particleScale, particleScale);
+                researchNormalArrow.setLength(Math.max(0.01, 1.5 * particleScale), 0.3 * particleScale, 0.2 * particleScale);
+
+                autonomousParticleU = (autonomousParticleU + particleOmega * dt) % 2.0;
+                let pu = autonomousParticleU; let pv = 0.5;
+
+                const pData = evaluateResearchParticleMath(pu, pv, 4.0);
+                researchParticle.position.copy(pData.pos);
+
+                const dr = 0.001;
+                const Tu = new THREE.Vector3().subVectors(evaluateResearchParticleMath(pu + dr, pv, 4.0).pos, pData.pos);
+                const Tv = new THREE.Vector3().subVectors(evaluateResearchParticleMath(pu, pv + dr, 4.0).pos, pData.pos);
+                researchNormalArrow.position.copy(pData.pos);
+                researchNormalArrow.setDirection(new THREE.Vector3().crossVectors(Tu, Tv).normalize());
+
+                document.getElementById('hud-omega').innerText = (particleOmega * particleScale).toFixed(2) + " rad/s";
+            } else {
+                researchParticle.visible = false; researchNormalArrow.visible = false;
+                autonomousParticleU = 0.0;
+                document.getElementById('hud-omega').innerText = "0.00 rad/s";
+            }
+
+            // Update DOM Elements
+            updateResearchCards(STATE.researchScrollY);
+            animateResearchBG(time);
+
+            document.getElementById('hud-s').innerText = STATE.researchScrollY.toFixed(2);
+            let phaseText = "MORPHING";
+            if (STATE.researchScrollY >= 4.0 && STATE.researchScrollY < 9.0) phaseText = "MÖBIUS MANIFOLD";
+            else if (STATE.researchScrollY >= 9.0) phaseText = "KLEIN TOPOLOGY";
+            document.getElementById('hud-phase').innerText = phaseText;
+        }
+
         gridMat.uniforms.uTime.value = time;
         starsMat.uniforms.uTime.value = time;
         starsMat.uniforms.uCameraZ.value = camera.position.z;

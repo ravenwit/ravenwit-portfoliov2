@@ -10,6 +10,8 @@ import { startAnimationLoop } from './core/animate.js';
 import { initScroll } from './core/scroll.js';
 import { CAREER_NODES } from './config.js';
 import { initHobbies } from './components/hobbies.js';
+import { initResearchTopology } from './components/researchTopology.js';
+import { initResearchCards } from './components/researchCards.js';
 
 async function init() {
     const statusDisp = document.getElementById('status-display');
@@ -67,6 +69,8 @@ async function init() {
     scene.add(nodeGroup);
     updateLoading('NODES_READY', 90);
 
+    const researchMesh = initResearchTopology(scene);
+
     // --- 6. CAMERA PATH (5%) ---
     const cameraPath = buildCameraPath();
     updateLoading('COMPUTING_TRAJECTORY', 95);
@@ -80,7 +84,7 @@ async function init() {
     setupResize();
 
     // Lenis Smooth Scroll (replaces raw wheel events)
-    initScroll({ cameraPath, torusMat, gridMat, starsMat, nodeGroup });
+    initScroll({ cameraPath, torusMat, gridMat, starsMat, nodeGroup, researchMesh });
 
     // --- TRACK MOUSE FOR PARALLAX ---
     STATE.mouse = new THREE.Vector2(0, 0);
@@ -109,8 +113,9 @@ async function init() {
     });
 
     initHobbies();
+    initResearchCards();
 
-    startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath);
+    startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath, researchMesh);
 }
 
 // Start Initialization

@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import gsap from 'gsap';
+import { setScrollTargetY } from './scroll.js';
 import { CONFIG } from '../config.js';
 import { STATE } from '../state.js';
 import { camera } from '../core/scene.js';
+import { initResearchBG } from '../components/researchBackground.js';
+import { researchLights } from '../components/researchTopology.js';
 
 export function initiateTransition(cameraPath, torusMat, gridMat, starsMat, nodeGroup) {
     if (STATE.phase !== 'HERO' || STATE.transitioning) return;
@@ -126,4 +129,211 @@ export function initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup) {
 
     tl.to('.scanlines', { opacity: 0.15, duration: 2, ease: 'power2.inOut' }, 0);
     tl.to('.vignette', { background: 'radial-gradient(circle at center, transparent 40%, #000 150%)', duration: 2 }, 0);
+}
+
+export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGroup, researchMesh) {
+    if (STATE.phase !== 'TIMELINE' || STATE.transitioning) return;
+    STATE.phase = 'TRANSITION';
+    STATE.transitioning = true;
+    STATE.researchVelocity = 0;
+    STATE.researchScrollY = 0;
+
+    // Fade out timeline HUD quickly and block pointer events
+    gsap.to('#hud', { opacity: 0, duration: 0.4 });
+    document.getElementById('hud').style.pointerEvents = 'none';
+
+    gsap.to('#hobbies-ui-layer', { opacity: 0, duration: 0.4 });
+    const hobbiesLayer = document.getElementById('hobbies-ui-layer');
+    if (hobbiesLayer) hobbiesLayer.style.pointerEvents = 'none';
+
+    gsap.to('#quantum-world-line', { opacity: 0, duration: 0.4 });
+
+    // Hide DOM Node UI
+    document.querySelectorAll('.node-container').forEach(el => {
+        el.style.display = 'none';
+        el.style.pointerEvents = 'none';
+    });
+
+    // Reset research elements immediately so they can transition in correctly
+    const researchUI = document.getElementById('ui-research');
+    if (researchUI) {
+        researchUI.style.display = 'block';
+        researchUI.style.opacity = 0;
+    }
+    document.getElementById('research-cards-container').style.opacity = 0;
+    const bgCanvas = document.getElementById('research-bg-canvas');
+    if (bgCanvas) bgCanvas.style.opacity = 0;
+    document.getElementById('left-hemi').style.transform = `translateX(25vw)`;
+
+    // Calculate dynamic end point deep in the Z axis
+    const startZ = camera.position.z;
+    const warpDepth = startZ - 1500;
+
+    const tl = gsap.timeline({
+        onComplete() {
+            STATE.phase = 'RESEARCH';
+            STATE.transitioning = false;
+        }
+    });
+
+    // 1. FOV Stretch (Spaghettification)
+    tl.to(camera, {
+        fov: 120,
+        duration: 2.0,
+        ease: 'power2.inOut',
+        onUpdate: () => { camera.updateProjectionMatrix(); }
+    }, 0);
+
+    // 2. Warp Speed past the end of the grid into pure blackness
+    tl.to(camera.position, { z: warpDepth, duration: 2.2, ease: 'power3.in' }, 0);
+
+    // 3. Fade out timeline geometry rapidly as we warp
+    tl.to(torusMat.uniforms.uOpacity, { value: 0, duration: 1.0, ease: 'power2.in' }, 0.5);
+    tl.to(gridMat.uniforms.uOpacity, { value: 0, duration: 1.0, ease: 'power2.in' }, 0.5);
+    tl.to(starsMat.uniforms.uOpacity, { value: 0, duration: 1.5, ease: 'power2.in' }, 0.7);
+
+    // 4. MÖBIUS GENESIS 
+    // Wait until warp is fully saturated (2.2s), then swap coordinates instantly after 0.3s void
+    tl.call(() => {
+        // Unmount timeline elements completely to save GPU cycles while in Research Chamber
+        nodeGroup.visible = false;
+        gridMat.visible = false;
+        torusMat.visible = false;
+        starsMat.visible = false;
+
+
+        // Lock camera to the research station coordinate
+        camera.position.set(8, 6, 8);
+        camera.lookAt(0, 0, 0);
+
+        // Prep the Research Mesh right at the origin, solid wireframe torus at 0.001 scale
+        researchMesh.visible = true;
+        researchLights.visible = true;
+        researchMesh.scale.set(0.001, 0.001, 0.001);
+        researchMesh.position.set(0, 0, 0);
+    }, null, 2.5);
+
+    // Fade FOV down to 45 quickly right as genesis starts
+    tl.to(camera, { fov: 45, duration: 0.5, ease: 'power2.out', onUpdate: () => camera.updateProjectionMatrix() }, 2.5);
+
+    // Pop the torus in exactly at the center
+    tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 2.6);
+
+    // Phase 2: Slide to the left Hemishpere (Orthogonal translation across a diagonal reverse-camera axis)
+    tl.to(researchMesh.position, { x: -4.5, z: 4.5, duration: 2.0, ease: 'power3.inOut' }, 3.8);
+
+    // 5. Fade in beautiful new UI
+    if (researchUI) {
+        tl.call(() => {
+            researchUI.style.display = 'block';
+            if (bgCanvas) {
+                initResearchBG();
+                import('../components/researchBackground.js').then(m => m.bindResearchMouse());
+            }
+        }, null, 3.8);
+
+        tl.to(researchUI, {
+            opacity: 1, duration: 1.0, onComplete() {
+                window.dispatchEvent(new Event('resize'));
+            }
+        }, 3.8);
+
+        if (bgCanvas) tl.to(bgCanvas, { opacity: 1, duration: 2.0 }, 4.0);
+        tl.to('#research-cards-container', { opacity: 1, duration: 1.5 }, 4.1);
+
+        // Stagger in cards from bottom
+        tl.fromTo('.research-card',
+            { y: 50, opacity: 0 },
+            { y: "-50%", opacity: 1, duration: 0.8, stagger: 0.2, ease: 'power2.out' }, 4.3);
+    }
+}
+
+export function initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, researchMesh, cameraPath) {
+    if (STATE.phase !== 'RESEARCH' || STATE.transitioning) return;
+    STATE.phase = 'TRANSITION';
+    STATE.transitioning = true;
+
+    // Fade out Research UI quickly
+    const researchUI = document.getElementById('ui-research');
+    if (researchUI) researchUI.style.opacity = 0;
+
+    // Pre-calculate the exact destination point on the spline we are returning to
+    const thresholdScroll = (Math.abs(CONFIG.gridZEnd) - 250);
+    const timelineProgress = Math.min(Math.max(thresholdScroll / 8000, 0), 1.0);
+    const targetPos = cameraPath.getPointAt(timelineProgress);
+    const targetLook = cameraPath.getPointAt(Math.min(timelineProgress + 0.01, 1.0));
+
+    // Calculate a dynamic start position for lookAt interpolation
+    const startLook = { x: 0, y: 0, z: 0 };
+
+    // HARD SYNC 1: Immediately lock scroll.js coordinates to the end destination.
+    // This prevents animate.js from grabbing default targetY=0 if a race condition hits.
+    STATE.scrollY = thresholdScroll;
+    STATE.targetScrollY = thresholdScroll;
+    setScrollTargetY(thresholdScroll);
+
+    // An object to hold our tweenable lookAt target during the transition
+    const lookTarget = { x: startLook.x, y: startLook.y, z: startLook.z };
+
+    const tl = gsap.timeline({
+        onUpdate() {
+            camera.lookAt(lookTarget.x, lookTarget.y, lookTarget.z);
+        },
+        onComplete() {
+            if (researchUI) researchUI.style.display = 'none';
+            researchMesh.visible = false;
+            researchLights.visible = false;
+            nodeGroup.visible = true;
+
+
+            // Turn WebGL rendering bounds physically back on before scaling Opacity up
+            torusMat.visible = true;
+            gridMat.visible = true;
+            starsMat.visible = true;
+
+            // Fade Timeline HUD back in and restore interactivity
+            gsap.to('#hud', { opacity: 1, duration: 0.5, onStart: () => document.getElementById('hud').style.pointerEvents = 'auto' });
+
+            const hobbiesLayer = document.getElementById('hobbies-ui-layer');
+            gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5, onStart: () => { if (hobbiesLayer) hobbiesLayer.style.pointerEvents = 'auto'; } });
+
+            // Unhide nodes and restore events
+            document.querySelectorAll('.node-container').forEach(el => {
+                el.style.display = 'flex';
+                el.style.pointerEvents = 'auto';
+            });
+
+            STATE.phase = 'TIMELINE';
+            STATE.transitioning = false;
+        }
+    });
+
+    // Pop research torus out
+    gsap.to(researchMesh.scale, { x: 0.001, y: 0.001, z: 0.001, duration: 1.0, ease: 'power2.in' });
+
+    // Stretch FOV back out for Timeline
+    tl.to(camera, { fov: 75, duration: 1.0, ease: 'power2.out', onUpdate: () => camera.updateProjectionMatrix() }, 0.0);
+
+    // Physically glide the camera's X, Y, Z back to the absolute coordinate on the timeline spline
+    tl.to(camera.position, {
+        x: targetPos.x,
+        y: targetPos.y, // animate.js will independently add the breathing sine wave later
+        z: targetPos.z,
+        duration: 2.5,
+        ease: 'power3.inOut'
+    }, 0.0);
+
+    // Smoothly rotate the camera's neck from staring at the Torus origin (0,0,0) towards the timeline track ahead
+    tl.to(lookTarget, {
+        x: targetLook.x,
+        y: targetLook.y,
+        z: targetLook.z,
+        duration: 2.5,
+        ease: 'power3.inOut'
+    }, 0.0);
+
+    // Fade in timeline background geometry at the tail end of the transition
+    tl.to(torusMat.uniforms.uOpacity, { value: 1, duration: 1.5, ease: 'power2.out' }, 1.0);
+    tl.to(gridMat.uniforms.uOpacity, { value: 1, duration: 1.5, ease: 'power2.out' }, 1.0);
+    tl.to(starsMat.uniforms.uOpacity, { value: 1, duration: 1.5, ease: 'power2.out' }, 1.5);
 }
