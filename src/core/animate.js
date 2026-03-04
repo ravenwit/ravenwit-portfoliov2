@@ -6,7 +6,7 @@ import { scene, camera, renderer, composer } from '../core/scene.js';
 import { updateScroll } from '../core/scroll.js';
 import { updateHobbies } from '../components/hobbies.js';
 import { initiateResearchTransition } from './transitions.js';
-import { researchMaterialUniforms, evaluateResearchParticleMath, researchParticle, researchNormalArrow, baseResearchMesh, researchLights } from '../components/researchTopology.js';
+import { researchMaterialUniforms, evaluateResearchParticleMath, researchParticle, researchNormalArrow, baseResearchMesh, researchLights, researchRenderer, researchScene, researchCamera, researchControls } from '../components/researchTopology.js';
 import { animateResearchBG, researchMouse } from '../components/researchBackground.js';
 import { updateResearchCards } from '../components/researchCards.js';
 
@@ -283,6 +283,8 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
             // Update DOM Elements
             updateResearchCards(STATE.researchScrollY);
+
+            // Pipe chronological clock time down into the 2D Wave Generator to restore the ripples
             animateResearchBG(time);
 
             document.getElementById('hud-s').innerText = STATE.researchScrollY.toFixed(2);
@@ -290,6 +292,19 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             if (STATE.researchScrollY >= 4.0 && STATE.researchScrollY < 9.0) phaseText = "MÖBIUS MANIFOLD";
             else if (STATE.researchScrollY >= 9.0) phaseText = "KLEIN TOPOLOGY";
             document.getElementById('hud-phase').innerText = phaseText;
+
+            // Pan Camera Centering Mechanics matching original HTML CSS transform rules
+            let panProgress = 0;
+            if (STATE.researchScrollY > 8.0) panProgress = Math.min(1.0, STATE.researchScrollY - 8.0);
+            let easedPan = panProgress * panProgress * (3.0 - 2.0 * panProgress);
+            const leftHemi = document.getElementById('left-hemi');
+            if (leftHemi) leftHemi.style.transform = `translateX(${easedPan * 25}vw)`;
+
+            // Critical Render Pass 2: The separated 50vw WebGL layer for the Topology
+            if (researchControls) researchControls.update();
+            if (researchRenderer && researchScene && researchCamera) {
+                researchRenderer.render(researchScene, researchCamera);
+            }
         }
 
         gridMat.uniforms.uTime.value = time;

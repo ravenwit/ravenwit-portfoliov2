@@ -1150,60 +1150,188 @@ canvas {
 /* --- RESEARCH PHASE UI --- */
 #noise-overlay {
     position: absolute;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    pointer-events: none; z-index: 50; opacity: 0.06;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.06;
     background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
 }
+
 #research-bg-canvas {
-    position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
 }
+
 #left-hemi {
-    position: absolute; top: 0; left: 0; width: 50vw; height: 100vh; z-index: 10; pointer-events: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 10;
+    pointer-events: auto;
 }
+
 #right-hemi {
-    position: absolute; top: 0; right: 0; width: 50vw; height: 100vh; z-index: 10; pointer-events: none;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
+
 #research-cards-container {
-    position: relative; width: 90%; max-width: 800px; height: 80vh; perspective: 2000px; margin-top: -70vh;
+    position: relative;
+    width: 90%;
+    max-width: 800px;
+    height: 80vh;
+    perspective: 2000px;
+    margin-top: -70vh;
 }
+
 .research-card {
-    position: absolute; top: 50%; background: #f4f3ef; border: 2px solid #111; padding: 3.5rem 3rem;
-    box-sizing: border-box; box-shadow: 12px 12px 0px #111; pointer-events: auto;
+    position: absolute;
+    top: 50%;
+    background: #f4f3ef;
+    border: 2px solid #111;
+    padding: 3.5rem 3rem;
+    box-sizing: border-box;
+    box-shadow: 12px 12px 0px #111;
+    pointer-events: auto;
     transition: opacity 0.1s, transform 0.1s, box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    will-change: transform, opacity; opacity: 0; overflow: hidden;
+    will-change: transform, opacity;
+    opacity: 0;
+    overflow: hidden;
     background-image: linear-gradient(rgba(17, 17, 17, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(17, 17, 17, 0.06) 1px, transparent 1px);
-    background-size: 20px 20px; background-position: center center;
+    background-size: 20px 20px;
+    background-position: center center;
 }
-.research-card:hover { box-shadow: 20px 20px 0px #FF3300; }
+
+.research-card:hover {
+    box-shadow: 20px 20px 0px #FF3300;
+}
+
 .editorial-number {
-    position: absolute; top: -20px; right: -10px; font-family: 'Playfair Display', serif;
-    font-size: 14rem; font-style: italic; font-weight: 700; color: #ebe9e0; line-height: 1; z-index: 0; pointer-events: none; user-select: none;
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    font-family: 'Playfair Display', serif;
+    font-size: 14rem;
+    font-style: italic;
+    font-weight: 700;
+    color: #ebe9e0;
+    line-height: 1;
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
 }
-.res-card-content { position: relative; z-index: 1; mix-blend-mode: multiply; }
+
+.res-card-content {
+    position: relative;
+    z-index: 1;
+    mix-blend-mode: multiply;
+}
+
 .res-card-header {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; color: #FF3300;
-    letter-spacing: 2px; margin-bottom: 2rem; text-transform: uppercase; display: inline-block; border-bottom: 1px solid #FF3300; padding-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #FF3300;
+    letter-spacing: 2px;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+    display: inline-block;
+    border-bottom: 1px solid #FF3300;
+    padding-bottom: 4px;
 }
+
 .res-card-title {
-    font-family: 'Playfair Display', serif; font-size: 3.2rem; font-weight: 400; font-style: italic;
-    color: #111; line-height: 1.05; margin-bottom: 1.5rem; max-width: 95%;
+    font-family: 'Playfair Display', serif;
+    font-size: 3.2rem;
+    font-weight: 400;
+    font-style: italic;
+    color: #111;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+    max-width: 95%;
 }
+
 .res-card-body {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.6; color: #333; margin-bottom: 2.5rem; max-width: 90%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 2.5rem;
+    max-width: 90%;
 }
-.res-card-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.res-card-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .res-tag {
-    background: #111; border: 1px solid #111; color: #f4f3ef; padding: 4px 10px; font-size: 0.7rem;
-    letter-spacing: 0.5px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+    background: #111;
+    border: 1px solid #111;
+    color: #f4f3ef;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
 }
+
 #research-hud-overlay {
-    position: absolute; bottom: 40px; left: 40px; pointer-events: none; z-index: 20; padding: 0; font-size: 11px; display: flex; gap: 40px;
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    pointer-events: none;
+    z-index: 20;
+    padding: 0;
+    font-size: 11px;
+    display: flex;
+    gap: 40px;
 }
-.stat-col { display: flex; flex-direction: column; gap: 4px; border-left: 2px solid #333; padding-left: 12px; }
-.stat-label { color: #666; letter-spacing: 1px; text-transform: uppercase; font-size: 10px; }
-.stat-value { color: #e0e0e0; font-weight: 700; font-size: 13px; }
-.hud-accent { color: #FF3300; }
+
+.stat-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-left: 2px solid #333;
+    padding-left: 12px;
+}
+
+.stat-label {
+    color: #666;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 10px;
+}
+
+.stat-value {
+    color: #e0e0e0;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.hud-accent {
+    color: #FF3300;
+}
 
 /* --- RESEARCH PHASE UI (SCIENTIFIC BRUTALISM) --- */
 #ui-research {

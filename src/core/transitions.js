@@ -163,7 +163,10 @@ export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGrou
     document.getElementById('research-cards-container').style.opacity = 0;
     const bgCanvas = document.getElementById('research-bg-canvas');
     if (bgCanvas) bgCanvas.style.opacity = 0;
-    document.getElementById('left-hemi').style.transform = `translateX(25vw)`;
+
+    // Explicitly hide left-hemi DOM until Torus scales up
+    const leftHemi = document.getElementById('left-hemi');
+    if (leftHemi) leftHemi.style.opacity = 0;
 
     // Calculate dynamic end point deep in the Z axis
     const startZ = camera.position.z;
@@ -219,9 +222,6 @@ export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGrou
     // Pop the torus in exactly at the center
     tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 2.6);
 
-    // Phase 2: Slide to the left Hemishpere (Orthogonal translation across a diagonal reverse-camera axis)
-    tl.to(researchMesh.position, { x: -4.5, z: 4.5, duration: 2.0, ease: 'power3.inOut' }, 3.8);
-
     // 5. Fade in beautiful new UI
     if (researchUI) {
         tl.call(() => {
@@ -237,6 +237,9 @@ export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGrou
                 window.dispatchEvent(new Event('resize'));
             }
         }, 3.8);
+
+        // Fade in our new dedicated WebGL layer
+        if (leftHemi) tl.to(leftHemi, { opacity: 1, duration: 2.0 }, 3.8);
 
         if (bgCanvas) tl.to(bgCanvas, { opacity: 1, duration: 2.0 }, 4.0);
         tl.to('#research-cards-container', { opacity: 1, duration: 1.5 }, 4.1);
@@ -258,7 +261,9 @@ export function initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, r
     if (researchUI) researchUI.style.opacity = 0;
 
     // Pre-calculate the exact destination point on the spline we are returning to
-    const thresholdScroll = (Math.abs(CONFIG.gridZEnd) - 250);
+    // The total virtual scroll maxes out at 8000. 
+    // We want the reverse scroll to land exactly at the precipice of the timeline plunge (Year 2026).
+    const thresholdScroll = 5700; // Physical scroll units (approx 82% of 8000)
     const timelineProgress = Math.min(Math.max(thresholdScroll / 8000, 0), 1.0);
     const targetPos = cameraPath.getPointAt(timelineProgress);
     const targetLook = cameraPath.getPointAt(Math.min(timelineProgress + 0.01, 1.0));
@@ -283,6 +288,11 @@ export function initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, r
             if (researchUI) researchUI.style.display = 'none';
             researchMesh.visible = false;
             researchLights.visible = false;
+
+            // Turn off Dual-Renderer DOM
+            const leftHemi = document.getElementById('left-hemi');
+            if (leftHemi) leftHemi.style.opacity = 0;
+
             nodeGroup.visible = true;
 
 

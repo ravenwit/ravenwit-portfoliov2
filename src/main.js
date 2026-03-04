@@ -69,7 +69,7 @@ async function init() {
     scene.add(nodeGroup);
     updateLoading('NODES_READY', 90);
 
-    const researchMesh = initResearchTopology(scene);
+    const researchMesh = initResearchTopology();
 
     // --- 6. CAMERA PATH (5%) ---
     const cameraPath = buildCameraPath();

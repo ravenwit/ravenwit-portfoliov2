@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 export let researchMaterialUniforms = { uScroll: { value: 0.0 } };
 export let researchParticle;
@@ -6,7 +7,31 @@ export let researchNormalArrow;
 export let baseResearchMesh;
 export let researchLights;
 
-export function initResearchTopology(scene) {
+export let researchScene;
+export let researchCamera;
+export let researchRenderer;
+export let researchControls;
+
+export function initResearchTopology() {
+    const leftHemi = document.getElementById('left-hemi');
+    if (!leftHemi) return null;
+
+    // Independent Scene Setup
+    researchScene = new THREE.Scene();
+    researchCamera = new THREE.PerspectiveCamera(45, (window.innerWidth / 2) / window.innerHeight, 0.1, 100);
+    researchCamera.position.set(8, 6, 8);
+
+    researchRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    researchRenderer.setSize(window.innerWidth / 2, window.innerHeight);
+    researchRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    leftHemi.appendChild(researchRenderer.domElement);
+
+    researchControls = new OrbitControls(researchCamera, researchRenderer.domElement);
+    researchControls.enableDamping = true;
+    researchControls.enableZoom = false;
+    researchControls.enablePan = false;
+
+    // Geometry Generation
     const R = 3.0, segmentsU = 150, segmentsV = 60;
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 3);
@@ -121,8 +146,9 @@ export function initResearchTopology(scene) {
 
     baseResearchMesh = new THREE.Mesh(geometry, material);
     baseResearchMesh.frustumCulled = false;
-    scene.add(baseResearchMesh);
-    // Move it out of view initially
+    researchScene.add(baseResearchMesh);
+
+    // Hidden initially
     baseResearchMesh.visible = false;
 
     researchParticle = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF3300 }));
@@ -133,14 +159,13 @@ export function initResearchTopology(scene) {
     researchParticle.visible = false;
     researchNormalArrow.visible = false;
 
-    // Add cinematic lights to a dedicated group so scaling the torus doesn't warp light vectors
+    // Local Lights matching original prototype perfectly
     researchLights = new THREE.Group();
-    researchLights.add(new THREE.AmbientLight(0xffffff, 0.8)); // Crucial for MeshStandardMaterial to not be pitch black
-    const dir1 = new THREE.DirectionalLight(0x00ffcc, 1.5); dir1.position.set(5, 5, 5); researchLights.add(dir1);
-    const dir2 = new THREE.DirectionalLight(0xff0066, 1.0); dir2.position.set(-5, -2, -5); researchLights.add(dir2);
+    researchLights.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const dir1 = new THREE.DirectionalLight(0x00ffcc, 2.5); dir1.position.set(5, 5, 5); researchLights.add(dir1);
+    const dir2 = new THREE.DirectionalLight(0xff0066, 2.0); dir2.position.set(-5, -2, -5); researchLights.add(dir2);
 
-    scene.add(researchLights);
-    researchLights.visible = false; // Hidden until the transition triggers
+    researchScene.add(researchLights);
 
     return baseResearchMesh;
 }

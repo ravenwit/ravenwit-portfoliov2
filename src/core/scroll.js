@@ -68,7 +68,7 @@ export function initScroll(deps) {
             if (e.deltaMode === 1) delta *= 40;
             if (e.deltaMode === 2) delta *= window.innerHeight;
 
-            const impulse = Math.sign(delta) * Math.min(Math.abs(delta), 100);
+            const impulse = Math.sign(delta) * Math.min(Math.abs(delta), 200);
             STATE.researchVelocity += impulse * 0.0006;
         }
     }, { passive: false });
