@@ -196,7 +196,7 @@ export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGrou
     tl.to(starsMat.uniforms.uOpacity, { value: 0, duration: 1.5, ease: 'power2.in' }, 0.7);
 
     // 4. MÖBIUS GENESIS 
-    // Wait until warp is fully saturated (2.2s), then swap coordinates instantly after 0.3s void
+    // Wait until warp is fully saturated (2.2s), then swap coordinates after extreme short 0.1s void
     tl.call(() => {
         // Unmount timeline elements completely to save GPU cycles while in Research Chamber
         nodeGroup.visible = false;
@@ -214,41 +214,37 @@ export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGrou
         researchLights.visible = true;
         researchMesh.scale.set(0.001, 0.001, 0.001);
         researchMesh.position.set(0, 0, 0);
-    }, null, 2.5);
+
+        // Crucial: Unblock the parent UI wrapper so the leftHemi canvas can actually be seen!
+        if (researchUI) researchUI.style.display = 'block';
+    }, null, 2.3);
 
     // Fade FOV down to 45 quickly right as genesis starts
-    tl.to(camera, { fov: 45, duration: 0.5, ease: 'power2.out', onUpdate: () => camera.updateProjectionMatrix() }, 2.5);
+    tl.to(camera, { fov: 45, duration: 0.5, ease: 'power2.out', onUpdate: () => camera.updateProjectionMatrix() }, 2.3);
 
-    // Pop the torus in exactly at the center
-    tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 2.6);
+    // Fade in the master UI wrapper instantly, and gracefully fade the left-hemi WebGL layer 
+    if (researchUI) tl.to(researchUI, { opacity: 1, duration: 0.1 }, 2.3);
+    if (leftHemi) tl.to(leftHemi, { opacity: 1, duration: 0.5 }, 2.3);
 
-    // 5. Fade in beautiful new UI
-    if (researchUI) {
-        tl.call(() => {
-            researchUI.style.display = 'block';
-            if (bgCanvas) {
-                initResearchBG();
-                import('../components/researchBackground.js').then(m => m.bindResearchMouse());
-            }
-        }, null, 3.8);
+    // Pop the torus in exactly at the center (VISIBLY this time!)
+    tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 2.4);
 
-        tl.to(researchUI, {
-            opacity: 1, duration: 1.0, onComplete() {
-                window.dispatchEvent(new Event('resize'));
-            }
-        }, 3.8);
+    // 5. Fade in beautiful new UI elements remaining (Background & Cards)
+    tl.call(() => {
+        if (bgCanvas) {
+            initResearchBG();
+            import('../components/researchBackground.js').then(m => m.bindResearchMouse());
+        }
+        window.dispatchEvent(new Event('resize'));
+    }, null, 2.8);
 
-        // Fade in our new dedicated WebGL layer
-        if (leftHemi) tl.to(leftHemi, { opacity: 1, duration: 2.0 }, 3.8);
+    if (bgCanvas) tl.to(bgCanvas, { opacity: 1, duration: 2.0 }, 3.0);
+    tl.to('#research-cards-container', { opacity: 1, duration: 1.5 }, 3.1);
 
-        if (bgCanvas) tl.to(bgCanvas, { opacity: 1, duration: 2.0 }, 4.0);
-        tl.to('#research-cards-container', { opacity: 1, duration: 1.5 }, 4.1);
-
-        // Stagger in cards from bottom
-        tl.fromTo('.research-card',
-            { y: 50, opacity: 0 },
-            { y: "-50%", opacity: 1, duration: 0.8, stagger: 0.2, ease: 'power2.out' }, 4.3);
-    }
+    // Stagger in cards from bottom
+    tl.fromTo('.research-card',
+        { y: 50, opacity: 0 },
+        { y: "-50%", opacity: 1, duration: 0.8, stagger: 0.2, ease: 'power2.out' }, 3.3);
 }
 
 export function initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, researchMesh, cameraPath) {
