@@ -240,9 +240,19 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             STATE.researchVelocity *= 0.92; // Fluid friction
             if (Math.abs(STATE.researchVelocity) < 0.0001) STATE.researchVelocity = 0;
 
-            const targetScroll = Math.max(0, Math.min(STATE.researchScrollY, 11.0));
+            const targetScroll = Math.max(0.0, Math.min(STATE.researchScrollY, 11.0));
             const decay = 5.0;
+
+            // Apply critically damped spring lerp
             STATE.researchScrollY += (targetScroll - STATE.researchScrollY) * (1.0 - Math.exp(-decay * dt));
+
+            // KAIZEN: Absolute physical boundary enforcement. 
+            // Aggressive reverse scroll impulses can mathematically drag the lerp into negative space 
+            // before the transition fires. This hard clamp prevents the GLSL shader from ever receiving -0.0
+            if (STATE.researchScrollY < 0.0) {
+                STATE.researchScrollY = 0.0;
+                STATE.researchVelocity = 0.0;
+            }
 
             // Update Topology Shader
             researchMaterialUniforms.uScroll.value = STATE.researchScrollY;
@@ -289,8 +299,10 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
             document.getElementById('hud-s').innerText = STATE.researchScrollY.toFixed(2);
             let phaseText = "MORPHING";
-            if (STATE.researchScrollY >= 4.0 && STATE.researchScrollY < 9.0) phaseText = "MÖBIUS MANIFOLD";
-            else if (STATE.researchScrollY >= 9.0) phaseText = "KLEIN TOPOLOGY";
+            if (STATE.researchScrollY <= 0.5) phaseText = "TORUS";
+            if (STATE.researchScrollY >= 10.8) phaseText = "TORUS";
+            if (STATE.researchScrollY >= 4.0 && STATE.researchScrollY < 9.0) phaseText = "MÖBIUS";
+            // else if (STATE.researchScrollY >= 9.0) phaseText = "KLEIN TOPOLOGY";
             document.getElementById('hud-phase').innerText = phaseText;
 
             // Pan Camera Centering Mechanics matching original HTML CSS transform rules
