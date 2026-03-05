@@ -15,8 +15,9 @@ export function initiateTransition(cameraPath, torusMat, gridMat, starsMat, node
     gsap.to('#ui-hero', { opacity: 0, duration: 0.6, ease: 'power2.out' });
     nodeGroup.visible = true;
 
-    const endPos = cameraPath.getPointAt(0);
-    const lookTarget = cameraPath.getPointAt(0.01);
+    const pathProgress = Math.min(Math.max(STATE.targetScrollY / 8000, 0), 1.0);
+    const endPos = cameraPath.getPointAt(pathProgress);
+    const lookTarget = cameraPath.getPointAt(Math.min(pathProgress + 0.01, 1.0));
 
     const tl = gsap.timeline({
         onUpdate() {

@@ -8,6 +8,7 @@
 import { STATE } from '../state.js';
 import { initiateTransition, initiateBackToHero, initiateResearchTransition, initiateTimelineReturn } from './transitions.js';
 import { toggleCard } from '../components/nodes.js';
+import gsap from 'gsap';
 
 let transitionDeps = null;
 
@@ -21,6 +22,68 @@ const MAX_SCROLL = 8000;     // Total virtual scroll range
 export function setScrollTargetY(val) {
     currentY = val;
     targetY = val;
+    STATE.targetScrollY = val;
+    STATE.scrollY = val;
+}
+
+export function initGlobalNav() {
+    const navNodes = document.querySelectorAll('.nav-node');
+    navNodes.forEach(node => {
+        node.addEventListener('click', (e) => {
+            if (STATE.transitioning) return;
+            const scrollTarget = parseInt(node.getAttribute('data-target'));
+
+            // Store previous phase
+            const previousPhase = STATE.phase;
+
+            // If we are currently in HERO and clicking a timeline or topology node
+            if (previousPhase === 'HERO' && scrollTarget > 0) {
+                setScrollTargetY(scrollTarget);
+                const { cameraPath, torusMat, gridMat, starsMat, nodeGroup } = transitionDeps;
+                initiateTransition(cameraPath, torusMat, gridMat, starsMat, nodeGroup);
+                return;
+            }
+
+            // If we are deep in Research and clicking back to Hero or Chronology
+            if (previousPhase === 'RESEARCH') {
+                const { torusMat, gridMat, starsMat, nodeGroup, cameraPath, researchMesh } = transitionDeps;
+
+                // Let the transition engine handle the camera swap
+                initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, researchMesh, cameraPath);
+
+                if (scrollTarget === 0) {
+                    setScrollTargetY(0);
+                    setTimeout(() => {
+                        initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup);
+                    }, 2000);
+                } else if (scrollTarget < 5700) {
+                    setScrollTargetY(scrollTarget);
+                }
+                return;
+            }
+
+            // If we are on the Chronology Timeline and clicking Hero
+            if (previousPhase === 'TIMELINE' && scrollTarget === 0) {
+                setScrollTargetY(0);
+                const { torusMat, gridMat, starsMat, nodeGroup } = transitionDeps;
+                initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup);
+                return;
+            }
+
+            // If we are on the Chronology Timeline and clicking Topology (Research)
+            if (previousPhase === 'TIMELINE' && scrollTarget >= 10000) {
+                setScrollTargetY(10000);
+                const { researchMesh } = transitionDeps;
+                initiateResearchTransition(researchMesh);
+                return;
+            }
+
+            // Standard Timeline Instanced Jump (Just warp!)
+            if (previousPhase === 'TIMELINE') {
+                setScrollTargetY(scrollTarget);
+            }
+        });
+    });
 }
 
 export function initScroll(deps) {

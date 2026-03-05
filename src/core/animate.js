@@ -161,6 +161,36 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             if (v_norm > 0.9) { document.getElementById('velocity-alert').style.display = 'block'; camera.position.x += (Math.random() - 0.5) * 0.5; }
             else document.getElementById('velocity-alert').style.display = 'none';
 
+            // --- GLOBAL NAV TELEMETRY UPDATE ---
+            const navNodes = document.querySelectorAll('.nav-node');
+            const navProgress = document.getElementById('nav-progress');
+            if (navNodes.length === 3 && navProgress) {
+                let progPercent = 0;
+
+                navNodes.forEach(n => n.classList.remove('active'));
+
+                if (STATE.phase === 'HERO') {
+                    progPercent = 0;
+                    navNodes[0].classList.add('active');
+                } else if (STATE.phase === 'TIMELINE') {
+                    // Timeline represents 0% to 50% visually on the nav
+                    const timelineProg = Math.max(0, Math.min(1.0, currentY / 6600)); // Cap slightly before absolute end
+                    progPercent = timelineProg * 50;
+
+                    if (timelineProg < 0.1) navNodes[0].classList.add('active');
+                    else navNodes[1].classList.add('active');
+
+                } else if (STATE.phase === 'RESEARCH') {
+                    // Research represents 50% to 100% physically panning right
+                    const researchProg = Math.max(0, Math.min(1.0, STATE.researchScrollY / 9.0));
+                    progPercent = 50 + (researchProg * 50);
+
+                    navNodes[2].classList.add('active');
+                }
+
+                navProgress.style.width = `${progPercent}%`;
+            }
+
             nodeGroup.children.forEach((wrapper, i) => {
                 const node = CAREER_NODES[i];
                 if (!node) return;

@@ -7,7 +7,7 @@ import { buildCameraPath } from './core/cameraPath.js';
 import { generateGeometry } from './core/geometryManager.js';
 import { createNodes, toggleCard, startTypingInterval } from './components/nodes.js';
 import { startAnimationLoop } from './core/animate.js';
-import { initScroll } from './core/scroll.js';
+import { initScroll, initGlobalNav } from './core/scroll.js';
 import { CAREER_NODES } from './config.js';
 import { initHobbies } from './components/hobbies.js';
 import { initResearchTopology } from './components/researchTopology.js';
@@ -85,6 +85,7 @@ async function init() {
 
     // Lenis Smooth Scroll (replaces raw wheel events)
     initScroll({ cameraPath, torusMat, gridMat, starsMat, nodeGroup, researchMesh });
+    initGlobalNav();
 
     // --- TRACK MOUSE FOR PARALLAX ---
     STATE.mouse = new THREE.Vector2(0, 0);
