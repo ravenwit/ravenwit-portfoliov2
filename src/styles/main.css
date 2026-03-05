@@ -532,7 +532,7 @@ canvas {
 /* --- SCROLL ICON --- */
 .scroll-icon-container {
     position: absolute;
-    top: calc(50% + 120px);
+    top: calc(70% + 120px);
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
@@ -540,18 +540,18 @@ canvas {
 }
 
 .mouse-icon {
-    width: 24px;
-    height: 38px;
-    border: 2px solid rgba(0, 255, 255, 0.7);
-    border-radius: 12px;
+    width: 18px;
+    height: 25px;
+    border: 1px solid rgba(0, 255, 255, 0.7);
+    border-radius: 7px;
     position: relative;
     box-shadow: 0 0 10px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.2);
     animation: mouseBeep 2s infinite alternate cubic-bezier(0.1, 0.7, 1.0, 0.1);
 }
 
 .wheel {
-    width: 4px;
-    height: 8px;
+    width: 2px;
+    height: 4px;
     background-color: #0ff;
     border-radius: 2px;
     position: absolute;

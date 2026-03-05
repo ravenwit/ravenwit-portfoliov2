@@ -14,7 +14,7 @@ import { starFragmentShader } from '../shaders/stars.frag.js';
  * Spawn a geometry worker, request all three buffers in parallel,
  * and resolve with the fully assembled Three.js objects.
  */
-export function generateGeometry(onProgress) {
+export function generateGeometry(onProgress, onTorusReady) {
     return new Promise((resolve) => {
         const worker = new Worker(
             new URL('../workers/geometry.worker.js', import.meta.url),
@@ -23,14 +23,23 @@ export function generateGeometry(onProgress) {
 
         const results = {};
         let completed = 0;
+        let torusObjects = null;
 
         worker.onmessage = ({ data }) => {
             results[data.type] = data;
             completed++;
+
+            if (data.type === 'torus') {
+                torusObjects = assembleTorus(data);
+                if (onTorusReady) onTorusReady(torusObjects);
+            }
+
             if (onProgress) onProgress(data.type, completed);
             if (completed === 3) {
                 worker.terminate();
-                resolve(assemble(results));
+                const gridObjects = assembleGrid(results.grid);
+                const starObjects = assembleStars(results.stars, gridObjects.gridMat);
+                resolve({ ...torusObjects, ...gridObjects, ...starObjects });
             }
         };
 
@@ -49,12 +58,11 @@ export function generateGeometry(onProgress) {
     });
 }
 
-function assemble(results) {
-    // --- Torus ---
-    const { positions: tPos, randoms } = results.torus;
+function assembleTorus(torusData) {
+    const { positions: tPos, randoms } = torusData;
     const torusGeo = new THREE.BufferGeometry();
     torusGeo.setAttribute('aLatticePos', new THREE.BufferAttribute(tPos, 3));
-    torusGeo.setAttribute('position', new THREE.BufferAttribute(tPos.slice(), 3)); // clone since lattice is shared
+    torusGeo.setAttribute('position', new THREE.BufferAttribute(tPos.slice(), 3));
     torusGeo.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
     const torusMat = new THREE.ShaderMaterial({
         uniforms: { uTime: { value: 0 }, uNoiseTime: { value: 0 }, uTemperature: { value: 50.0 }, uStretch: { value: 0.0 } },
@@ -62,9 +70,11 @@ function assemble(results) {
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
     });
     const torusMesh = new THREE.Points(torusGeo, torusMat);
+    return { torusMesh, torusMat };
+}
 
-    // --- Grid ---
-    const { positions: gPos } = results.grid;
+function assembleGrid(gridData) {
+    const { positions: gPos } = gridData;
     const gridGeo = new THREE.BufferGeometry();
     gridGeo.setAttribute('basePos', new THREE.BufferAttribute(gPos, 3));
     gridGeo.setAttribute('position', new THREE.BufferAttribute(gPos.slice(), 3));
@@ -79,9 +89,11 @@ function assemble(results) {
         transparent: true, depthWrite: false, blending: THREE.NormalBlending
     });
     const gridMesh = new THREE.Points(gridGeo, gridMat);
+    return { gridMesh, gridMat };
+}
 
-    // --- Stars ---
-    const { positions: sPos, sizes } = results.stars;
+function assembleStars(starsData, gridMat) {
+    const { positions: sPos, sizes } = starsData;
     const starsGeo = new THREE.BufferGeometry();
     starsGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
     starsGeo.setAttribute('basePos', new THREE.BufferAttribute(sPos.slice(), 3));
@@ -89,7 +101,7 @@ function assemble(results) {
     const starsMat = new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 }, uCameraZ: { value: 0 }, uSpeed: { value: 0 }, uOpacity: { value: 0.0 },
-            uMassCount: gridMat.uniforms.uMassCount, // share uniform reference
+            uMassCount: gridMat.uniforms.uMassCount,
             uMassPositions: { value: gridMat.uniforms.uMassPositions.value },
             uMassStrengths: { value: gridMat.uniforms.uMassStrengths.value },
             uCameraPos: { value: new THREE.Vector3() }, uLensing: { value: CONFIG.lensingStrength }
@@ -99,6 +111,5 @@ function assemble(results) {
     });
     const starField = new THREE.Points(starsGeo, starsMat);
     starField.frustumCulled = false;
-
-    return { torusMesh, torusMat, gridMesh, gridMat, starField, starsMat };
+    return { starField, starsMat };
 }

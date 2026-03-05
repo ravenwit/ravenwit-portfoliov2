@@ -53,14 +53,43 @@ async function init() {
 
     // --- 2-4. GENERATE GEOMETRY (WEB WORKER) ---
     // Offload heavy particle generation to a background thread
-    const { torusMesh, torusMat, gridMesh, gridMat, starField, starsMat } = await generateGeometry((type, count) => {
-        // Map worker progress to loading percentages (10% -> 75%)
-        const map = { 'torus': 30, 'grid': 55, 'stars': 75 };
-        const stageMap = { 'torus': 'TORUS_GENERATED', 'grid': 'GRID_GENERATED', 'stars': 'STARS_GENERATED' };
-        if (map[type]) updateLoading(stageMap[type], map[type]);
-    });
+    let torusMesh, torusMat, gridMesh, gridMat, starField, starsMat;
+    const geometryObjects = await generateGeometry(
+        (type, count) => {
+            // Map worker progress to loading percentages (10% -> 75%)
+            const map = { 'torus': 30, 'grid': 55, 'stars': 75 };
+            const stageMap = { 'torus': 'TORUS_GENERATED', 'grid': 'GRID_GENERATED', 'stars': 'STARS_GENERATED' };
+            if (map[type]) updateLoading(stageMap[type], map[type]);
+        },
+        (torusData) => {
+            torusMesh = torusData.torusMesh;
+            torusMat = torusData.torusMat;
+            scene.add(torusMesh);
 
-    scene.add(torusMesh);
+            // Start preloader spin 
+            let preloaderFrame;
+            function preLoaderLoop(time) {
+                if (window.mainLoopStarted) {
+                    cancelAnimationFrame(preloaderFrame);
+                    return;
+                }
+                preloaderFrame = requestAnimationFrame(preLoaderLoop);
+                torusMesh.rotation.z += 0.002;
+                const dt = 0.016;
+                torusMat.uniforms.uNoiseTime.value += dt * (0.1 + STATE.temperature * 0.05);
+                torusMat.uniforms.uTemperature.value = STATE.temperature;
+                torusMat.uniforms.uTime.value = time * 0.001;
+                renderer.render(scene, camera);
+            }
+            preloaderFrame = requestAnimationFrame(preLoaderLoop);
+        }
+    );
+
+    gridMesh = geometryObjects.gridMesh;
+    gridMat = geometryObjects.gridMat;
+    starField = geometryObjects.starField;
+    starsMat = geometryObjects.starsMat;
+
     scene.add(gridMesh);
     scene.add(starField);
 

@@ -15,6 +15,8 @@ let autonomousParticleU = 0.0;
 const particleOmega = 0.25;
 
 export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath, researchMesh) {
+    window.mainLoopStarted = true;
+
     function animate(timestamp) {
         requestAnimationFrame(animate);
         timer.update(timestamp);
@@ -22,9 +24,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
         const dt = timer.getDelta(); const time = timer.getElapsed();
 
         if (STATE.phase === 'LOADING') {
-            // Preloader updates are now handled in main.js during initialization.
-            // This loop only handles visual cooling/spin once loadProgress is 100.
-            document.getElementById('progress-bar').style.width = `${STATE.loadProgress}%`;
+            // Visual cooling/spin once loadProgress is 100.
 
             if (STATE.loadProgress >= 100) {
                 if (STATE.temperature > CONFIG.minTemp) {
@@ -32,8 +32,12 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                 } else {
                     STATE.temperature = CONFIG.minTemp;
                     STATE.phase = 'HERO';
-                    document.getElementById('ui-loader').style.opacity = 0;
-                    setTimeout(() => document.getElementById('ui-hero').style.opacity = 1, 1000);
+
+                    const heroEl = document.getElementById('ui-hero');
+                    if (heroEl) {
+                        heroEl.style.display = 'block'; // Ensure it's not display: none
+                        setTimeout(() => heroEl.style.opacity = 1, 1000);
+                    }
                     const start = camera.position.clone();
                     const target = new THREE.Vector3(0, 0, 50);
                     let tt = 0;
@@ -50,6 +54,14 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
         }
         else if (STATE.phase === 'HERO' && !STATE.transitioning) {
             torusMesh.rotation.z += 0.001;
+
+            // Scale the torus up natively in HERO phase
+            const currentScale = torusMesh.scale.x;
+            const targetScale = 2.0;
+            if (currentScale < targetScale) {
+                const newScale = currentScale + (targetScale - currentScale) * 0.02;
+                torusMesh.scale.set(newScale, newScale, newScale);
+            }
 
             // Baseline passive breath
             let targetX = Math.sin(time * 0.5) * 1.5;
