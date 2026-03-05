@@ -299,8 +299,11 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             let easedPan = panProgress * panProgress * (3.0 - 2.0 * panProgress);
             const leftHemi = document.getElementById('left-hemi');
             if (leftHemi) leftHemi.style.transform = `translateX(${easedPan * 25}vw)`;
+        }
 
-            // Critical Render Pass 2: The separated 50vw WebGL layer for the Topology
+        // Critical Render Pass 2: The separated 50vw WebGL layer for the Topology
+        // This must run outside the 'RESEARCH' phase lock so it renders smoothly while scaling up during the 'TRANSITION' phase!
+        if (baseResearchMesh && baseResearchMesh.visible) {
             if (researchControls) researchControls.update();
             if (researchRenderer && researchScene && researchCamera) {
                 researchRenderer.render(researchScene, researchCamera);

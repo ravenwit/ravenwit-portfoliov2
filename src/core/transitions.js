@@ -5,6 +5,7 @@ import { CONFIG } from '../config.js';
 import { STATE } from '../state.js';
 import { camera } from '../core/scene.js';
 import { initResearchBG } from '../components/researchBackground.js';
+import { updateResearchCards } from '../components/researchCards.js';
 import { researchLights } from '../components/researchTopology.js';
 
 export function initiateTransition(cameraPath, torusMat, gridMat, starsMat, nodeGroup) {
@@ -226,25 +227,31 @@ export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGrou
     if (researchUI) tl.to(researchUI, { opacity: 1, duration: 0.1 }, 2.3);
     if (leftHemi) tl.to(leftHemi, { opacity: 1, duration: 0.5 }, 2.3);
 
-    // Pop the torus in exactly at the center (VISIBLY this time!)
-    tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 2.4);
-
-    // 5. Fade in beautiful new UI elements remaining (Background & Cards)
+    // 5. Fade in beautiful new UI elements immediately against the dark background
     tl.call(() => {
         if (bgCanvas) {
             initResearchBG();
             import('../components/researchBackground.js').then(m => m.bindResearchMouse());
         }
+
+        // Critically initialize the mathematical CSS grid transformations so they don't 'jump' when the phase shifts!
+        updateResearchCards(0);
+
         window.dispatchEvent(new Event('resize'));
-    }, null, 2.8);
+    }, null, 2.4);
 
-    if (bgCanvas) tl.to(bgCanvas, { opacity: 1, duration: 2.0 }, 3.0);
-    tl.to('#research-cards-container', { opacity: 1, duration: 1.5 }, 3.1);
+    if (bgCanvas) tl.to(bgCanvas, { opacity: 1, duration: 1.0 }, 2.5);
 
-    // Stagger in cards from bottom
+    // Slide up the entire container smoothly
+    tl.fromTo('#research-cards-container', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1.0, ease: 'power2.out' }, 2.6);
+
+    // Stagger fade opacity only! So it doesn't fight the `translate3d` CSS physics on individual cards!
     tl.fromTo('.research-card',
-        { y: 50, opacity: 0 },
-        { y: "-50%", opacity: 1, duration: 0.8, stagger: 0.2, ease: 'power2.out' }, 3.3);
+        { opacity: 0 },
+        { opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power2.out' }, 2.7);
+
+    // Pop the torus in on the left AFTER the cards have settled
+    tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 3.5);
 }
 
 export function initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, researchMesh, cameraPath) {

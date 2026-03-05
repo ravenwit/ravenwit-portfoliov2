@@ -1369,7 +1369,7 @@ canvas {
     width: 50vw;
     height: 100vh;
     z-index: 10;
-    pointer-events: none;
+    pointer-events: auto;
 }
 
 #right-hemi {

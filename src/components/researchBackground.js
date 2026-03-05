@@ -11,7 +11,7 @@ const baseRestoring = 0.00004;
 const baseDamping = 0.9976;
 const spongeWidth = 25;
 const maxExtraDamping = 0.15;
-const sourceAmplitude = 0.08;
+const sourceAmplitude = 0.2;
 const sourceFrequency = 0.003;
 const sourceRadius = 400;
 const waveNumber = 0.035;
@@ -113,7 +113,8 @@ export function animateResearchBG(currentTime) {
             if (s_dist < sourceRadius) {
                 let s_influence = Math.pow(1 - (s_dist / sourceRadius), 2);
                 let projected_d = (s_dx + s_dy) / Math.SQRT2;
-                p.vy += Math.cos(currentTime * sourceFrequency - waveNumber * projected_d) * sourceAmplitude * s_influence;
+                // Force milliseconds into the oscillator so the 0.003 frequency scaling natively unfreezes the string generator
+                p.vy += Math.cos(performance.now() * sourceFrequency - waveNumber * projected_d) * sourceAmplitude * s_influence;
             }
 
             // Displacement Laplacian Approximation
