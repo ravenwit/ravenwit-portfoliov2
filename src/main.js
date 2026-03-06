@@ -118,6 +118,7 @@ async function init() {
     // --- TRACK MOUSE FOR PARALLAX ---
     STATE.mouse = new THREE.Vector2(0, 0);
     const fourierContainer = document.getElementById('fourier-container');
+    const liquidContainer = document.getElementById('liquid-name-container');
 
     window.addEventListener('mousemove', (event) => {
         // Normalize coordinates to -1 to 1
@@ -130,11 +131,22 @@ async function init() {
             const yOffset = STATE.mouse.y * 5;
             fourierContainer.style.transform = `translate(calc(-50% + ${xOffset}px), calc(-50% + ${yOffset}px))`;
         }
+
+        // Parallax for Liquid Name
+        if (liquidContainer) {
+            const lxOffset = -STATE.mouse.x * 8; // Slightly more parallax than the logo
+            const lyOffset = STATE.mouse.y * 8;
+            liquidContainer.style.transform = `translate(calc(-50% + ${lxOffset}px), calc(-50% + ${lyOffset}px))`;
+        }
     });
 
     // Initialize Fourier Canvas & Social Quanta
     import('./components/fourier.js').then(module => {
         module.initFourier('fourierCanvas');
+    });
+
+    import('./components/liquidTypography.js').then(module => {
+        module.initLiquidTypography('liquidNameCanvas');
     });
 
     import('./components/social.js').then(module => {

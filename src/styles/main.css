@@ -532,7 +532,7 @@ canvas {
 /* --- SCROLL ICON --- */
 .scroll-icon-container {
     position: absolute;
-    top: calc(70% + 120px);
+    bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;

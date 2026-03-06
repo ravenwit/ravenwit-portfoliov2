@@ -13,7 +13,14 @@ export function initiateTransition(cameraPath, torusMat, gridMat, starsMat, node
     STATE.phase = 'TRANSITION';
     STATE.transitioning = true;
 
-    gsap.to('#ui-hero', { opacity: 0, duration: 0.6, ease: 'power2.out' });
+    gsap.to('#ui-hero', {
+        opacity: 0,
+        duration: 0.6,
+        ease: 'power2.out',
+        onComplete: () => {
+            document.getElementById('ui-hero').style.display = 'none';
+        }
+    });
     nodeGroup.visible = true;
 
     const endPos = cameraPath.getPointAt(0);
@@ -103,7 +110,17 @@ export function initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup) {
             STATE.transitioning = false;
             STATE.targetScrollY = 0;
             STATE.scrollY = 0;
-            gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
+
+            const heroEl = document.getElementById('ui-hero');
+            if (heroEl) {
+                heroEl.style.display = 'block';
+                gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
+            }
+
+            const liquidEl = document.getElementById('liquid-name-container');
+            if (liquidEl) {
+                setTimeout(() => liquidEl.style.pointerEvents = 'auto', 800);
+            }
         }
     });
 
