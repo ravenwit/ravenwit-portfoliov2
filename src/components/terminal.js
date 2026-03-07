@@ -1,3 +1,9 @@
+import * as THREE from 'three';
+import { playKeystroke, playEnterKey, playCRTBoot } from './terminalUtils/audio.js';
+import { cmdPing, cmdNmap } from './terminalUtils/network.js';
+import { cmdChat } from './terminalUtils/ai.js';
+import { cmdHexdump } from './terminalUtils/visualizers.js';
+
 // Terminal overlay component
 // Implements the hidden diegetic command line interface
 
@@ -34,7 +40,11 @@ export class TerminalController {
                     "echo": this.cmdEcho.bind(this),
                     "cat": this.cmdCat.bind(this),
                     "rm": this.cmdRm.bind(this),
-                    "vim": this.cmdVim.bind(this)
+                    "vim": this.cmdVim.bind(this),
+                    "ping": (args) => cmdPing(args, this),
+                    "nmap": (args) => cmdNmap(args, this),
+                    "chat": (args) => cmdChat(args, this),
+                    "hexdump": (args) => cmdHexdump(args, this)
                 }
             }
         };
@@ -104,6 +114,7 @@ export class TerminalController {
                     this.input.value = '';
                     this.historyIndex = this.history.length; // Reset history index
                     this.updateInputWidth();
+                    playEnterKey();
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
                     if (this.historyIndex > 0) {
@@ -121,6 +132,10 @@ export class TerminalController {
                         this.input.value = '';
                     }
                     this.updateInputWidth();
+                } else {
+                    if (e.key.length === 1 || e.key === 'Backspace') {
+                        playKeystroke();
+                    }
                 }
             });
 
@@ -150,6 +165,7 @@ export class TerminalController {
                 this.input.focus();
                 // Play boot sequence if first time opening and empty history
                 if (this.historyContainer.innerHTML === '') {
+                    playCRTBoot();
                     this.playBootSequence();
                 }
             }, 50);
@@ -265,14 +281,14 @@ export class TerminalController {
 
         // Check if command exists in /bin
         if (this.vfs.root.bin[command] && typeof this.vfs.root.bin[command] === 'function') {
-            // Let the command function handle its own history printing and output to allow for async/special formats if needed
             const output = this.vfs.root.bin[command](args);
             if (output !== undefined && output !== null) {
                 this.printHistory(cmdStr, output);
-            } else {
+            } else if (output === undefined) {
                 // Command handled its own printing or had no output
                 this.printHistory(cmdStr, '');
             }
+            // If output is null, it means the command explicitly signals an async bypass. We do not print a prompt automatically here.
         } else {
             this.printHistory(cmdStr, `bash: ${command}: command not found`, true);
         }
