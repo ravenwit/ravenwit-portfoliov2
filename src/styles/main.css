@@ -1,3 +1,5 @@
+@import "terminal.css";
+
 body {
     margin: 0;
     overflow: hidden;
@@ -859,7 +861,7 @@ canvas {
     transform-style: preserve-3d;
     animation: eigen-float 10s ease-in-out infinite;
     transform: rotateX(10deg);
-    background: rgba(5, 10, 15, 0.4);
+    background: rgba(90, 88, 52, 0.538);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(0, 243, 255, 0.15);
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 50px rgba(0, 0, 0, 0.6);
@@ -924,7 +926,7 @@ canvas {
     top: -10px;
     bottom: -10px;
     width: 15px;
-    border: 2px solid rgba(255, 100, 0, 0.4);
+    border: 2px solid rgba(255, 100, 0, 0.8);
     pointer-events: none;
     box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
 }

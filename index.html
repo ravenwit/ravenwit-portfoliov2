@@ -26,6 +26,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
         rel="stylesheet">
+
     <script>
         MathJax = {
             tex: {
@@ -193,6 +194,21 @@
                     class="stat-value">0.00</span></div>
             <div class="stat-col"><span class="stat-label">PARTICLE Ω</span><span id="hud-omega" class="stat-value">0.00
                     rad/s</span></div>
+        </div>
+    </div>
+
+    <!-- TERMINAL OVERLAY UI -->
+    <div id="terminal-overlay" class="terminal-hidden">
+        <div class="terminal-crt-overlay"></div>
+        <div class="terminal-scanlines"></div>
+        <div class="terminal-container">
+            <div id="terminal-history"></div>
+            <div class="terminal-input-row">
+                <span id="terminal-prompt" class="terminal-prompt">[user@raven ~]$</span>
+                <input type="text" id="terminal-input" class="terminal-input" autocomplete="off" spellcheck="false"
+                    autofocus />
+                <span class="terminal-cursor"></span>
+            </div>
         </div>
     </div>
 

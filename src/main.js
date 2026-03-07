@@ -12,6 +12,7 @@ import { CAREER_NODES } from './config.js';
 import { initHobbies } from './components/hobbies.js';
 import { initResearchTopology } from './components/researchTopology.js';
 import { initResearchCards } from './components/researchCards.js';
+import { terminal } from './components/terminal.js';
 
 async function init() {
     const statusDisp = document.getElementById('status-display');
@@ -160,6 +161,16 @@ async function init() {
 
     initHobbies();
     initResearchCards();
+
+    // Attach Telemetry for terminal `htop` command
+    terminal.telemetryCallback = () => {
+        return {
+            fps: STATE.currentFPS || 60, // Passed from global state if tracked, else dummy
+            calls: renderer.info.render.calls,
+            geometries: renderer.info.memory.geometries,
+            triangles: renderer.info.render.triangles
+        };
+    };
 
     startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath, researchMesh);
 }
