@@ -1,29 +1,53 @@
-export const RESEARCH_DATA = [
-    { id: "RES-01", title: "Wavelet-Based CNNs", desc: "Integration of Discrete Wavelet Transforms into Convolutional Neural Networks to prevent high-frequency spatial information loss during max-pooling. Achieved higher compression efficiency.", tags: ["Python", "TensorFlow", "Signal Processing"] },
-    { id: "RES-02", title: "Quantum Monte Carlo", desc: "Path integral formulation mapping a d-dimensional quantum system to a (d+1)-dimensional classical system. Visualized bosonic exchange and topological reconnections.", tags: ["C++", "Quantum Mechanics", "Statistical Physics"] },
-    { id: "RES-03", title: "Tensor Networks (MPS)", desc: "Matrix Product States for compressing exponentially large quantum Hilbert spaces. Performed Singular Value Decomposition (SVD) truncation on internal entanglement bonds.", tags: ["Julia", "Linear Algebra", "Many-Body Physics"] },
-    { id: "RES-04", title: "Neutrino Oscillation", desc: "Wigner Monte Carlo simulation of neutrino flavor state superpositions propagating through space, tracking the phase shift governed by the PMNS matrix.", tags: ["Fortran", "Particle Physics", "Monte Carlo"] },
-    { id: "RES-05", title: "Ising Phase Transitions", desc: "Simulation of spontaneous symmetry breaking and the divergence of correlation length near a critical temperature in a 3D lattice array.", tags: ["C++", "Statistical Mechanics", "Phase Transitions"] }
-];
-
-export function initResearchCards() {
+export async function initResearchCards() {
     const container = document.getElementById('research-cards-container');
     if (!container) return;
 
-    RESEARCH_DATA.forEach((data, i) => {
-        const numStr = (i + 1).toString().padStart(2, '0');
-        container.innerHTML += `
-            <div class="research-card" id="res-card-${i}">
-                <div class="editorial-number">${numStr}</div>
-                <div class="res-card-content">
-                    <div class="res-card-header">${data.id}</div>
-                    <div class="res-card-title">${data.title}</div>
-                    <div class="res-card-body">${data.desc}</div>
-                    <div class="res-card-tags">${data.tags.map(t => `<span class="res-tag">${t}</span>`).join('')}</div>
+    try {
+        const res = await fetch('/data/research.json');
+        if (!res.ok) throw new Error("Failed to fetch research cards data");
+        const researchData = await res.json();
+
+        researchData.forEach((data, i) => {
+            const numStr = (i + 1).toString().padStart(2, '0');
+
+            let headerHTML = `<div class="res-card-header">${data.id}</div>`;
+            if (data.link) {
+                headerHTML += `
+                    <a href="${data.link}" target="_blank" class="res-card-link" aria-label="View Project">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </a>
+                `;
+            }
+
+            let collabHTML = '';
+            if (data.collaborators && data.collaborators.length > 0) {
+                collabHTML = `<div class="res-card-collab">with ${data.collaborators.join(', ')}</div>`;
+            }
+
+            container.innerHTML += `
+                <div class="research-card" id="res-card-${i}">
+                    <div class="editorial-number">${numStr}</div>
+                    <div class="res-card-content">
+                        ${headerHTML}
+                        <div class="res-card-title">${data.title}</div>
+                        ${collabHTML}
+                        <div class="res-card-body">${data.desc}</div>
+                        <div class="res-card-tags">${data.tags.map(t => `<span class="res-tag">${t}</span>`).join('')}</div>
+                    </div>
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
+
+        // Trigger MathJax typeset on the newly appended dynamic research text
+        if (window.MathJax) {
+            MathJax.typesetPromise([container]).catch((err) => console.log('MathJax typeset failed: ' + err.message));
+        }
+
+    } catch (e) {
+        console.error("Failed to load research.json:", e);
+    }
 }
 
 export function updateResearchCards(currentScroll) {
@@ -51,7 +75,7 @@ export function updateResearchCards(currentScroll) {
             const rotateZ = baseTilt + (isEven ? -clampedDepth * 2 : clampedDepth * 2);
 
             card.style.transform = `translate3d(${xOffset}px, calc(-50% + ${yOffset}px), ${zOffset}px) rotateZ(${rotateZ}deg)`;
-            card.style.opacity = 1.0 - (clampedDepth * 0.25);
+            card.style.opacity = 1.0 - (clampedDepth * 0.05);
             card.style.zIndex = 10 - Math.floor(stackDepth);
             card.style.pointerEvents = 'auto';
 

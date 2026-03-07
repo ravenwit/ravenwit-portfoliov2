@@ -113,6 +113,57 @@ canvas {
     animation: blink 1s infinite;
 }
 
+/* --- SATELLITE BUTTONS --- */
+.satellite-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* Base centering, JS adjusts this */
+    z-index: 20;
+    pointer-events: auto;
+    /* Allow interaction even if parent blocks */
+    width: 60px;
+    height: 60px;
+}
+
+.satellite-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    background: rgba(10, 15, 25, 0.4);
+    backdrop-filter: blur(4px);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Snap/Bounce effect */
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.1), inset 0 0 5px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+}
+
+.satellite-icon {
+    width: 24px;
+    height: 24px;
+    fill: rgba(0, 255, 255, 0.8);
+    transition: fill 0.3s ease;
+}
+
+.satellite-button:hover {
+    border-color: rgba(0, 255, 255, 1);
+    background: rgba(0, 255, 255, 0.15);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.2);
+    transform: scale(1.15);
+}
+
+.satellite-button:hover .satellite-icon,
+.satellite-button:hover svg path,
+.satellite-button:hover svg circle {
+    fill: #fff;
+}
+
+
 /* --- HUD --- */
 #hud {
     position: fixed;
@@ -707,8 +758,8 @@ canvas {
     top: 0;
     bottom: 0;
     width: 1px;
-    background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.6) 20%, rgba(0, 255, 255, 0.6) 80%, transparent);
-    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+    background: linear-gradient(to bottom, transparent, rgba(248, 155, 42, 0.6) 20%, rgba(246, 19, 144, 0.6) 80%, transparent);
+    box-shadow: 0 0 8px rgba(248, 169, 58, 0.5);
 }
 
 .quanta-node {
@@ -727,8 +778,8 @@ canvas {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background-color: #0ff;
-    box-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+    background-color: #ff6600;
+    box-shadow: 0 0 10px #ff6600, 0 0 20px #ff6600;
     transition: all 0.3s ease;
 }
 
@@ -736,7 +787,7 @@ canvas {
 .quanta-node.observed .node-core {
     transform: scale(1.5);
     background-color: #fff;
-    box-shadow: 0 0 15px #fff, 0 0 30px #0ff;
+    box-shadow: 0 0 15px #fff, 0 0 30px #ff6600;
 }
 
 .node-label-container {
@@ -752,7 +803,7 @@ canvas {
     font-size: 11px;
     letter-spacing: 2px;
     color: #ffffff;
-    text-shadow: 0 0 5px #ff0055, 0 0 10px #ff0055;
+    text-shadow: 0 0 5px #ff6600, 0 0 10px #ff6600;
     white-space: nowrap;
     opacity: 0;
     transform: translateX(20px);
@@ -1206,7 +1257,7 @@ canvas {
 .research-card {
     position: absolute;
     top: 50%;
-    background: #f4f3ef;
+    background: #fff1ba;
     border: 2px solid #111;
     padding: 3.5rem 3rem;
     box-sizing: border-box;
@@ -1261,18 +1312,47 @@ canvas {
 
 .res-card-title {
     font-family: 'Playfair Display', serif;
-    font-size: 3.2rem;
+    font-size: 2rem;
     font-weight: 400;
     font-style: italic;
     color: #111;
     line-height: 1.05;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
     max-width: 95%;
+}
+
+.res-card-collab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #2c2c2c;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    letter-spacing: 1px;
+}
+
+.res-card-link {
+    display: inline-block;
+    float: right;
+    margin-top: -5px;
+    color: #FF3300;
+    opacity: 0.7;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.res-card-link:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.res-card-link svg {
+    width: 24px;
+    height: 24px;
 }
 
 .res-card-body {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.9rem;
+    font-size: 0.7rem;
     line-height: 1.6;
     color: #333;
     margin-bottom: 2.5rem;
@@ -1438,91 +1518,4 @@ canvas {
     position: relative;
     z-index: 1;
     mix-blend-mode: multiply;
-}
-
-.res-card-header {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #FF3300;
-    letter-spacing: 2px;
-    margin-bottom: 2rem;
-    text-transform: uppercase;
-    display: inline-block;
-    border-bottom: 1px solid #FF3300;
-    padding-bottom: 4px;
-}
-
-.res-card-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 3.2rem;
-    font-weight: 400;
-    font-style: italic;
-    color: #111;
-    line-height: 1.05;
-    margin-bottom: 1.5rem;
-    max-width: 95%;
-}
-
-.res-card-body {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.9rem;
-    line-height: 1.6;
-    color: #333;
-    margin-bottom: 2.5rem;
-    max-width: 90%;
-}
-
-.res-card-tags {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.res-tag {
-    background: #111;
-    border: 1px solid #111;
-    color: #f4f3ef;
-    padding: 4px 10px;
-    font-size: 0.7rem;
-    letter-spacing: 0.5px;
-    font-family: 'JetBrains Mono', monospace;
-    text-transform: uppercase;
-}
-
-#research-hud-overlay {
-    position: absolute;
-    bottom: 40px;
-    left: 40px;
-    pointer-events: none;
-    z-index: 20;
-    padding: 0;
-    font-size: 11px;
-    display: flex;
-    gap: 40px;
-}
-
-#research-hud-overlay .stat-col {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    border-left: 2px solid #333;
-    padding-left: 12px;
-}
-
-#research-hud-overlay .stat-label {
-    color: #666;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-size: 10px;
-}
-
-#research-hud-overlay .stat-value {
-    color: #e0e0e0;
-    font-weight: 700;
-    font-size: 13px;
-}
-
-#research-hud-overlay .hud-accent {
-    color: #FF3300;
 }

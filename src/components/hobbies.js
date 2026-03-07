@@ -266,6 +266,7 @@ function spawnItem(itemDef, cellIndex, gridState, trackingDict, matrixEl, dim) {
         fetch(iconPath)
             .then(res => {
                 if (!res.ok) throw new Error("Not found");
+                if (res.headers.get("content-type")?.includes("text/html")) throw new Error("Fallback HTML returned instead of SVG");
                 return res.text();
             })
             .then(svgCode => {

@@ -44,7 +44,7 @@ export function initLiquidTypography(canvasId, textDefault = "SHAKIR AHMED", tex
             this.vy = 0;
 
             this.radius = Math.random() * 1.5 + 0.5;
-            this.color = `rgba(0, 255, 255, ${Math.random() * 0.5 + 0.5})`;
+            this.color = `rgba(150, 255, 255, ${Math.random() * 0.5 + 0.5})`;
         }
 
         update() {

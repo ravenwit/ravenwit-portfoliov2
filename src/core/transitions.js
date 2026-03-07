@@ -327,6 +327,11 @@ export function initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, r
             const hobbiesLayer = document.getElementById('hobbies-ui-layer');
             gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5, onStart: () => { if (hobbiesLayer) hobbiesLayer.style.pointerEvents = 'auto'; } });
 
+            const quantumLine = document.getElementById('quantum-world-line');
+            if (quantumLine) {
+                gsap.to('#quantum-world-line', { opacity: 1, duration: 0.5, onStart: () => quantumLine.style.pointerEvents = 'auto' });
+            }
+
             // Unhide nodes and restore events
             document.querySelectorAll('.node-container').forEach(el => {
                 el.style.display = 'flex';

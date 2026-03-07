@@ -1,0 +1,67 @@
+[
+    {
+        "id": "2016",
+        "title": "Radioactive Waste Disposal",
+        "desc": "We evaluate the feasibility of nuclear waste disposal via solar impact versus asteroid belt storage. The required $\\Delta v$ to reach the asteroid belt $(6.274 \text{ km/s})$ is lower than the requirements for direct solar impact $(29.8 \text{ km/s})$ or a Jupiter swing-by $(7.174 \text{ km/s})$. Furthermore, the calculated collision frequency in the asteroid belt is negligible $(3.49 \times 10^{17} \text{ years} / \text{km}^2)$. Due to these lower orbital energy requirements and minimal collision risk, we conclude that asteroid belt storage presents a safer and more viable disposal method.",
+        "tags": [
+            "Hohman Transfer",
+            "Orbital Mechanics",
+            "Collision Probability"
+        ],
+        "link": "https://doi.org/10.13140/RG.2.2.32859.41761",
+        "collaborators": [
+            "Syed Navid Reza",
+            "Golam Mohammad Kibria"
+        ]
+    },
+    {
+        "id": "2018",
+        "title": "Relativistic Dynamics of Electromagnetic Two Body Problem",
+        "desc": "The electromagnetic interaction of two classical point charges is investigated with special relativistic rigor. Numerical integration of their equations of motion yields anomalous, unphysical solutions. We discuss the mathematical origins of these discrepancies and outline the analytical considerations necessary to recover physically allowable trajectories.",
+        "tags": [
+            "Lienard-Wiechert Potential",
+            "Feynman-Wheeler Absorber Model",
+            "Runge-Kutta Integration"
+        ],
+        "link": "https://doi.org/10.13140/RG.2.2.13267.22562",
+        "collaborators": [
+            "Mahiyath K. Chowdhury"
+        ]
+    },
+    {
+        "id": "(2019) Continuing...",
+        "title": "Neutrino Oscillation",
+        "desc": "Wigner Monte Carlo simulation of neutrino flavor state superpositions propagating through space, tracking the phase shift governed by the PMNS matrix.",
+        "tags": [
+            "Particle Physics",
+            "Real Time Quantum Monte Carlo",
+            "PMNS Matrix"
+        ],
+        "collaborators": [
+            "Syed Navid Reza",
+            "Mahiyath K. Chowdhury",
+            "Suhrid Saha Pranta"
+        ]
+    },
+    {
+        "id": "2018",
+        "title": "Ising Model Simulation",
+        "desc": "Simulation of spontaneous symmetry breaking in a 2D simple square grid, with periodic boundary conditions, using the Metropolis-Hastings algorithm with the functionality to calculate different observables like magnetization, specific heat and susceptibility at different temperatures. \\ \\ Currently planning to extend the simulation to different lattice structures with advanced algorithms (e.g., Wolf-Cluster algorithm) having the objective to understand criticality with conformal map.",
+        "tags": [
+            "Monte Carlo",
+            "Metropolis-Hastings Algorithm",
+            "Phase Transitions"
+        ],
+        "link": "https://github.com/ravenwit/Numerical/blob/master/IsingModel.py"
+    },
+    {
+        "id": "2024",
+        "title": "Inverse Ising Problem (Gradient Descent)",
+        "desc": "Simulation of spontaneous symmetry breaking and the divergence of correlation length near a critical temperature in a 3D lattice array.",
+        "tags": [
+            "C++",
+            "Statistical Mechanics",
+            "Phase Transitions"
+        ]
+    }
+]

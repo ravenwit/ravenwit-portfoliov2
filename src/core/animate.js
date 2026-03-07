@@ -129,10 +129,10 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
                 // Check edge cases (beyond first or last node)
                 if (camZ >= CAREER_NODES[0].z) {
-                    currentYear = parseYear(CAREER_NODES[0].time_range ? CAREER_NODES[0].time_range.start : CAREER_NODES[0].date);
+                    currentYear = parseYear(CAREER_NODES[0]?.time_range?.start || CAREER_NODES[0]?.date);
                 } else if (camZ <= CAREER_NODES[CAREER_NODES.length - 1].z) {
                     const lastNode = CAREER_NODES[CAREER_NODES.length - 1];
-                    const lastYear = parseYear(lastNode.time_range ? lastNode.time_range.start : lastNode.date);
+                    const lastYear = parseYear(lastNode?.time_range?.start || lastNode?.date);
 
                     // We established 1 Year = -100 Z units previously in timeline.json
                     const zUnitsPerYear = 100;
@@ -153,8 +153,8 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                             const currentDistance = camZ - nodeA.z;
                             const progress = currentDistance / totalDistance;
 
-                            const yrAStr = nodeA.time_range ? nodeA.time_range.start : nodeA.date;
-                            const yrBStr = nodeB.time_range ? nodeB.time_range.start : nodeB.date;
+                            const yrAStr = nodeA?.time_range?.start || nodeA?.date;
+                            const yrBStr = nodeB?.time_range?.start || nodeB?.date;
 
                             const yearA = parseYear(yrAStr);
                             const yearB = parseYear(yrBStr);
@@ -252,7 +252,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             STATE.researchVelocity *= 0.92; // Fluid friction
             if (Math.abs(STATE.researchVelocity) < 0.0001) STATE.researchVelocity = 0;
 
-            const targetScroll = Math.max(0.0, Math.min(STATE.researchScrollY, 11.0));
+            const targetScroll = Math.max(0.0, Math.min(STATE.researchScrollY, 13.0));
             const decay = 5.0;
 
             // Apply critically damped spring lerp
@@ -312,10 +312,21 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             document.getElementById('hud-s').innerText = STATE.researchScrollY.toFixed(2);
             let phaseText = "MORPHING";
             if (STATE.researchScrollY <= 0.5) phaseText = "TORUS";
-            if (STATE.researchScrollY >= 10.8) phaseText = "TORUS";
+            if (STATE.researchScrollY >= 10.8 && STATE.researchScrollY < 11.5) phaseText = "TORUS";
+            if (STATE.researchScrollY >= 12.0) phaseText = "COFFEE MUG";
             if (STATE.researchScrollY >= 4.0 && STATE.researchScrollY < 9.0) phaseText = "MÖBIUS";
             // else if (STATE.researchScrollY >= 9.0) phaseText = "KLEIN TOPOLOGY";
             document.getElementById('hud-phase').innerText = phaseText;
+
+            const quantumLine = document.getElementById('quantum-world-line');
+            if (quantumLine) {
+                let qOpacity = 0;
+                if (STATE.researchScrollY > 10.5) {
+                    qOpacity = Math.min(1.0, (STATE.researchScrollY - 10.5) * 2.0);
+                }
+                quantumLine.style.opacity = qOpacity;
+                quantumLine.style.pointerEvents = qOpacity > 0.5 ? 'auto' : 'none';
+            }
 
             // Pan Camera Centering Mechanics matching original HTML CSS transform rules
             let panProgress = 0;

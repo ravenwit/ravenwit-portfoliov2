@@ -92,9 +92,21 @@ export function initResearchTopology() {
                     inflateLambda = rawInflate * rawInflate * (3.0 - 2.0 * rawInflate);
                 }
 
+                // Mug Phase: T_val > 11.2
+                float mugLambda = 0.0;
+                if (T_val > 11.2) {
+                    float rawMug = min((T_val - 11.2) / 1.3, 1.0);
+                    mugLambda = rawMug * rawMug * (3.0 - 2.0 * rawMug);
+                }
+
                 float f1, f2, tau;
                 float vmax = 2.0 * PI; // Vmax is locked to 2*PI permanently
                 float v = v_norm * vmax;
+                
+                // Deformation for Mug Body
+                float bowlMask = smoothstep(-0.2, 0.5, -cos(u));
+                float r_target = mix(1.0, 2.8, bowlMask * mugLambda);
+                float y_target = mix(sin(v), sign(sin(v)) * (1.0 - pow(abs(cos(v)), 10.0)) * 2.0, bowlMask * mugLambda);
                 
                 if (phase < 0.5) { // Phase 0 (0-2.0): Flatten the Tube to a Ribbon
                     f1 = (1.0 - lambda) * cos(v) + lambda * sin(v); 
@@ -103,15 +115,30 @@ export function initResearchTopology() {
                 } else { // Phase 1 (2.0-4.0): Perform the Half Twist
                     f1 = mix(sin(v), cos(v), inflateLambda); // Inflates back to cos(v) between S=9 and S=11
                     f2 = sin(v); 
-                    tau = 0.5 * lambda;
+                    tau = mix(0.5 * lambda, 0.0, mugLambda); // Untwist if making a mug
                 }
+
+                f1 *= r_target;
+                f2 = y_target;
 
                 float twistAngle = tau * u;
                 float x_prime = f1 * cos(twistAngle) - f2 * sin(twistAngle);
                 float z_prime = f1 * sin(twistAngle) + f2 * cos(twistAngle);
                 
                 float R = 3.0;
-                return vec3((R + x_prime) * cos(u), z_prime, -(R + x_prime) * sin(u));
+                vec3 p = vec3((R + x_prime) * cos(u), z_prime, -(R + x_prime) * sin(u));
+                
+                // Form the Cup Hole via spatial depression of the top surface
+                vec2 cupCenter = vec2(-3.0, 0.0);
+                float distXZ = length(vec2(p.x, p.z) - cupCenter);
+                float currentOuter = max(2.4 * bowlMask * mugLambda, 0.001);
+                float currentInner = 2.0 * bowlMask * mugLambda;
+                float depression = smoothstep(currentOuter, currentInner, distXZ);
+                float topMask = smoothstep(-0.1, 0.2, sin(v));
+                
+                p.y -= depression * 3.5 * bowlMask * mugLambda * topMask;
+                
+                return p;
             }
 
             vec3 calculateNormal(float u_norm, float v_norm, float T_val, vec3 pos) {
@@ -188,9 +215,23 @@ export function evaluateResearchParticleMath(u_norm, v_norm, T_val) {
         inflateLambda = rawInflate * rawInflate * (3.0 - 2.0 * rawInflate);
     }
 
+    let mugLambda = 0.0;
+    if (T_val > 11.2) {
+        let rawMug = Math.min((T_val - 11.2) / 1.3, 1.0);
+        mugLambda = rawMug * rawMug * (3.0 - 2.0 * rawMug);
+    }
+
     let f1, f2, tau;
     const vmax = 2.0 * Math.PI;
     const v = v_norm * vmax;
+
+    let bowlVal = -Math.cos(u);
+    let bowlMask = Math.max(0, Math.min(1, (bowlVal - (-0.2)) / (0.5 - (-0.2))));
+    bowlMask = bowlMask * bowlMask * (3.0 - 2.0 * bowlMask); // smoothstep
+
+    const r_target = 1.0 * (1.0 - bowlMask * mugLambda) + 2.8 * (bowlMask * mugLambda);
+    const signSinV = Math.sign(Math.sin(v));
+    const y_target = Math.sin(v) * (1.0 - bowlMask * mugLambda) + (signSinV * (1.0 - Math.pow(Math.abs(Math.cos(v)), 10.0)) * 2.0) * (bowlMask * mugLambda);
 
     if (phase === 0) {
         f1 = (1.0 - lambda) * Math.cos(v) + lambda * Math.sin(v);
@@ -199,11 +240,41 @@ export function evaluateResearchParticleMath(u_norm, v_norm, T_val) {
     } else {
         f1 = (1.0 - inflateLambda) * Math.sin(v) + inflateLambda * Math.cos(v);
         f2 = Math.sin(v);
-        tau = 0.5 * lambda;
+        tau = (0.5 * lambda) * (1.0 - mugLambda);
     }
+
+    f1 *= r_target;
+    f2 = y_target;
 
     const twistAngle = tau * u;
     const x_prime = f1 * Math.cos(twistAngle) - f2 * Math.sin(twistAngle);
     const z_prime = f1 * Math.sin(twistAngle) + f2 * Math.cos(twistAngle);
-    return { pos: new THREE.Vector3((R + x_prime) * Math.cos(u), z_prime, -(R + x_prime) * Math.sin(u)) };
+
+    let p = new THREE.Vector3((R + x_prime) * Math.cos(u), z_prime, -(R + x_prime) * Math.sin(u));
+
+    const dx = p.x - (-3.0);
+    const dz = p.z - 0.0;
+    const distXZ = Math.sqrt(dx * dx + dz * dz);
+    const currentOuter = Math.max(2.4 * bowlMask * mugLambda, 0.001);
+    const currentInner = 2.0 * bowlMask * mugLambda;
+
+    let depression = 0.0;
+    if (distXZ <= currentInner) {
+        depression = 1.0;
+    } else if (distXZ < currentOuter) {
+        let t = (distXZ - currentOuter) / (currentInner - currentOuter);
+        depression = t * t * (3.0 - 2.0 * t);
+    }
+
+    let topMask = 0.0;
+    let sv = Math.sin(v);
+    if (sv >= 0.2) topMask = 1.0;
+    else if (sv > -0.1) {
+        let t = (sv - (-0.1)) / 0.3;
+        topMask = t * t * (3.0 - 2.0 * t);
+    }
+
+    p.y -= depression * 3.5 * bowlMask * mugLambda * topMask;
+
+    return { pos: p };
 }
