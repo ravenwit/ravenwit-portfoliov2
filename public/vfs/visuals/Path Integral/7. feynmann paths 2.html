@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path Integral & Braiding Hero</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        .math-overlay {
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        /* Custom Scrollbar for the blog modal */
+        .scroller::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scroller::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        .scroller::-webkit-scrollbar-thumb {
+            background: #38bdf8; 
+            border-radius: 4px;
+        }
+        .scroller::-webkit-scrollbar-thumb:hover {
+            background: #0ea5e9; 
+        }
+        
+        /* Modal Animation */
+        #math-modal {
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+        #math-modal.hidden-modal {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #math-modal.visible-modal {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="bg-black select-none">
+
+    <!-- Hero Content Overlay -->
+    <div class="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-4xl math-overlay">
+            <h1 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tighter glow-text bg-clip-text text-transparent bg-gradient-to-b from-sky-300 to-indigo-500 uppercase">
+                The Sum Over Histories
+            </h1>
+            <p class="text-lg md:text-2xl font-light text-sky-200/70 italic mb-8">
+                "The probability amplitude $\psi(b, a)$ is the sum over all possible paths..."
+            </p>
+            <div class="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-sky-500/20 inline-block pointer-events-auto hover:bg-black/60 transition-colors cursor-pointer" onclick="openModal()">
+                <p class="text-xl md:text-2xl font-mono text-sky-400">
+                    $K(x_b, t_b; x_a, t_a) = \int \mathcal{D}[x(t)] e^{\frac{i}{\hbar} S[x(t)]}$
+                </p>
+            </div>
+            <div class="mt-12 flex gap-4 justify-center pointer-events-auto">
+                <button class="px-8 py-3 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-medium transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(2,132,199,0.4)]">
+                    Explore Braiding
+                </button>
+                <button onclick="openModal()" class="px-8 py-3 rounded-full border border-sky-500/50 hover:bg-sky-500/10 text-sky-300 font-medium transition-all cursor-pointer">
+                    View Equations
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Elements -->
+    <div class="absolute bottom-8 left-8 z-20 hidden md:block">
+        <div class="flex flex-col gap-2 text-xs font-mono text-sky-400/50 uppercase tracking-widest">
+            <span>Lagrangian $\mathcal{L} = T - (V_{base} + V_{ext})$</span>
+            <span>Quantum Coherence: <span id="interference-stat" class="text-sky-300">100%</span></span>
+        </div>
+    </div>
+
+    <!-- Mathematical Blog Modal -->
+    <div id="math-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden-modal p-4">
+        <div class="bg-[#050505] w-full max-w-4xl h-[85vh] rounded-2xl border border-sky-800/50 shadow-[0_0_50px_rgba(8,145,178,0.2)] flex flex-col overflow-hidden relative">
+            
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-sky-900/30 bg-sky-950/20">
+                <h2 class="text-2xl font-bold text-sky-100 font-mono">Formal Derivation: The Propagator</h2>
+                <button onclick="closeModal()" class="text-sky-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="flex-1 overflow-y-auto p-8 scroller text-gray-300 leading-relaxed">
+                
+                <div class="space-y-8">
+                    <section>
+                        <h3 class="text-xl font-bold text-sky-400 mb-3 border-l-4 border-sky-600 pl-3">1. The Quantum Propagator</h3>
+                        <p class="mb-4">
+                            In non-relativistic quantum mechanics, the time evolution of a state ket $|\psi(t_a)\rangle$ to $|\psi(t_b)\rangle$ is governed by the unitary operator $U(t_b, t_a) = e^{-i\hat{H}(t_b-t_a)/\hbar}$. The transition amplitude, or <strong>propagator</strong>, to find a particle at position $x_b$ at time $t_b$ given it started at $x_a$ at $t_a$ is:
+                        </p>
+                        <div class="bg-sky-900/20 p-4 rounded-lg border border-sky-800/30 text-center my-4">
+                            $$K(x_b, t_b; x_a, t_a) = \langle x_b | e^{-\frac{i}{\hbar}\hat{H}(t_b - t_a)} | x_a \rangle$$
+                        </div>
+                        <p>
+                            Feynman's insight was to slice the time interval $T = t_b - t_a$ into $N$ infinitesimal segments $\epsilon = T/N$. By inserting completeness relations $\int dx_i |x_i\rangle\langle x_i| = \mathbb{1}$ at each time step, we derive the path integral formulation.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h3 class="text-xl font-bold text-sky-400 mb-3 border-l-4 border-sky-600 pl-3">2. The Action Functional</h3>
+                        <p class="mb-4">
+                            As $N \to \infty$, the propagator becomes a functional integral over all possible continuous paths $x(t)$ connecting $(x_a, t_a)$ to $(x_b, t_b)$:
+                        </p>
+                        <div class="bg-sky-900/20 p-4 rounded-lg border border-sky-800/30 text-center my-4">
+                            $$K(b,a) = \int_{x(t_a)=x_a}^{x(t_b)=x_b} \mathcal{D}[x(t)] \exp\left( \frac{i}{\hbar} S[x(t)] \right)$$
+                        </div>
+                        <p class="mb-2">
+                            Where $S[x(t)]$ is the classical Action functional:
+                        </p>
+                        <div class="text-center my-2 text-sky-200">
+                            $$S[x] = \int_{t_a}^{t_b} \mathcal{L}(\dot{x}, x, t) \, dt = \int_{t_a}^{t_b} \left( \frac{1}{2}m\dot{x}^2 - V(x) \right) dt$$
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-xl font-bold text-sky-400 mb-3 border-l-4 border-sky-600 pl-3">3. Visualization Logic</h3>
+                        <p class="mb-4">
+                            This visualization renders a Monte Carlo approximation of the integral. We display $N=200$ paths. For each path $j$, we calculate a discretized Action $S_j$.
+                        </p>
+                        <ul class="list-disc pl-6 space-y-2 marker:text-sky-500">
+                            <li><strong>Phase Contribution:</strong> Each path contributes a complex number $z_j = e^{i S_j / \hbar}$.</li>
+                            <li><strong>Time Evolution:</strong> To visualize the wave nature, we multiply by the time-dependent factor $e^{-iEt/\hbar}$, resulting in a rotating phase $\phi_j(t) = \frac{S_j}{\hbar} - \omega t$.</li>
+                            <li><strong>The "Blink" (Interference):</strong> The opacity of each path on screen corresponds to the real part of this amplitude:
+                                $$\text{Opacity}_j \propto \left| \text{Re}\left( e^{i\phi_j(t)} \right) \right|^p$$
+                            </li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h3 class="text-xl font-bold text-sky-400 mb-3 border-l-4 border-sky-600 pl-3">4. The Perturbation (Your Cursor)</h3>
+                        <p class="mb-4">
+                            Your cursor introduces a local external potential $V_{ext}(\mathbf{x})$:
+                        </p>
+                        <div class="bg-sky-900/20 p-4 rounded-lg border border-sky-800/30 text-center my-4">
+                            $$S'[x] = \int_{t_a}^{t_b} \left( \mathcal{L}_{free} - V_{ext}(x,t) \right) dt$$
+                        </div>
+                        <p>
+                            When the cursor approaches a bundle of paths, the local potential $V_{ext}$ increases the Action $S$ significantly. Because $\hbar$ is small in our simulation ($\hbar \approx 0.25$), a change in $S$ causes rapid oscillations in the phase factor $e^{iS/\hbar}$. This leads to <strong>destructive interference</strong>, visually represented by the paths fading out or "shimmering" rapidly, mimicking the cancellation of non-classical paths in the semi-classical limit ($\hbar \to 0$).
+                        </p>
+                    </section>
+                </div>
+
+                <div class="mt-12 pt-6 border-t border-sky-900/30 text-center text-sm text-gray-500">
+                    <p>Reference: Feynman, R. P. (1948). "Space-Time Approach to Non-Relativistic Quantum Mechanics".</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <!-- MathJax for rendering -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script>
+        /**
+         * MODAL LOGIC
+         */
+        const modal = document.getElementById('math-modal');
+        function openModal() {
+            modal.classList.remove('hidden-modal');
+            modal.classList.add('visible-modal');
+        }
+        function closeModal() {
+            modal.classList.remove('visible-modal');
+            modal.classList.add('hidden-modal');
+        }
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        /**
+         * PATH INTEGRAL VISUALIZER
+         * Implements a real-time "Sum over Histories" calculation.
+         * The cursor acts as an external potential perturbing the action S.
+         */
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statEl = document.getElementById('interference-stat');
+
+        let width, height;
+        let paths = [];
+        const PATH_COUNT = 200; 
+        const SEGMENTS = 30; 
+        let mouse = { x: -1000, y: -1000, active: false };
+        let time = 0;
+
+        // Physical Constants (scaled for visualization)
+        const H_BAR = 0.25; // Adjusted for smoother phase transition
+        const PARTICLE_MASS = 1.0;
+        
+        class Path {
+            constructor(index) {
+                this.index = index;
+                this.points = [];
+                this.action = 0;
+                this.phase = 0;
+                this.opacity = 0;
+                this.color = '';
+                this.offset = Math.random() * Math.PI * 2;
+                this.init();
+            }
+
+            init() {
+                this.points = [];
+                const spread = (this.index / PATH_COUNT - 0.5) * 2;
+                this.variation = spread;
+            }
+
+            update(start, end, mousePos) {
+                this.points = [];
+                this.action = 0;
+                
+                const steps = SEGMENTS;
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    
+                    // Linear interpolation x(t)
+                    let x = start.x + (end.x - start.x) * t;
+                    let y = start.y + (end.y - start.y) * t;
+
+                    // Fluctuation around the classical path
+                    const envelope = Math.sin(t * Math.PI);
+                    const arc = envelope * 200 * this.variation;
+                    const jitter = Math.sin(t * Math.PI * 4 + time * 1.5 + this.offset) * 3;
+                    
+                    y += arc + jitter;
+
+                    // Interaction with Cursor (Potential Well V_ext)
+                    if (mousePos.active) {
+                        const dx = x - mousePos.x;
+                        const dy = y - mousePos.y;
+                        const distSq = dx*dx + dy*dy;
+                        const influence = Math.exp(-distSq / (120 * 120)); 
+                        
+                        // Path deformation
+                        y -= dy * influence * 0.35;
+                        
+                        // Action integral calculation contribution
+                        const kinetic = 150; 
+                        const potential = influence * 1500; 
+                        this.action += (kinetic + potential) * (1/steps);
+                    } else {
+                        this.action += 150 * (1/steps);
+                    }
+
+                    this.points.push({ x, y });
+                }
+
+                // Phase evolution: exp(i * [S/hbar + omega * t])
+                // Slowed down omega (time * 0.8) to prevent "strobe blinking"
+                this.phase = (this.action / H_BAR) + (time * 0.8);
+                
+                // Opacity mapped to the real part of the amplitude
+                // We use a power function to sharpen the constructive peaks
+                const amplitude = (Math.cos(this.phase) + 1) / 2;
+                this.opacity = Math.pow(amplitude, 1.5) * 0.4;
+                
+                const hue = 195 + Math.sin(this.phase * 0.3) * 25;
+                this.color = `hsla(${hue}, 85%, 70%, ${this.opacity})`;
+            }
+
+            draw() {
+                if (this.points.length < 2) return;
+
+                ctx.beginPath();
+                ctx.moveTo(this.points[0].x, this.points[0].y);
+
+                for (let i = 1; i < this.points.length - 2; i++) {
+                    const xc = (this.points[i].x + this.points[i + 1].x) / 2;
+                    const yc = (this.points[i].y + this.points[i + 1].y) / 2;
+                    ctx.quadraticCurveTo(this.points[i].x, this.points[i].y, xc, yc);
+                }
+
+                ctx.quadraticCurveTo(
+                    this.points[this.points.length - 2].x,
+                    this.points[this.points.length - 2].y,
+                    this.points[this.points.length - 1].x,
+                    this.points[this.points.length - 1].y
+                );
+
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 1 + this.opacity * 10;
+                ctx.stroke();
+
+                // Slow particles tracing the paths
+                if (this.index % 15 === 0) {
+                    const progress = (time * 0.3 + this.index * 0.02) % 1;
+                    const idx = Math.floor(progress * (this.points.length - 1));
+                    const p = this.points[idx];
+                    ctx.fillStyle = `rgba(186, 230, 253, ${this.opacity * 2})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            
+            paths = [];
+            for (let i = 0; i < PATH_COUNT; i++) {
+                paths.push(new Path(i));
+            }
+        }
+
+        const handleInput = (x, y) => {
+            mouse.x = x;
+            mouse.y = y;
+            mouse.active = true;
+        };
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', (e) => handleInput(e.clientX, e.clientY));
+        window.addEventListener('mouseleave', () => mouse.active = false);
+        window.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            handleInput(touch.clientX, touch.clientY);
+        });
+        window.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            handleInput(touch.clientX, touch.clientY);
+        });
+
+        function animate() {
+            time += 0.016; 
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, width, height);
+
+            // Subtle background gradient
+            const bgGrad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width*0.7);
+            bgGrad.addColorStop(0, 'rgba(7, 89, 133, 0.08)');
+            bgGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            const start = { x: width * 0.12, y: height * 0.5 };
+            const end = { x: width * 0.88, y: height * 0.5 };
+
+            // Render source/sink
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#38bdf8';
+            ctx.fillStyle = '#f0f9ff';
+            ctx.beginPath();
+            ctx.arc(start.x, start.y, 2.5, 0, Math.PI * 2);
+            ctx.arc(end.x, end.y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Render Cursor Influence Area
+            if (mouse.active) {
+                ctx.beginPath();
+                const g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 150);
+                g.addColorStop(0, 'rgba(56, 189, 248, 0.12)');
+                g.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                ctx.fillStyle = g;
+                ctx.arc(mouse.x, mouse.y, 150, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Update/Draw Paths with Additive Blending
+            let totalOpacity = 0;
+            ctx.globalCompositeOperation = 'lighter';
+            paths.forEach(path => {
+                path.update(start, end, mouse);
+                path.draw();
+                totalOpacity += path.opacity;
+            });
+            ctx.globalCompositeOperation = 'source-over';
+
+            // Stats Update
+            if (Math.floor(time * 60) % 15 === 0) {
+                const coherence = Math.min(100, (totalOpacity / (PATH_COUNT * 0.18)) * 100).toFixed(0);
+                statEl.innerText = `${coherence}%`;
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        resize();
+        animate();
+
+    </script>
+</body>
+</html>

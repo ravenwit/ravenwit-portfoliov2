@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Showcase Dimension - Editorial</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0c0c0c;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e0e0e0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- OVERLAYS & NOISE --- */
+        #noise-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.06;
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+        }
+
+        /* --- BACKGROUND LAYER --- */
+        #bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- DUAL HEMISPHERE LAYOUT --- */
+        #left-hemi {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        #right-hemi {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- EDITORIAL PAPER UI (SCIENTIFIC BRUTALISM) --- */
+        #cards-container {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            perspective: 2000px;
+            margin-top: -70vh;
+        }
+
+        .research-card {
+            position: absolute;
+            top: 50%;
+            background: #f4f3ef;
+            /* Archival paper */
+            border: 2px solid #111;
+            padding: 3.5rem 3rem;
+            box-sizing: border-box;
+            box-shadow: 12px 12px 0px #111;
+            /* Brutalist shadow */
+            pointer-events: auto;
+            transition: opacity 0.1s, transform 0.1s, box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            will-change: transform, opacity;
+            opacity: 0;
+            overflow: hidden;
+
+            background-image:
+                linear-gradient(rgba(17, 17, 17, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(17, 17, 17, 0.06) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: center center;
+        }
+
+        .research-card:hover {
+            box-shadow: 20px 20px 0px #FF3300;
+            /* Caution orange */
+        }
+
+        /* The Giant Editorial Watermark Number */
+        .editorial-number {
+            position: absolute;
+            top: -20px;
+            right: -10px;
+            font-family: 'Playfair Display', serif;
+            font-size: 14rem;
+            font-style: italic;
+            font-weight: 700;
+            color: #ebe9e0;
+            /* Blends nicely */
+            line-height: 1;
+            z-index: 0;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+            mix-blend-mode: multiply;
+        }
+
+        .card-header {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #FF3300;
+            letter-spacing: 2px;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            display: inline-block;
+            border-bottom: 1px solid #FF3300;
+            padding-bottom: 4px;
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.2rem;
+            font-weight: 400;
+            font-style: italic;
+            color: #111;
+            line-height: 1.05;
+            margin-bottom: 1.5rem;
+            max-width: 95%;
+        }
+
+        .card-body {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 2.5rem;
+            max-width: 90%;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #111;
+            border: 1px solid #111;
+            color: #f4f3ef;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+        }
+
+        /* SCIENTIFIC HUD */
+        #hud-overlay {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            pointer-events: none;
+            z-index: 20;
+            padding: 0;
+            font-size: 11px;
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat-col {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-left: 2px solid #333;
+            padding-left: 12px;
+        }
+
+        .stat-label {
+            color: #666;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        .stat-value {
+            color: #e0e0e0;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .hud-accent {
+            color: #FF3300;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="noise-overlay"></div>
+    <canvas id="bg-canvas"></canvas>
+    <div id="left-hemi"></div>
+    <div id="right-hemi">
+        <div id="cards-container"></div>
+    </div>
+
+    <div id="hud-overlay">
+        <div class="stat-col">
+            <span class="stat-label">OBSERVATION_S</span>
+            <span class="stat-value" id="hud-s">0.00</span>
+        </div>
+        <div class="stat-col">
+            <span class="stat-label">MANIFOLD_STATE</span>
+            <span class="stat-value" id="hud-phase">TORUS</span>
+        </div>
+        <div class="stat-col">
+            <span class="stat-label">PARTICLE_ω</span>
+            <span class="stat-value hud-accent" id="hud-omega">0.00 rad/s</span>
+        </div>
+    </div>
+
+    <script>
+        const bgCanvas = document.getElementById('bg-canvas');
+        const ctx = bgCanvas.getContext('2d');
+        let width, height;
+        let strings = [];
+
+        // Increased resolution and density
+        const stringCount = 90;
+        const pointsPerString = 170;
+
+        const baseRestoring = 0.00004;
+        const baseDamping = 0.9976;
+        const spongeWidth = 25;
+        const maxExtraDamping = 0.15;
+
+        // Source wave parameters
+        const sourceAmplitude = 0.08;
+        const sourceFrequency = 0.003;
+        const sourceRadius = 400;
+        const waveNumber = 0.035;
+
+        let mouse = { x: -1000, y: -1000, px: -1000, py: -1000, vx: 0, vy: 0 };
+        let hasInteracted = false;
+
+        class Point {
+            constructor(x, y, gridX, gridY) {
+                this.x = x; this.y = y; this.baseY = y; this.vy = 0;
+
+                // 1. Dual-Hemisphere Refraction: Left side is dense/slow, Right side is fast
+                this.c2 = (x < window.innerWidth / 2) ? 0.0015 : 0.006;
+
+                this.localDamping = baseDamping;
+                let minDist = Math.min(gridX, gridY);
+                if (minDist < spongeWidth) {
+                    let penetration = (spongeWidth - minDist) / spongeWidth;
+                    this.localDamping = baseDamping - (maxExtraDamping * Math.pow(penetration, 2));
+                }
+            }
+            update() {
+                this.vy += (this.baseY - this.y) * baseRestoring;
+                this.vy *= this.localDamping;
+                this.y += this.vy;
+            }
+        }
+
+        function initBG() {
+            width = bgCanvas.width = window.innerWidth;
+            height = bgCanvas.height = window.innerHeight;
+            strings = [];
+            const xStep = width / (pointsPerString - 1);
+            const yStep = height / (stringCount + 1);
+            for (let i = 0; i < stringCount; i++) {
+                let points = [];
+                for (let j = 0; j < pointsPerString; j++) points.push(new Point(j * xStep, (i + 1) * yStep, j, i));
+                strings.push(points);
+            }
+        }
+
+        function animateBG(currentTime) {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw dual-hemisphere scientific background
+            ctx.fillStyle = 'rgba(12, 12, 12, 0.3)'; // Right (Cards)
+            ctx.fillRect(width / 2, 0, width / 2, height);
+            ctx.fillStyle = 'rgba(6, 6, 6, 0.3)'; // Left (Topology)
+            ctx.fillRect(0, 0, width / 2, height);
+
+            // Draw clinical guides
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height);
+            ctx.moveTo(0, height / 2); ctx.lineTo(width, height / 2);
+            ctx.stroke();
+
+            const cX = width / 4, cY = height / 2;
+            const r1 = Math.min(width, height) * 0.25;
+            const r2 = Math.min(width, height) * 0.40;
+            ctx.beginPath();
+            ctx.arc(cX, cY, r1, 0, Math.PI * 2);
+            ctx.arc(cX, cY, r2, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            for (let a = 0; a < 360; a += 15) {
+                let rad = (a * Math.PI) / 180;
+                let tickDist = a % 90 === 0 ? 20 : 10;
+                ctx.moveTo(cX + Math.cos(rad) * r2, cY + Math.sin(rad) * r2);
+                ctx.lineTo(cX + Math.cos(rad) * (r2 + tickDist), cY + Math.sin(rad) * (r2 + tickDist));
+            }
+            ctx.stroke();
+
+            mouse.vx *= 0.5; mouse.vy *= 0.5;
+            const sourceX = width; const sourceY = height;
+
+            for (let i = 0; i < stringCount; i++) {
+                for (let j = 0; j < pointsPerString; j++) {
+                    let p = strings[i][j];
+
+                    // Mouse Interaction
+                    let dx = mouse.x - p.x, dy = mouse.y - p.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 120) {
+                        let influence = 1 - (dist / 120);
+                        p.vy += mouse.vy * 0.05 * influence;
+                    }
+
+                    // Source Wave Generator (Originating from bottom right)
+                    let s_dx = sourceX - p.x, s_dy = sourceY - p.baseY;
+                    let s_dist = Math.sqrt(s_dx * s_dx + s_dy * s_dy);
+                    if (s_dist < sourceRadius) {
+                        let s_influence = Math.pow(1 - (s_dist / sourceRadius), 2);
+                        let projected_d = (s_dx + s_dy) / Math.SQRT2;
+                        p.vy += Math.cos(currentTime * sourceFrequency - waveNumber * projected_d) * sourceAmplitude * s_influence;
+                    }
+
+                    // Displacement Laplacian Approximation
+                    let u = p.y - p.baseY;
+                    let forceLeft = (j > 0) ? (strings[i][j - 1].y - p.y) : (strings[i][j + 1].y - p.y);
+                    let forceRight = (j < pointsPerString - 1) ? (strings[i][j + 1].y - p.y) : (strings[i][j - 1].y - p.y);
+                    let u_up = (i > 0) ? (strings[i - 1][j].y - strings[i - 1][j].baseY) : (strings[i + 1][j].y - strings[i + 1][j].baseY);
+                    let u_down = (i < stringCount - 1) ? (strings[i + 1][j].y - strings[i + 1][j].baseY) : (strings[i - 1][j].y - strings[i - 1][j].baseY);
+
+                    // Apply local c^2 wave speed
+                    p.vy += (forceLeft + forceRight + (u_up - u) + (u_down - u)) * p.c2;
+                }
+            }
+
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.0; ctx.globalAlpha = 0.08;
+            for (let i = 0; i < stringCount; i++) {
+                ctx.beginPath();
+                for (let j = 0; j < pointsPerString; j++) {
+                    let p = strings[i][j]; p.update();
+                    j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+                }
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+            requestAnimationFrame(animateBG);
+        }
+
+        window.addEventListener('mousemove', e => {
+            if (!hasInteracted) {
+                mouse.px = mouse.x = e.clientX;
+                mouse.py = mouse.y = e.clientY;
+                hasInteracted = true; return;
+            }
+            mouse.px = mouse.x; mouse.py = mouse.y;
+            mouse.x = e.clientX; mouse.y = e.clientY;
+            mouse.vx = mouse.x - mouse.px; mouse.vy = mouse.y - mouse.py;
+        });
+
+        window.addEventListener('resize', initBG);
+        initBG();
+        requestAnimationFrame(animateBG); // Initiate loop with time parameter
+    </script>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- 1. RESEARCH DATA ---
+        const researchData = [
+            { id: "RES-01", title: "Wavelet-Based CNNs", desc: "Integration of Discrete Wavelet Transforms into Convolutional Neural Networks to prevent high-frequency spatial information loss during max-pooling. Achieved higher compression efficiency.", tags: ["Python", "TensorFlow", "Signal Processing"] },
+            { id: "RES-02", title: "Quantum Monte Carlo", desc: "Path integral formulation mapping a d-dimensional quantum system to a (d+1)-dimensional classical system. Visualized bosonic exchange and topological reconnections.", tags: ["C++", "Quantum Mechanics", "Statistical Physics"] },
+            { id: "RES-03", title: "Tensor Networks (MPS)", desc: "Matrix Product States for compressing exponentially large quantum Hilbert spaces. Performed Singular Value Decomposition (SVD) truncation on internal entanglement bonds.", tags: ["Julia", "Linear Algebra", "Many-Body Physics"] },
+            { id: "RES-04", title: "Neutrino Oscillation", desc: "Wigner Monte Carlo simulation of neutrino flavor state superpositions propagating through space, tracking the phase shift governed by the PMNS matrix.", tags: ["Fortran", "Particle Physics", "Monte Carlo"] },
+            { id: "RES-05", title: "Ising Phase Transitions", desc: "Simulation of spontaneous symmetry breaking and the divergence of correlation length near a critical temperature in a 3D lattice array.", tags: ["C++", "Statistical Mechanics", "Phase Transitions"] }
+        ];
+
+        const container = document.getElementById('cards-container');
+        researchData.forEach((data, i) => {
+            const numStr = (i + 1).toString().padStart(2, '0');
+            container.innerHTML += `
+                <div class="research-card" id="card-${i}">
+                    <div class="editorial-number">${numStr}</div>
+                    <div class="card-content">
+                        <div class="card-header">${data.id}</div>
+                        <div class="card-title">${data.title}</div>
+                        <div class="card-body">${data.desc}</div>
+                        <div class="card-tags">${data.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                    </div>
+                </div>
+            `;
+        });
+        const cards = document.querySelectorAll('.research-card');
+
+        // --- 2. THREE.JS SETUP ---
+        const leftHemi = document.getElementById('left-hemi');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, (window.innerWidth / 2) / window.innerHeight, 0.1, 100);
+        camera.position.set(8, 6, 8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth / 2, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        leftHemi.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.enableZoom = false; controls.enablePan = false;
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const dir1 = new THREE.DirectionalLight(0x00ffcc, 2.5); dir1.position.set(5, 5, 5); scene.add(dir1);
+        const dir2 = new THREE.DirectionalLight(0xff0066, 2.0); dir2.position.set(-5, -2, -5); scene.add(dir2);
+
+        const R = 3.0, segmentsU = 150, segmentsV = 60;
+        const geometry = new THREE.BufferGeometry();
+        const vertices = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 3);
+        const uvs = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 2);
+        const indices = [];
+        let index3 = 0, index2 = 0;
+        for (let i = 0; i <= segmentsU; i++) {
+            for (let j = 0; j <= segmentsV; j++) {
+                vertices[index3++] = 0; vertices[index3++] = 0; vertices[index3++] = 0;
+                uvs[index2++] = i / segmentsU; uvs[index2++] = j / segmentsV;
+            }
+        }
+        for (let i = 0; i < segmentsU; i++) {
+            for (let j = 0; j < segmentsV; j++) {
+                let a = i * (segmentsV + 1) + j, b = a + (segmentsV + 1), c = a + 1, d = b + 1;
+                indices.push(a, b, d); indices.push(a, d, c);
+            }
+        }
+        geometry.setIndex(indices);
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
+        // Prevent frustum culling since vertices are calculated in shader
+        geometry.computeBoundingSphere();
+        geometry.boundingSphere.radius = 10;
+
+        const materialUniforms = { uScroll: { value: 0.0 } };
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xaaaaaa, roughness: 0.1, metalness: 0.8,
+            side: THREE.DoubleSide, transparent: true, opacity: 0.8, wireframe: true
+        });
+        material.defines = { 'USE_UV': '' };
+
+        material.onBeforeCompile = (shader) => {
+            shader.uniforms.uScroll = materialUniforms.uScroll;
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <common>',
+                `#include <common>
+                uniform float uScroll;
+
+                vec3 evaluateMasterEquation(float u_norm, float v_norm, float T_val) {
+                    float u = u_norm * 2.0 * PI;
+                    float geomT = min(T_val, 4.0);
+                    
+                    // Divide 4.0 scroll units into 2 main phases (Flatten, then Twist)
+                    float phase = floor(geomT / 2.0);
+                    if (phase >= 2.0) phase = 1.0;
+                    
+                    // Normalize lambda scale 0->1 per 2.0 duration phase
+                    float rawLambda = (geomT - phase * 2.0) / 2.0;
+                    if (geomT >= 4.0) rawLambda = 1.0;
+                    float lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda); // smoothstep
+
+                    // Kaizen Phase: Inflate as a non-orientable topology
+                    float inflateLambda = 0.0;
+                    if (T_val > 9.0) {
+                        float rawInflate = min((T_val - 9.0) / 2.0, 1.0);
+                        inflateLambda = rawInflate * rawInflate * (3.0 - 2.0 * rawInflate);
+                    }
+
+                    float f1, f2, tau;
+                    float vmax = 2.0 * PI; // Vmax is locked to 2*PI permanently
+                    float v = v_norm * vmax;
+                    
+                    if (phase < 0.5) { // Phase 0 (0-2.0): Flatten the Tube to a Ribbon
+                        f1 = (1.0 - lambda) * cos(v) + lambda * sin(v); 
+                        f2 = sin(v); 
+                        tau = 0.0;
+                    } else { // Phase 1 (2.0-4.0): Perform the Half Twist
+                        f1 = mix(sin(v), cos(v), inflateLambda); // Inflates back to cos(v) between S=9 and S=11
+                        f2 = sin(v); 
+                        tau = 0.5 * lambda;
+                    }
+
+                    float twistAngle = tau * u;
+                    float x_prime = f1 * cos(twistAngle) - f2 * sin(twistAngle);
+                    float z_prime = f1 * sin(twistAngle) + f2 * cos(twistAngle);
+                    
+                    float R = 3.0;
+                    return vec3((R + x_prime) * cos(u), z_prime, -(R + x_prime) * sin(u));
+                }
+
+                vec3 calculateNormal(float u_norm, float v_norm, float T_val, vec3 pos) {
+                    float d = 0.001;
+                    // finite difference approximation for tangents
+                    vec3 pU = evaluateMasterEquation(u_norm + d, v_norm, T_val);
+                    vec3 pV = evaluateMasterEquation(u_norm, v_norm + d, T_val);
+                    vec3 Tu = pU - pos;
+                    vec3 Tv = pV - pos;
+                    return normalize(cross(Tu, Tv));
+                }
+                `
+            );
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <beginnormal_vertex>',
+                `
+                vec3 computedPos = evaluateMasterEquation(uv.x, uv.y, uScroll);
+                vec3 objectNormal = calculateNormal(uv.x, uv.y, uScroll, computedPos);
+                #ifdef USE_TANGENT
+                    vec3 objectTangent = vec3( tangent.xyz );
+                #endif
+                `
+            );
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `
+                vec3 transformed = computedPos; 
+                `
+            );
+        };
+        const mesh = new THREE.Mesh(geometry, material); scene.add(mesh);
+
+        const particle = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF3300 })); mesh.add(particle);
+        const normalArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1.5, 0xFF3300, 0.3, 0.2); mesh.add(normalArrow);
+        particle.visible = false; normalArrow.visible = false;
+
+        // --- 3. CINEMATIC SCROLL EXPERIENCE ---
+        let targetScroll = 0.0;
+        let currentScroll = 0.0;
+        let scrollVelocity = 0.0;
+
+        const clock = new THREE.Clock();
+        let autonomousParticleU = 0.0;
+        const particleOmega = 0.25;
+
+        // Cinematic wheel normalization (Trackpads & Mouse Wheels smoothed identically)
+        window.addEventListener('wheel', (event) => {
+            let delta = event.deltaY;
+
+            // Normalize distinct scrolling metrics (pixels vs lines/pages)
+            if (event.deltaMode === 1) delta *= 40;
+            if (event.deltaMode === 2) delta *= window.innerHeight;
+
+            // Bounded impulse addition gives aggressive mouse wheels butter-smooth momentum
+            const impulse = Math.sign(delta) * Math.min(Math.abs(delta), 100);
+            scrollVelocity += impulse * 0.0006;
+        }, { passive: true });
+
+        function evaluateMasterEquation(u_norm, v_norm, T_val) {
+            const u = u_norm * 2.0 * Math.PI;
+            const geomT = Math.min(T_val, 4.0);
+
+            // Divide 4.0 scroll units into 2 main phases (Flatten, then Twist)
+            let phase = Math.floor(geomT / 2.0);
+            if (phase >= 2.0) phase = 1.0;
+
+            // Normalize lambda scale 0->1 per 2.0 duration phase
+            let rawLambda = (geomT - phase * 2.0) / 2.0;
+            if (geomT >= 4.0) rawLambda = 1.0;
+            const lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda);
+
+            // Kaizen Phase: Inflate as a non-orientable topology
+            let inflateLambda = 0.0;
+            if (T_val > 9.0) {
+                let rawInflate = Math.min((T_val - 9.0) / 2.0, 1.0);
+                inflateLambda = rawInflate * rawInflate * (3.0 - 2.0 * rawInflate);
+            }
+
+            let f1, f2, tau;
+            const vmax = 2.0 * Math.PI; // Vmax is locked to 2*PI permanently
+            const v = v_norm * vmax;
+
+            if (phase === 0) { // Phase 0 (0-2.0): Flatten the Tube to a Ribbon
+                f1 = (1.0 - lambda) * Math.cos(v) + lambda * Math.sin(v);
+                f2 = Math.sin(v);
+                tau = 0.0;
+            } else { // Phase 1 (2.0-4.0): Perform the Half Twist
+                f1 = (1.0 - inflateLambda) * Math.sin(v) + inflateLambda * Math.cos(v);
+                f2 = Math.sin(v);
+                tau = 0.5 * lambda;
+            }
+
+            const twistAngle = tau * u;
+            const x_prime = f1 * Math.cos(twistAngle) - f2 * Math.sin(twistAngle);
+            const z_prime = f1 * Math.sin(twistAngle) + f2 * Math.cos(twistAngle);
+            return { pos: new THREE.Vector3((R + x_prime) * Math.cos(u), z_prime, -(R + x_prime) * Math.sin(u)) };
+        }
+
+        // --- 4. ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+
+            // --- SCROLL INERTIA & DAMPENING ---
+            targetScroll += scrollVelocity;
+            scrollVelocity *= 0.92; // Fluid friction
+            if (Math.abs(scrollVelocity) < 0.0001) scrollVelocity = 0;
+
+            // Hard boundaries
+            if (targetScroll < 0) { targetScroll = 0; scrollVelocity = 0; }
+            if (targetScroll > 11.0) { targetScroll = 11.0; scrollVelocity = 0; }
+
+            // Frame-rate independent critically damped spring lerp
+            const decay = 5.0;
+            currentScroll += (targetScroll - currentScroll) * (1.0 - Math.exp(-decay * dt));
+
+            // --- TOPOLOGY UPDATE (NOW ON GPU) ---
+            materialUniforms.uScroll.value = currentScroll;
+
+            // Add subtle continuous rotation so the artifact feels "alive" (Kaizen)
+            // You can change these velocity constants to make it spin faster or slower!
+            const rotVelocityY = 0.02;
+            const rotVelocityX = 0.007;
+
+            mesh.rotation.y += rotVelocityY * dt;
+            mesh.rotation.x += rotVelocityX * dt;
+            mesh.rotation.z = Math.sin(clock.getElapsedTime() * 0.3) * 0.05;
+
+            // Kaizen Cinematic Panning: Bring the manifold to screen center as particles vanish
+            let panProgress = 0;
+            if (currentScroll > 8.0) {
+                panProgress = Math.min(1.0, currentScroll - 8.0);
+            }
+            // Continuous Improvement: Apply an explicit cubic ease (smoothstep) so the motion decelerates and feels incredibly fluid.
+            let easedPan = panProgress * panProgress * (3.0 - 2.0 * panProgress);
+            // leftHemi width is 50vw. To center it perfectly in a 100vw space, we translate it linearly to 25.0vw.
+            leftHemi.style.transform = `translateX(${easedPan * 25}vw)`;
+
+            // --- AUTONOMOUS PARTICLE PHYSICS ---
+            if (currentScroll >= 4.0 && currentScroll < 9.5) { // Safe bound to allow it to reach scale 0 cleanly
+                particle.visible = true; normalArrow.visible = true;
+
+                // Kaizen Improvement: Graceful decay of the particle rather than abrupt pop-out
+                let particleScale = 1.0;
+                if (currentScroll > 8.0) {
+                    particleScale = Math.max(0, 1.0 - (currentScroll - 8.0));
+                }
+                particle.scale.set(particleScale, particleScale, particleScale);
+                // Safe length minimum to avoid ThreeJS ArrowHelper zero-length assertions
+                normalArrow.setLength(Math.max(0.01, 1.5 * particleScale), 0.3 * particleScale, 0.2 * particleScale);
+
+                autonomousParticleU = (autonomousParticleU + particleOmega * dt) % 2.0;
+                let pu = autonomousParticleU;
+                let pv = 0.5;
+
+                const pData = evaluateMasterEquation(pu, pv, 4.0);
+                particle.position.copy(pData.pos);
+
+                const d = 0.001;
+                const Tu = new THREE.Vector3().subVectors(evaluateMasterEquation(pu + d, pv, 4.0).pos, pData.pos);
+                const Tv = new THREE.Vector3().subVectors(evaluateMasterEquation(pu, pv + d, 4.0).pos, pData.pos);
+                normalArrow.position.copy(pData.pos);
+                normalArrow.setDirection(new THREE.Vector3().crossVectors(Tu, Tv).normalize());
+
+                document.getElementById('hud-omega').innerText = (particleOmega * particleScale).toFixed(2) + " rad/s";
+            } else {
+                particle.visible = false; normalArrow.visible = false;
+                autonomousParticleU = 0.0;
+                document.getElementById('hud-omega').innerText = "0.00 rad/s";
+            }
+
+            // --- CARDS CASCADING UPDATE (EDITORIAL ASYMMETRY) ---
+            cards.forEach((card, i) => {
+                const triggerPoint = 1.5 + i * 1.0;
+                const diff = currentScroll - triggerPoint;
+
+                // Determine layout rules mathematically by index
+                const isEven = i % 2 === 0;
+                card.style.width = isEven ? '80%' : '65%';
+                card.style.left = isEven ? '0' : 'auto';
+                card.style.right = isEven ? 'auto' : '0';
+
+                const baseTilt = isEven ? -2 : 3;
+
+                if (diff < 0) {
+                    // IN THE MESSY DECK
+                    const stackDepth = Math.abs(diff);
+                    const clampedDepth = Math.min(stackDepth, 3);
+
+                    const yOffset = 250 + (clampedDepth * 40);
+                    const zOffset = -100 * clampedDepth;
+
+                    const xOffset = isEven ? -(clampedDepth * 20) : (clampedDepth * 20);
+                    const rotateZ = baseTilt + (isEven ? -clampedDepth * 2 : clampedDepth * 2);
+
+                    card.style.transform = `translate3d(${xOffset}px, calc(-50% + ${yOffset}px), ${zOffset}px) rotateZ(${rotateZ}deg)`;
+                    card.style.opacity = 1.0 - (clampedDepth * 0.25);
+                    card.style.zIndex = 10 - Math.floor(stackDepth);
+                    card.style.pointerEvents = 'auto';
+
+                } else if (diff < 1.0) {
+                    // ACTIVE TO PAST (Floating up with parallax)
+                    const yOffset = -300 * diff;
+                    const xOffset = isEven ? -10 * diff : 15 * diff;
+                    const opacity = 1.0 - diff;
+
+                    card.style.transform = `translate3d(${xOffset}px, calc(-50% + ${yOffset}px), 0px) rotateZ(${baseTilt}deg)`;
+                    card.style.opacity = opacity;
+                    card.style.zIndex = 10;
+                    card.style.pointerEvents = 'auto';
+                } else {
+                    // ARCHIVED
+                    card.style.opacity = 0;
+                    card.style.pointerEvents = 'none';
+                }
+            });
+
+            // Update HUD
+            document.getElementById('hud-s').innerText = currentScroll.toFixed(2);
+            let phaseText = "MORPHING";
+            if (currentScroll >= 4.0 && currentScroll < 9.0) phaseText = "MÖBIUS MANIFOLD";
+            else if (currentScroll >= 9.0) phaseText = "KLEIN TOPOLOGY";
+            document.getElementById('hud-phase').innerText = phaseText;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = (window.innerWidth / 2) / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth / 2, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+
+</html>

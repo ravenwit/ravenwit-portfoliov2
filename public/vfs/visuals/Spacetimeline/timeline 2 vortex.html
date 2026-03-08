@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shakir Ahmed | Path Integral Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <style>
+        body { margin: 0; background-color: #000; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+        canvas { position: fixed; top: 0; left: 0; z-index: 1; outline: none; }
+        
+        #ui-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        
+        .hud-text { font-family: 'Courier New', monospace; color: rgba(0, 255, 255, 0.7); }
+        
+        /* The container for 3D-tracked labels */
+        #labels-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+        
+        .node-label {
+            position: absolute;
+            transform: translate3d(-50%, -50%, 0);
+            pointer-events: auto;
+            transition: opacity 0.3s;
+            will-change: transform, opacity;
+        }
+
+        .skill-tag {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #0ff;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin: 2px;
+            display: inline-block;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+
+        /* Scroll forcing */
+        #spacetime-scroll { height: 1000vh; width: 100%; position: relative; z-index: 0; }
+        
+        /* Math overlays */
+        .eq-overlay {
+            position: absolute;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.4);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gl-canvas"></canvas>
+    <div id="spacetime-scroll"></div>
+    <div id="labels-container"></div>
+
+    <!-- HUD / UI -->
+    <div id="ui-layer" class="flex flex-col justify-between p-6">
+        <!-- Header -->
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-5xl font-bold tracking-tighter text-white drop-shadow-[0_0_15px_rgba(0,255,255,0.5)]">
+                    SHAKIR AHMED
+                </h1>
+                <div class="mt-2 text-cyan-400 font-mono text-sm tracking-wider flex flex-col gap-1">
+                    <span id="math-wavefunction"></span>
+                    <span>Physics M.Sc. | Algorithm Developer | MLOps</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="hud-text text-xs">SYS_TIME: <span id="clock">00:00</span></div>
+                <div class="hud-text text-xs mt-1">METRIC: η_μν = diag(-1, 1, 1, 1)</div>
+                <div class="hud-text text-xs mt-1">Hürth, Germany</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="w-full flex justify-center items-end pb-8">
+            <div class="text-center opacity-70">
+                <p class="text-xs text-cyan-300 uppercase tracking-[0.3em] mb-2">Traverse the Worldline</p>
+                <div id="math-action"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js Import -->
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+        // --- 1. DATA: The Unified Chronology ---
+        // We merge all events into a single causal chain sorted by time.
+        // "Skills" are the bound states at each node.
+        const timelineData = [
+            {
+                year: 2015,
+                title: "B.Sc Physics Start",
+                org: "Shahjalal Univ (SUST)",
+                desc: "Foundation of analytical mechanics.",
+                skills: ["Mechanics", "Calculus", "Linear Algebra"],
+                color: "#4facfe"
+            },
+            {
+                year: 2016,
+                title: "Physics Silver Medal",
+                org: "Univ Physics Competition",
+                desc: "Global recognition in problem solving.",
+                skills: ["Problem Solving", "Analytics", "Teamwork"],
+                color: "#00f2fe"
+            },
+            {
+                year: 2017,
+                title: "SysAdmin",
+                org: "HEXit",
+                desc: "Managing Linux infrastructure.",
+                skills: ["Linux/CentOS", "Networking", "Cybersecurity", "Bash"],
+                color: "#ff9a9e"
+            },
+            {
+                year: 2019,
+                title: "Wigner Monte Carlo",
+                org: "Academic Project",
+                desc: "Computational physics thesis.",
+                skills: ["C++", "Monte Carlo", "Numerical Methods", "Statistics"],
+                color: "#a18cd1"
+            },
+            {
+                year: 2021,
+                title: "Subject Matter Expert",
+                org: "Shikho",
+                desc: "Digitizing physics curriculum.",
+                skills: ["Python", "Automation", "Curriculum Design"],
+                color: "#fbc2eb"
+            },
+            {
+                year: 2023,
+                title: "M.Sc Physics",
+                org: "Univ of Cologne",
+                desc: "Advanced Computational Physics.",
+                skills: ["Quantum Mechanics", "Data Analysis", "Research"],
+                color: "#84fab0"
+            },
+            {
+                year: 2023,
+                title: "Deep Learning Spec",
+                org: "IBM / Coursera",
+                desc: "Neural Networks foundation.",
+                skills: ["TensorFlow", "Neural Networks", "Signal Processing"],
+                color: "#fee140"
+            },
+            {
+                year: 2024,
+                title: "Algorithm Dev",
+                org: "Luna Innovations",
+                desc: "DFOS & MLOps Architecture.",
+                skills: ["MLOps", "Microservices", "Docker", "Algorithms", "Agile"],
+                color: "#fa709a"
+            }
+        ];
+
+        // --- 2. SCENE SETUP ---
+        const canvas = document.querySelector('#gl-canvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050508);
+        scene.fog = new THREE.FogExp2(0x050508, 0.025); // Dense fog for "tunnel" effect
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // --- 3. CURVE GENERATION (The Worldline) ---
+        // We generate a smooth 3D spline representing the path through time
+        const curvePoints = [];
+        const steps = timelineData.length;
+        
+        for (let i = 0; i < steps; i++) {
+            // Spiral upward and forward
+            const t = i / (steps - 1);
+            const angle = t * Math.PI * 4; // 2 full rotations
+            const radius = 5 + Math.sin(t * 10) * 2; // Varying radius
+            
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            const z = i * 15; // Distance between events
+            
+            curvePoints.push(new THREE.Vector3(x, y, z));
+            
+            // Store position in data for later
+            timelineData[i].pos = new THREE.Vector3(x, y, z);
+        }
+
+        // Add a "Future" point
+        curvePoints.push(new THREE.Vector3(0, 0, steps * 15 + 10));
+
+        const curve = new THREE.CatmullRomCurve3(curvePoints);
+        curve.tension = 0.5;
+
+        // --- 4. TUBE GEOMETRY (The Flow) ---
+        const tubeGeo = new THREE.TubeGeometry(curve, 200, 0.4, 16, false);
+        const tubeMat = new THREE.MeshStandardMaterial({
+            color: 0x222222,
+            emissive: 0x00ffff,
+            emissiveIntensity: 0.5,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
+        scene.add(tubeMesh);
+
+        // Core Energy Beam (Inner glow)
+        const coreGeo = new THREE.TubeGeometry(curve, 200, 0.05, 8, false);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(coreMesh);
+
+
+        // --- 5. EVENT NODES & SKILL ORBITALS ---
+        
+        const labelsContainer = document.getElementById('labels-container');
+        const createdLabels = [];
+
+        // Particle system for background stars/dust
+        const particlesGeo = new THREE.BufferGeometry();
+        const particleCount = 2000;
+        const pArray = new Float32Array(particleCount * 3);
+        for(let i=0; i<particleCount*3; i++) {
+            pArray[i] = (Math.random() - 0.5) * 100;
+        }
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pArray, 3));
+        const particleMat = new THREE.PointsMaterial({ size: 0.05, color: 0xffffff, transparent: true, opacity: 0.4 });
+        const starField = new THREE.Points(particlesGeo, particleMat);
+        scene.add(starField);
+
+        // Function to create orbital skill clouds
+        timelineData.forEach((data, index) => {
+            const point = data.pos;
+            const color = new THREE.Color(data.color);
+
+            // 1. Central Node (The Event)
+            const geometry = new THREE.IcosahedronGeometry(0.5, 1);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: color, 
+                emissive: color,
+                emissiveIntensity: 2,
+                roughness: 0,
+                metalness: 1
+            });
+            const node = new THREE.Mesh(geometry, material);
+            node.position.copy(point);
+            scene.add(node);
+
+            // Light
+            const light = new THREE.PointLight(color, 2, 8);
+            light.position.copy(point);
+            scene.add(light);
+
+            // 2. Skill Orbitals (Visualizing skills as electrons)
+            const orbitGroup = new THREE.Group();
+            orbitGroup.position.copy(point);
+            scene.add(orbitGroup);
+            
+            // Store reference for animation
+            data.orbitGroup = orbitGroup;
+
+            data.skills.forEach((skill, sIndex) => {
+                // Create a ring trail or particle for each skill
+                const angle = (sIndex / data.skills.length) * Math.PI * 2;
+                const radius = 1.5 + Math.random();
+                
+                // Small mesh for the skill "particle"
+                const skillGeo = new THREE.SphereGeometry(0.08, 8, 8);
+                const skillMat = new THREE.MeshBasicMaterial({ color: color });
+                const skillMesh = new THREE.Mesh(skillGeo, skillMat);
+                
+                // Position relative to group center
+                skillMesh.position.set(Math.cos(angle)*radius, Math.sin(angle)*radius, 0);
+                orbitGroup.add(skillMesh);
+                
+                // Add a trail ring
+                const ringGeo = new THREE.RingGeometry(radius - 0.02, radius + 0.02, 32);
+                const ringMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.lookAt(new THREE.Vector3(0,0,1)); // Orient
+                orbitGroup.add(ring);
+            });
+
+            // 3. HTML Label Generation
+            const div = document.createElement('div');
+            div.className = 'node-label backdrop-blur-sm bg-black/50 p-4 rounded border border-white/10 w-80';
+            
+            // Generate Skill Tags HTML
+            const skillTags = data.skills.map(s => `<span class="skill-tag">${s}</span>`).join('');
+
+            div.innerHTML = `
+                <div class="text-xs font-mono text-gray-400 mb-1">${data.year}</div>
+                <h2 class="text-xl font-bold text-white mb-1" style="color:${data.color}">${data.title}</h2>
+                <div class="text-sm text-cyan-200 mb-2">${data.org}</div>
+                <p class="text-xs text-gray-300 mb-3">${data.desc}</p>
+                <div class="flex flex-wrap gap-1 border-t border-white/10 pt-2">
+                    ${skillTags}
+                </div>
+            `;
+            labelsContainer.appendChild(div);
+            createdLabels.push({ div, pos: point, mesh: node });
+        });
+
+
+        // --- 6. ANIMATION & LOGIC ---
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // A. Scroll Logic (Drive Camera along Curve)
+            const scrollY = window.scrollY;
+            const maxHeight = document.body.scrollHeight - window.innerHeight;
+            const scrollFraction = Math.max(0, Math.min(1, scrollY / maxHeight));
+
+            // Get position on curve (0..1)
+            // We map scroll to a slightly shorter range (0..0.95) so we don't fly off end
+            const t = scrollFraction * 0.98;
+            
+            const camPos = curve.getPointAt(t);
+            const lookAtPos = curve.getPointAt(Math.min(t + 0.05, 1)); // Look slightly ahead
+
+            // Smooth camera movement
+            camera.position.lerp(camPos, 0.1);
+            camera.lookAt(lookAtPos);
+            
+            // Add a slight offset to camera to feel like we are "orbiting" the timeline slightly
+            // We use the frenet frames or just simple offset
+            const offset = new THREE.Vector3(1, 1, 0); 
+            // camera.position.add(offset); // Optional: makes it feel less "on rails"
+
+            // B. Animate Orbitals (Skills spinning)
+            timelineData.forEach((data, i) => {
+                if(data.orbitGroup) {
+                    // Spin speed depends on index or randomness
+                    data.orbitGroup.rotation.z += 0.02 * (i % 2 === 0 ? 1 : -1);
+                    data.orbitGroup.rotation.x += 0.01;
+                }
+            });
+
+            // C. Label Projection & Visibility
+            createdLabels.forEach(item => {
+                // Project 3D position to 2D
+                const tempV = item.pos.clone();
+                // Add offset so label floats above the node
+                tempV.y += 1.5; 
+                
+                tempV.project(camera);
+
+                const x = (tempV.x * .5 + .5) * window.innerWidth;
+                const y = (-(tempV.y * .5) + .5) * window.innerHeight;
+
+                item.div.style.left = `${x}px`;
+                item.div.style.top = `${y}px`;
+
+                // Calculate distance to handle opacity (Fade in/out)
+                const dist = camera.position.distanceTo(item.pos);
+                
+                // Logic: Visible when approaching and passing, fade when too far
+                let opacity = 0;
+                if (dist < 15) {
+                    opacity = 1 - (dist / 15);
+                    // Also hide if behind camera (z check in NDC is tricky with curve, simpler to check distance)
+                }
+                
+                // Simple dot product check to see if point is in front of camera
+                const dir = new THREE.Vector3().subVectors(item.pos, camera.position).normalize();
+                const camDir = new THREE.Vector3();
+                camera.getWorldDirection(camDir);
+                if (dir.dot(camDir) < 0) opacity = 0; // Behind camera
+
+                item.div.style.opacity = Math.max(0, opacity);
+            });
+
+            // D. Render
+            renderer.render(scene, camera);
+            
+            // Update Clock
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString();
+        }
+
+        // --- 7. RESIZE HANDLER ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- 8. INIT KATE X ---
+        document.addEventListener("DOMContentLoaded", function() {
+            katex.render("\\Psi(x, t) = A e^{i(kx - \\omega t)}", document.getElementById('math-wavefunction'), {
+                throwOnError: false, color: '#00ffff'
+            });
+            katex.render("S = \\int_{t_1}^{t_2} L(q, \\dot{q}, t) dt", document.getElementById('math-action'), {
+                throwOnError: false
+            });
+        });
+
+        animate();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poloidal Scanner | Möbius in Solid Torus</title>
+    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; box-sizing: border-box; }
+        
+        .panel { background: rgba(5, 10, 15, 0.85); backdrop-filter: blur(8px); border-left: 2px solid #0ff; padding: 20px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.1); border-radius: 0 4px 4px 0; width: 450px; pointer-events: auto; }
+        
+        h1 { font-size: 16px; margin: 0 0 10px 0; color: #0ff; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 8px rgba(0,255,255,0.5); }
+        p { font-size: 11px; color: #88ccdd; line-height: 1.5; margin-bottom: 10px; }
+        
+        .math-box { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 4px; border-left: 2px solid #ff00ff; margin-bottom: 15px; font-size: 12px; }
+        
+        .slider-container { margin-top: 15px; border-top: 1px solid rgba(0,255,255,0.3); padding-top: 10px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; color: #fff; margin-bottom: 8px; font-weight: bold; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #0ff; }
+        
+        .legend { display: flex; align-items: center; gap: 10px; font-size: 11px; margin-top: 5px;}
+        .color-box { width: 12px; height: 12px; border-radius: 2px; }
+
+        #instructions { position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: #555; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="panel">
+            <h1>Poloidal Cross-Section Scanner</h1>
+            <p>To definitively prove the manifold lies strictly within the volume, we analyze the poloidal cross-section of the Solid Torus.</p>
+            
+            <div class="math-box">
+                $$ \text{At any angle } \phi\text{, the strip is a line segment:} $$
+                $$ v \in [-w, w] \quad \text{rotated by} \quad \theta = \frac{\phi}{2} $$
+            </div>
+
+            <p>Observe the yellow scanner ring. It represents a 2D slice of the donut's "tube." The magenta line inside the ring is the Möbius strip. Because the line's length exactly matches the ring's diameter ($2w$), it never escapes the interior volume.</p>
+
+            <div class="legend"><div class="color-box" style="background:#0ff; opacity:0.3; border:1px solid #0ff;"></div> Bounding Torus Wireframe</div>
+            <div class="legend"><div class="color-box" style="background:#ff00ff;"></div> Interior Möbius Surface</div>
+            <div class="legend"><div class="color-box" style="background:#ffff00;"></div> Poloidal Scanner Slice</div>
+
+            <div class="slider-container" style="margin-top: 20px;">
+                <div class="slider-label">
+                    <span>SWEEP CROSS-SECTION ANGLE ($\phi$)</span>
+                    <span id="phi-val">2.00π</span>
+                </div>
+                <input type="range" id="phi-slider" min="0.00" max="1" step="0.005" value="1">
+            </div>
+            
+            <button id="auto-btn" style="background: rgba(0, 255, 255, 0.1); border: 1px solid #0ff; color: #0ff; padding: 10px; width: 100%; font-family: inherit; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 15px;">AUTO-SWEEP</button>
+        </div>
+        
+        <div id="instructions">DRAG TO ORBIT | OBSERVE HOW THE STRIP IS THE ROTATING DIAMETER OF THE TUBE</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- 1. SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000510, 0.015);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- 2. MATHEMATICAL GEOMETRY ---
+        const R = 10.0; // Torus Major Radius
+        const w = 3.5;  // Torus Minor Radius
+        const uSegments = 400; // High resolution \phi
+        const vSegments = 20;  // Resolution v
+
+        const group = new THREE.Group();
+        scene.add(group);
+
+        // A. Wireframe Bounding Torus (Eliminates Depth Sorting Glitches)
+        const torusGeo = new THREE.TorusGeometry(R, w, 24, 100);
+        const torusMat = new THREE.MeshBasicMaterial({ 
+            color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.15 
+        });
+        const torusMesh = new THREE.Mesh(torusGeo, torusMat);
+        torusMesh.rotation.x = Math.PI / 2;
+        group.add(torusMesh);
+
+        // B. The Möbius Strip Surface
+        const mobiusGeo = new THREE.BufferGeometry();
+        const vertices = [];
+        const indices = [];
+
+        for (let i = 0; i <= uSegments; i++) {
+            let u = (i / uSegments) * Math.PI * 2; 
+            for (let j = 0; j <= vSegments; j++) {
+                let v = -w + (j / vSegments) * (2 * w); 
+                let x = (R + v * Math.cos(u / 2)) * Math.cos(u);
+                let y = (R + v * Math.cos(u / 2)) * Math.sin(u);
+                let z = v * Math.sin(u / 2);
+                vertices.push(x, y, z);
+            }
+        }
+
+        for (let i = 0; i < uSegments; i++) {
+            for (let j = 0; j < vSegments; j++) {
+                let a = i * (vSegments + 1) + j;
+                let b = a + 1;
+                let c = (i + 1) * (vSegments + 1) + j;
+                let d = c + 1;
+                indices.push(a, b, d);
+                indices.push(a, d, c);
+            }
+        }
+
+        mobiusGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        mobiusGeo.setIndex(indices);
+        mobiusGeo.computeVertexNormals();
+
+        // Better lighting for surface definition
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // DepthWrite disabled to prevent it from blocking the scanner ring
+        const mobiusMat = new THREE.MeshStandardMaterial({ 
+            color: 0xff00ff, side: THREE.DoubleSide, roughness: 0.3, metalness: 0.4, 
+            transparent: true, opacity: 0.85, depthWrite: false 
+        });
+        const mobiusMesh = new THREE.Mesh(mobiusGeo, mobiusMat);
+        group.add(mobiusMesh);
+
+        // C. The Poloidal Scanner Ring
+        const ringGeo = new THREE.BufferGeometry();
+        const ringPos = new Float32Array(65 * 3); // 64 segments + 1 to close
+        ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
+        const ringMat = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 3 });
+        const ringMesh = new THREE.Line(ringGeo, ringMat);
+        group.add(ringMesh);
+
+        // D. The Internal Diameter Line (The cross section of the Mobius strip)
+        const chordGeo = new THREE.BufferGeometry();
+        const chordPos = new Float32Array(6); // 2 points
+        chordGeo.setAttribute('position', new THREE.BufferAttribute(chordPos, 3));
+        const chordMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 4 });
+        const chordMesh = new THREE.Line(chordGeo, chordMat);
+        group.add(chordMesh);
+
+        // --- 3. UI STATE AND ANIMATION ---
+        function updateSweep(percent) {
+            let phi = percent * Math.PI * 2;
+            
+            // 1. Update Mobius Strip Draw Range
+            let drawnQuads = Math.floor(percent * uSegments) * vSegments;
+            mobiusGeo.setDrawRange(0, drawnQuads * 6);
+            
+            // 2. Update Scanner Ring Position
+            for (let i = 0; i <= 64; i++) {
+                let theta = (i / 64) * Math.PI * 2;
+                // Parametric equation of the torus slice at angle phi
+                let x = (R + w * Math.cos(theta)) * Math.cos(phi);
+                let y = (R + w * Math.cos(theta)) * Math.sin(phi);
+                let z = w * Math.sin(theta);
+                
+                ringPos[i*3] = x; ringPos[i*3+1] = y; ringPos[i*3+2] = z;
+            }
+            ringGeo.attributes.position.needsUpdate = true;
+
+            // 3. Update Internal Chord Position (The Mobius strip at this exact slice)
+            // It goes from v = -w to v = w, rotated by theta = phi/2
+            let thetaM = phi / 2;
+            
+            // Point 1 (v = -w)
+            chordPos[0] = (R - w * Math.cos(thetaM)) * Math.cos(phi);
+            chordPos[1] = (R - w * Math.cos(thetaM)) * Math.sin(phi);
+            chordPos[2] = -w * Math.sin(thetaM);
+            
+            // Point 2 (v = w)
+            chordPos[3] = (R + w * Math.cos(thetaM)) * Math.cos(phi);
+            chordPos[4] = (R + w * Math.cos(thetaM)) * Math.sin(phi);
+            chordPos[5] = w * Math.sin(thetaM);
+            
+            chordGeo.attributes.position.needsUpdate = true;
+        }
+
+        const slider = document.getElementById('phi-slider');
+        let autoAnimate = false;
+
+        slider.addEventListener('input', (e) => {
+            autoAnimate = false;
+            let val = parseFloat(e.target.value);
+            document.getElementById('phi-val').innerText = (val * 2).toFixed(2) + "π";
+            updateSweep(val);
+        });
+
+        document.getElementById('auto-btn').addEventListener('click', () => {
+            autoAnimate = !autoAnimate;
+        });
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            let time = clock.getElapsedTime();
+
+            if (autoAnimate) {
+                let sweep = (time * 0.1) % 1.0;
+                slider.value = sweep;
+                document.getElementById('phi-val').innerText = (sweep * 2).toFixed(2) + "π";
+                updateSweep(sweep);
+            }
+
+            // Gentle rotation to observe from all 3D angles
+            group.rotation.x = Math.sin(time * 0.2) * 0.15;
+            group.rotation.y = time * 0.1;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Init
+        updateSweep(1.0);
+        animate();
+    </script>
+</body>
+</html>

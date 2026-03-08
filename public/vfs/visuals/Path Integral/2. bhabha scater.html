@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QED | Bhabha Scattering Topology</title>
+    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; box-sizing: border-box; }
+        
+        .panel { background: rgba(5, 10, 15, 0.85); backdrop-filter: blur(8px); border-left: 2px solid #0ff; padding: 20px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.1); border-radius: 0 4px 4px 0; width: 600px; pointer-events: auto; }
+        
+        h1 { font-size: 16px; margin: 0 0 10px 0; color: #0ff; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 8px rgba(0,255,255,0.5); }
+        p { font-size: 11px; color: #88ccdd; line-height: 1.5; margin-bottom: 10px; }
+        
+        .e-color { color: #00ffff; font-weight: bold; text-shadow: 0 0 5px rgba(0,255,255,0.5); }
+        .p-color { color: #ffaa00; font-weight: bold; text-shadow: 0 0 5px rgba(255,170,0,0.5); }
+        .g-color { color: #ff00ff; font-weight: bold; text-shadow: 0 0 5px rgba(255,0,255,0.5); }
+        
+        #status-box { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 15px; padding: 10px; border: 1px dashed #555; transition: all 0.5s; }
+        .status-uncontracted { color: #aaa; border-color: #aaa; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .status-s-channel { color: #0f0; border-color: #0f0; text-shadow: 0 0 10px rgba(0,255,0,0.5); }
+        .status-t-channel { color: #f0f; border-color: #f0f; text-shadow: 0 0 10px rgba(255,0,255,0.5); }
+        .status-u-channel { color: #f00; border-color: #f00; text-shadow: 0 0 10px rgba(255,0,0,0.5); background: rgba(255,0,0,0.1); }
+        
+        #equation-display { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 4px; box-sizing: border-box; min-height: 180px; display: flex; flex-direction: column; justify-content: center;}
+        
+        .controls { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        button { flex: 1 1 45%; background: transparent; border: 1px solid #555; color: #fff; padding: 10px; font-family: 'Courier New', monospace; font-size: 11px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: rgba(255,255,255,0.1); }
+        button.active-btn { border-color: #0ff; color: #0ff; font-weight: bold; box-shadow: 0 0 10px rgba(0,255,255,0.3); }
+
+        #instructions { position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: #555; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="panel">
+            <h1>Bhabha Scattering (<span class="p-color">e⁺</span> <span class="e-color">e⁻</span> &rarr; <span class="p-color">e⁺</span> <span class="e-color">e⁻</span>)</h1>
+            <p>Evaluating the second-order S-Matrix operator for <span class="e-color">electrons</span> and <span class="p-color">positrons</span> exchanging a <span class="g-color">virtual photon</span>:</p>
+            <p style="text-align: center; margin: 15px 0;">$$ \langle f | S^{(2)} | i \rangle \propto \langle 0 | \color{#00ffff}{a_{p_3}} \color{#ffaa00}{b_{p_4}} \int d^4x d^4y \, \mathcal{T}\{ \mathcal{H}_{int}(x) \mathcal{H}_{int}(y) \} \color{#00ffff}{a_{p_1}^\dagger} \color{#ffaa00}{b_{p_2}^\dagger} | 0 \rangle $$</p>
+            <p>Wick's Theorem expands the Time-Ordered product into normal-ordered contractions. The geometry explicitly maps the operators to their corresponding fields in the vacuum.</p>
+        </div>
+
+        <div class="panel" style="border-left-color: #fff;" id="dynamic-panel">
+            <div id="status-box" class="status-uncontracted">PHASE 1: UNCONTRACTED FIELDS</div>
+            
+            <div id="equation-display">
+                <div style="text-align: center; color: #888;">Initializing Physics Kernel...</div>
+            </div>
+
+            <div class="controls">
+                <button id="btn-0" class="active-btn" onclick="setPhase(0)">UNCONTRACTED (Disconnected)</button>
+                <button id="btn-1" onclick="setPhase(1)">S-CHANNEL (Annihilation)</button>
+                <button id="btn-2" onclick="setPhase(2)">T-CHANNEL (Scattering)</button>
+                <button id="btn-3" onclick="setPhase(3)">U-CHANNEL (Forbidden)</button>
+            </div>
+        </div>
+        
+        <div id="instructions">DRAG TO ORBIT | SELECT CHANNELS TO OBSERVE TOPOLOGICAL MORPHING</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- 1. THREE.JS SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000510, 0.02);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 22);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- 2. MATHEMATICAL COORDINATES ---
+        const p1_in  = new THREE.Vector3(-10,  5, 0); // e- in
+        const p2_in  = new THREE.Vector3(-10, -5, 0); // e+ in
+        const p3_out = new THREE.Vector3( 10,  5, 0); // e- out
+        const p4_out = new THREE.Vector3( 10, -5, 0); // e+ out
+        
+        let v_x = new THREE.Vector3();
+        let v_y = new THREE.Vector3();
+
+        // --- 3. GEOMETRY GENERATORS ---
+        function createGlowingNode(colorHex, size) {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            g.addColorStop(0, '#fff'); g.addColorStop(0.2, '#' + colorHex); g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64);
+            const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, transparent: true });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(size, size, 1);
+            return sprite;
+        }
+
+        const vertexX = createGlowingNode('ffffff', 2.0); scene.add(vertexX);
+        const vertexY = createGlowingNode('ffffff', 2.0); scene.add(vertexY);
+
+        [p1_in, p3_out].forEach(pos => { scene.add(createGlowingNode('00ffff', 1.5)).position.copy(pos); }); 
+        [p2_in, p4_out].forEach(pos => { scene.add(createGlowingNode('ffaa00', 1.5)).position.copy(pos); }); 
+
+        // --- 4. THE PROPAGATORS ---
+        function createLine(colorHex) {
+            const mat = new THREE.LineBasicMaterial({ color: parseInt(colorHex, 16), linewidth: 2, transparent: true, opacity: 1 });
+            const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            return line;
+        }
+
+        const line_e_in = createLine('00ffff');  
+        const line_p_in = createLine('ffaa00');  
+        const line_e_out = createLine('00ffff'); 
+        const line_p_out = createLine('ffaa00'); 
+
+        const photonMat = new THREE.LineBasicMaterial({ color: 0xff00ff, linewidth: 2, transparent: true, opacity: 1 });
+        const ph_geo = new THREE.BufferGeometry();
+        ph_geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(51 * 3), 3));
+        const ph_line = new THREE.Line(ph_geo, photonMat);
+        scene.add(ph_line);
+
+        function updateWavyLine(pA, pB, time) {
+            const pos = ph_geo.attributes.position.array;
+            const dir = new THREE.Vector3().subVectors(pB, pA);
+            if(dir.lengthSq() < 0.001) return; 
+            dir.normalize();
+            
+            let up = new THREE.Vector3(0, 0, 1);
+            if(Math.abs(dir.dot(up)) > 0.9) up.set(0, 1, 0);
+            const orth = new THREE.Vector3().crossVectors(dir, up).normalize();
+
+            for(let i=0; i<=50; i++) {
+                const t = i / 50;
+                const basePos = new THREE.Vector3().lerpVectors(pA, pB, t);
+                const envelope = Math.sin(t * Math.PI); 
+                const waveOffset = Math.sin(t * 20.0 - time * 8.0) * 0.6 * envelope;
+                basePos.addScaledVector(orth, waveOffset);
+                pos[i*3] = basePos.x; pos[i*3+1] = basePos.y; pos[i*3+2] = basePos.z;
+            }
+            ph_geo.attributes.position.needsUpdate = true;
+        }
+
+        function setStraightLine(lineObj, pStart, pEnd) {
+            const pos = lineObj.geometry.attributes.position.array;
+            pos[0] = pStart.x; pos[1] = pStart.y; pos[2] = pStart.z;
+            pos[3] = pEnd.x; pos[4] = pEnd.y; pos[5] = pEnd.z;
+            lineObj.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // --- 5. TOPOLOGICAL STATE MACHINE & MATHJAX ---
+        let currentState = -1;
+        let transitionProgress = 0.0; 
+        
+        let target_Vx = new THREE.Vector3(); let prev_Vx = new THREE.Vector3();
+        let target_Vy = new THREE.Vector3(); let prev_Vy = new THREE.Vector3();
+        let target_p1_end = new THREE.Vector3(); let prev_p1_end = new THREE.Vector3();
+        let target_p2_end = new THREE.Vector3(); let prev_p2_end = new THREE.Vector3();
+        let target_p3_start = new THREE.Vector3(); let prev_p3_start = new THREE.Vector3();
+        let target_p4_start = new THREE.Vector3(); let prev_p4_start = new THREE.Vector3();
+
+        const mathDefs = {
+            0: `$$ : \\bar{\\psi}_x \\gamma^\\mu \\psi_x \\color{#ff00ff}{A_{\\mu,x}} \\, \\bar{\\psi}_y \\gamma^\\nu \\psi_y \\color{#ff00ff}{A_{\\nu,y}} : = 0 $$
+                <div style="font-size: 10px; color: #888; text-align: center;">Asymptotic states isolated. Operators do not contract.</div>`,
+            
+            1: `<div style="font-size:11px; margin-bottom: 5px;">Exact Contraction Sequence (s-Channel):</div>
+                $$ \\color{#00ffff}{\\langle a_{p_3} \\bar{\\psi}_y \\rangle} \\color{#ffaa00}{\\langle b_{p_4} \\psi_y \\rangle} \\color{#ff00ff}{\\langle A_{\\mu,x} A_{\\nu,y} \\rangle} \\color{#ffaa00}{\\langle \\bar{\\psi}_x b^\\dagger_{p_2} \\rangle} \\color{#00ffff}{\\langle \\psi_x a^\\dagger_{p_1} \\rangle} $$
+                <div style="font-size:11px; margin-top: 10px; margin-bottom: 5px;">Evaluating to S-Matrix Amplitude:</div>
+                $$ i\\mathcal{M}_s = -(-ie)^2 [\\color{#ffaa00}{\\bar{v}(p_2)} \\gamma^\\mu \\color{#00ffff}{u(p_1)}] \\color{#ff00ff}{\\left[ \\frac{-i\\eta_{\\mu\\nu}}{(p_1+p_2)^2} \\right]} [\\color{#00ffff}{\\bar{u}(p_3)} \\gamma^\\nu \\color{#ffaa00}{v(p_4)}] $$`,
+            
+            2: `<div style="font-size:11px; margin-bottom: 5px;">Exact Contraction Sequence (t-Channel):</div>
+                $$ \\color{#00ffff}{\\langle a_{p_3} \\bar{\\psi}_x \\rangle} \\color{#00ffff}{\\langle \\psi_x a^\\dagger_{p_1} \\rangle} \\color{#ff00ff}{\\langle A_{\\mu,x} A_{\\nu,y} \\rangle} \\color{#ffaa00}{\\langle b_{p_4} \\psi_y \\rangle} \\color{#ffaa00}{\\langle \\bar{\\psi}_y b^\\dagger_{p_2} \\rangle} $$
+                <div style="font-size:11px; margin-top: 10px; margin-bottom: 5px;">Evaluating to S-Matrix Amplitude (Notice relative + sign):</div>
+                $$ i\\mathcal{M}_t = +(-ie)^2 [\\color{#00ffff}{\\bar{u}(p_3)} \\gamma^\\mu \\color{#00ffff}{u(p_1)}] \\color{#ff00ff}{\\left[ \\frac{-i\\eta_{\\mu\\nu}}{(p_1-p_3)^2} \\right]} [\\color{#ffaa00}{\\bar{v}(p_2)} \\gamma^\\nu \\color{#ffaa00}{v(p_4)}] $$`,
+                
+            3: `<div style="font-size:11px; margin-bottom: 5px;">Charge Violation (u-Channel):</div>
+                $$ \\color{#ff0000}{\\langle b_{p_4} \\bar{\\psi}_x \\rangle \\langle \\psi_x a^\\dagger_{p_1} \\rangle} \\to \\text{Vertex X destroys } \\color{#00ffff}{e^-} \\text{ and creates } \\color{#ffaa00}{e^+} $$
+                <div style="font-size:11px; margin-top: 10px; margin-bottom: 5px;">Mathematical Evaluation:</div>
+                $$ \\langle 0 | \\color{#ffaa00}{b_{p_4}} \\color{#00ffff}{a_{p_3}} \\, \\mathcal{T}\\{ \\mathcal{H}_{int}(x) \\mathcal{H}_{int}(y) \\} \\, \\color{#00ffff}{a^\\dagger_{p_1}} \\color{#ffaa00}{b^\\dagger_{p_2}} | 0 \\rangle = \\color{#ff0000}{0} $$
+                <div style="font-size: 10px; color: #ffaaaa; text-align: center; margin-top: 5px;">Vertex X and Y each explicitly violate charge conservation ($\\Delta Q = 2$).</div>`
+        };
+
+        function setPhase(phaseNum) {
+            if(currentState === phaseNum) return;
+            
+            prev_Vx.copy(target_Vx); prev_Vy.copy(target_Vy);
+            prev_p1_end.copy(target_p1_end); prev_p2_end.copy(target_p2_end);
+            prev_p3_start.copy(target_p3_start); prev_p4_start.copy(target_p4_start);
+            
+            currentState = phaseNum;
+            transitionProgress = 0.0;
+            
+            const box = document.getElementById('status-box');
+            const panel = document.getElementById('dynamic-panel');
+            const eqDisp = document.getElementById('equation-display');
+            
+            for(let i=0; i<=3; i++) {
+                document.getElementById(`btn-${i}`).className = '';
+                document.getElementById(`btn-${i}`).style.borderColor = '#555';
+                document.getElementById(`btn-${i}`).style.color = '#fff';
+            }
+            
+            let activeBtn = document.getElementById(`btn-${phaseNum}`);
+
+            // Reset Default Visibility
+            vertexX.material.color.setHex(0xffffff);
+            vertexY.material.color.setHex(0xffffff);
+            photonMat.color.setHex(0xff00ff);
+            
+            line_e_in.material.opacity = 1; line_p_in.material.opacity = 1;
+            line_e_out.material.opacity = 1; line_p_out.material.opacity = 1;
+
+            photonMat.opacity = 1;
+            vertexX.material.opacity = 1; vertexY.material.opacity = 1;
+
+            if(phaseNum === 0) {
+                activeBtn.className = 'active-btn';
+                box.className = 'status-uncontracted';
+                panel.style.borderLeftColor = '#aaa';
+                box.innerText = "PHASE 1: UNCONTRACTED FIELDS";
+                
+                target_Vx.set(-2, 1, 0); target_Vy.set(2, -1, 0);
+                target_p1_end.set(-6, 3, 0); target_p2_end.set(-6, -3, 0);
+                target_p3_start.set(6, 3, 0); target_p4_start.set(6, -3, 0);
+                
+                photonMat.opacity = 0.5; 
+            } 
+            else if (phaseNum === 1) {
+                activeBtn.className = 'active-btn';
+                activeBtn.style.borderColor = '#0f0'; activeBtn.style.color = '#0f0';
+                box.className = 'status-s-channel';
+                panel.style.borderLeftColor = '#0f0';
+                box.innerText = "PHASE 2: FULLY CONTRACTED (s-Channel Annihilation)";
+                
+                target_Vx.set(-4, 0, 0); target_Vy.set( 4, 0, 0);
+                target_p1_end.copy(target_Vx); target_p2_end.copy(target_Vx);
+                target_p3_start.copy(target_Vy); target_p4_start.copy(target_Vy); 
+            }
+            else if (phaseNum === 2) {
+                activeBtn.className = 'active-btn';
+                activeBtn.style.borderColor = '#f0f'; activeBtn.style.color = '#f0f';
+                box.className = 'status-t-channel';
+                panel.style.borderLeftColor = '#f0f';
+                box.innerText = "PHASE 3: FULLY CONTRACTED (t-Channel Scattering)";
+                
+                target_Vx.set(0,  3.5, 0); target_Vy.set(0, -3.5, 0);
+                target_p1_end.copy(target_Vx); target_p2_end.copy(target_Vy);
+                target_p3_start.copy(target_Vx); target_p4_start.copy(target_Vy); 
+            }
+            else if (phaseNum === 3) {
+                activeBtn.className = 'active-btn';
+                activeBtn.style.borderColor = '#f00'; activeBtn.style.color = '#f00';
+                box.className = 'status-u-channel';
+                panel.style.borderLeftColor = '#f00';
+                box.innerText = "PHASE 4: FORBIDDEN TOPOLOGY (u-Channel)";
+                
+                photonMat.opacity = 0.2; photonMat.color.setHex(0xff0000);
+                vertexX.material.color.setHex(0xff0000); 
+                vertexY.material.color.setHex(0xff0000);
+                
+                target_Vx.set(0,  3.5, 0); target_Vy.set(0, -3.5, 0);
+                target_p1_end.copy(target_Vx); target_p2_end.copy(target_Vy);
+                target_p3_start.copy(target_Vy); 
+                target_p4_start.copy(target_Vx); 
+            }
+
+            eqDisp.innerHTML = mathDefs[phaseNum];
+            try { if(window.MathJax) { MathJax.typesetPromise([eqDisp]); } } catch(e) {}
+        }
+
+        target_Vx.set(-2, 1, 0); target_Vy.set(2, -1, 0);
+        target_p1_end.set(-6, 3, 0); target_p2_end.set(-6, -3, 0);
+        target_p3_start.set(6, 3, 0); target_p4_start.set(6, -3, 0);
+        setPhase(0);
+
+        // --- 6. ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            if(transitionProgress < 1.0) transitionProgress += 0.02;
+            if(transitionProgress > 1.0) transitionProgress = 1.0;
+            const ease = transitionProgress * transitionProgress * (3 - 2 * transitionProgress);
+
+            if(currentState > -1) {
+                const cur_Vx = new THREE.Vector3().lerpVectors(prev_Vx, target_Vx, ease);
+                const cur_Vy = new THREE.Vector3().lerpVectors(prev_Vy, target_Vy, ease);
+                
+                const cur_p1_end = new THREE.Vector3().lerpVectors(prev_p1_end, target_p1_end, ease);
+                const cur_p2_end = new THREE.Vector3().lerpVectors(prev_p2_end, target_p2_end, ease);
+                const cur_p3_start = new THREE.Vector3().lerpVectors(prev_p3_start, target_p3_start, ease);
+                const cur_p4_start = new THREE.Vector3().lerpVectors(prev_p4_start, target_p4_start, ease);
+
+                setStraightLine(line_e_in, p1_in, cur_p1_end);
+                setStraightLine(line_p_in, p2_in, cur_p2_end);
+                setStraightLine(line_e_out, cur_p3_start, p3_out);
+                setStraightLine(line_p_out, cur_p4_start, p4_out);
+
+                updateWavyLine(cur_Vx, cur_Vy, time);
+                
+                vertexX.position.copy(cur_Vx);
+                vertexY.position.copy(cur_Vy);
+            }
+
+            const pulse = currentState === 3 ? 2.0 + Math.random() * 0.5 : 2.0 + Math.sin(time * 5) * 0.3;
+            vertexX.scale.set(pulse, pulse, 1);
+            vertexY.scale.set(pulse, pulse, 1);
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        animate();
+    </script>
+</body>
+</html>

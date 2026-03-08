@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topology of Quantum Statistics: 2D vs 3D</title>
+    <style>
+        :root {
+            --bg: #050508;
+            --panel: rgba(20, 20, 25, 0.8);
+            --accent: #00f3ff;
+            --text: #a0a0b0;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Modern UI Overlay */
+        #ui {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            z-index: 10;
+            background: var(--panel);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        h2 {
+            font-size: 0.75rem;
+            font-weight: 400;
+            margin: 0 0 20px 0;
+            color: var(--text);
+        }
+
+        .slider-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--accent);
+            transition: transform 0.1s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text);
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #555;
+            box-shadow: 0 0 10px #555;
+            transition: 0.3s;
+        }
+
+        /* States */
+        .state-2d .dot { background: #ff2a2a; box-shadow: 0 0 10px #ff2a2a; }
+        .state-2d .text { color: #ffaaaa; }
+        
+        .state-3d .dot { background: #00f3ff; box-shadow: 0 0 10px #00f3ff; }
+        .state-3d .text { color: #aaffff; }
+
+        .explanation {
+            line-height: 1.5;
+        }
+
+        /* Loading */
+        #loading {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #666;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+    </style>
+    <!-- Import Three.js via CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="loading">Initializing Quantum Engine...</div>
+    <div id="canvas-container"></div>
+
+    <div id="ui">
+        <h1>Homotopy Visualizer</h1>
+        <h2>Contracting the Quantum Loop</h2>
+
+        <div class="slider-container">
+            <input type="range" id="dim-slider" min="0" max="1" step="0.001" value="0">
+            <div class="labels">
+                <span>2D PLANE (Anyons)</span>
+                <span>3D SPACE (Bosons)</span>
+            </div>
+        </div>
+
+        <div class="status-indicator state-2d" id="status-box">
+            <div class="dot"></div>
+            <div class="text explanation" id="status-text">
+                <strong>Topologically Trapped ($n=1$).</strong><br>
+                The loop cannot shrink without cutting the singularity. Winding number is conserved.
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // --- Configuration ---
+        const config = {
+            coreRadius: 0.5,
+            loopBaseRadius: 3.5,
+            loopHeight: 4.0,
+            colorTrapped: new THREE.Color(0xff2a2a), // Red
+            colorFree: new THREE.Color(0x00f3ff)     // Cyan
+        };
+
+        // --- Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050508, 0.03);
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        // Initial 2D View (Top Down)
+        camera.position.set(0, 15, 0); 
+        camera.lookAt(0, 0, 0);
+
+        // --- Post Processing (Bloom) ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- Objects ---
+
+        // 1. Grid (The Manifold)
+        const gridHelper = new THREE.GridHelper(20, 20, 0x333333, 0x111111);
+        scene.add(gridHelper);
+
+        // 2. The Singularity (Particle)
+        const coreGeo = new THREE.SphereGeometry(config.coreRadius, 32, 32);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(core);
+
+        // Core Glow
+        const glowGeo = new THREE.SphereGeometry(config.coreRadius * 1.2, 32, 32);
+        const glowMat = new THREE.MeshBasicMaterial({ 
+            color: 0xffffff, 
+            transparent: true, 
+            opacity: 0.3 
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        scene.add(glow);
+
+
+        // 3. The Wavefunction Loop (Elastic Band)
+        // We use a TubeGeometry that we will rebuild/update every frame based on homotopy parameters
+        const tubeSegments = 128;
+        const tubeRadius = 0.08;
+        const tubeMat = new THREE.MeshBasicMaterial({ color: config.colorTrapped });
+        
+        let loopMesh = new THREE.Mesh(new THREE.BufferGeometry(), tubeMat);
+        scene.add(loopMesh);
+
+        // --- Curve Logic ---
+        // We define a custom curve class to handle the deformation
+        class HomotopyCurve extends THREE.Curve {
+            constructor(liftFactor) {
+                super();
+                this.lift = liftFactor; // 0 to 1
+            }
+
+            getPoint(t, optionalTarget = new THREE.Vector3()) {
+                const angle = t * Math.PI * 2;
+                
+                // Radius Logic:
+                // At lift = 0 (2D), Radius is constant (Trapped).
+                // At lift = 1 (3D), Radius shrinks to 0 at the top.
+                // We model the "shrinking" as the loop moves up.
+                
+                // Let's make the contraction depend on the lift.
+                // If lift > 0, we allow radius to shrink.
+                
+                // Base radius
+                let r = config.loopBaseRadius;
+                
+                // As we lift, the loop wants to contract.
+                // We visualize the "attempt" to contract.
+                // In 2D (lift=0), it hits the core radius and stops (collision).
+                // In 3D (lift>0), it can go smaller.
+                
+                const contraction = this.lift * 0.99; // fully contracted at lift 1
+                r = config.loopBaseRadius * (1 - contraction);
+
+                // However, in 2D, it physically cannot go below coreRadius.
+                // We simulate this "physical barrier"
+                if (r < config.coreRadius + 0.2 && this.lift < 0.2) {
+                    r = config.coreRadius + 0.2 + Math.random()*0.05; // Jitter to show tension
+                }
+
+                const x = Math.cos(angle) * r;
+                const z = Math.sin(angle) * r; // Z in math, but Y in Three.js coords usually... wait
+                
+                // Height Logic:
+                // Move up along Y axis (Three.js up)
+                const y = this.lift * config.loopHeight;
+
+                return optionalTarget.set(x, y, z);
+            }
+        }
+
+        // --- Interaction State ---
+        const state = {
+            t: 0 // The slider value (0 = 2D, 1 = 3D)
+        };
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = Date.now() * 0.001;
+
+            // 1. Update Curve Geometry
+            const path = new HomotopyCurve(state.t);
+            const geometry = new THREE.TubeGeometry(path, tubeSegments, tubeRadius, 8, true);
+            
+            // Optimization: Dispose old geometry to prevent memory leak
+            loopMesh.geometry.dispose();
+            loopMesh.geometry = geometry;
+
+            // 2. Visual Feedback (Color & Camera)
+            
+            // Color Interpolation
+            // 0 -> Red (Trapped)
+            // 1 -> Cyan (Free)
+            loopMesh.material.color.lerpColors(config.colorTrapped, config.colorFree, state.t);
+            
+            // Camera Interpolation
+            // 2D View: (0, 15, 0) Looking at (0,0,0)
+            // 3D View: (10, 8, 10) Looking at (0, 2, 0)
+            
+            const cam2D = new THREE.Vector3(0, 14, 0);
+            const cam3D = new THREE.Vector3(8, 6, 8);
+            
+            const currentPos = new THREE.Vector3().copy(cam2D).lerp(cam3D, state.t);
+            camera.position.copy(currentPos);
+            
+            const target2D = new THREE.Vector3(0, 0, 0);
+            const target3D = new THREE.Vector3(0, 2, 0); // Look slightly up as it lifts
+            const currentTarget = new THREE.Vector3().copy(target2D).lerp(target3D, state.t);
+            camera.lookAt(currentTarget);
+
+            // 3. The Core Pulsing (visualize singularity)
+            const scale = 1 + Math.sin(time * 3) * 0.1;
+            core.scale.set(scale, scale, scale);
+            
+            // Hide core if loop is fully contracted and "gone" (lift > 0.95)
+            // Actually, keep core, hide loop.
+            if (state.t > 0.98) {
+                loopMesh.visible = false;
+                
+                // Add a "flash" effect?
+                // For now, simpler is better.
+            } else {
+                loopMesh.visible = true;
+            }
+
+            composer.render();
+        }
+
+        // --- Event Listeners ---
+        const slider = document.getElementById('dim-slider');
+        const statusBox = document.getElementById('status-box');
+        const statusText = document.getElementById('status-text');
+
+        slider.addEventListener('input', (e) => {
+            state.t = parseFloat(e.target.value);
+
+            // UI Text Updates
+            if (state.t > 0.8) {
+                statusBox.className = "status-indicator state-3d";
+                statusText.innerHTML = `<strong>Topologically Trivial ($n=0$).</strong><br>In 3D, the loop lifts over the singularity and contracts to a point. Phase is lost.`;
+            } else {
+                statusBox.className = "status-indicator state-2d";
+                statusText.innerHTML = `<strong>Topologically Trapped ($n=1$).</strong><br>The loop cannot shrink without cutting the singularity. Winding number is conserved.`;
+            }
+        });
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Hide loading
+        document.getElementById('loading').style.display = 'none';
+
+        // Start
+        animate();
+
+    </script>
+</body>
+</html>

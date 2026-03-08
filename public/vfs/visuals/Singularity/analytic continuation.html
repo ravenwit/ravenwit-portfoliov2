@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytic Continuation in the g-plane</title>
+    
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', monospace; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; display: block; }
+        
+        #ui {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85); padding: 20px; border-radius: 8px;
+            border: 1px solid #334155; border-top: 4px solid #8b5cf6;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            width: 480px; backdrop-filter: blur(4px); z-index: 10;
+        }
+        
+        .math-text { font-size: 1rem; color: #cbd5e1; text-align: center; margin-bottom: 10px; }
+        
+        .legend { position: absolute; top: 30px; left: 30px; background: rgba(15, 23, 42, 0.8); padding: 15px; border-radius: 8px; border: 1px solid #334155; z-index: 10;}
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        
+        .instructions {
+            position: absolute; top: 30px; right: 30px; background: rgba(15, 23, 42, 0.6);
+            padding: 10px 15px; border-radius: 6px; font-size: 0.85rem; color: #94a3b8; z-index: 10;
+            border: 1px solid #334155;
+        }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div class="legend">
+        <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: #8b5cf6;">Manifold Z(g) = 1/(1+g²)</h3>
+        <div class="legend-item"><div class="dot" style="background: linear-gradient(90deg, #ff0000, #00ff00, #0000ff);"></div> Surface Color: Complex Phase</div>
+        <div class="legend-item"><div class="dot" style="background: #fbbf24;"></div> Origin (g = 0, Z = 1)</div>
+        <div class="legend-item"><div class="dot" style="background: #ef4444;"></div> Poles (g = ±i, Z = ∞)</div>
+        <div class="legend-item"><div class="dot" style="background: #10b981;"></div> Target (g = 2, Z = 0.2)</div>
+        <div class="legend-item"><div class="dot" style="border: 2px solid #38bdf8; background: transparent;"></div> Radius of Convergence |g|=1</div>
+    </div>
+
+    <div class="instructions">
+        🖱️ Left Click + Drag to Rotate<br>
+        🖱️ Right Click + Drag to Pan<br>
+        🖱️ Scroll to Zoom
+    </div>
+
+    <div id="ui">
+        <div class="math-text">
+            <strong>Analytic Continuation in the g-plane</strong><br><br>
+            $$ Z(g) = \sum_{n=0}^{\infty} (-1)^n g^{2n} \implies \frac{1}{1+g^2} $$
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- 1. SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(4, 5, 6);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(5, 10, 5);
+        scene.add(dirLight);
+
+        // --- 2. MANIFOLD GENERATION ---
+        const gridMin = -2.5, gridMax = 2.5;
+        const res = 200; 
+        const maxZ = 6.0; // Cap the infinite spires
+
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        const colors = [];
+        const indices = [];
+
+        // Generate Vertices
+        for(let i = 0; i <= res; i++) {
+            const x = gridMin + (i / res) * (gridMax - gridMin); // Real(g)
+            for(let j = 0; j <= res; j++) {
+                const y = gridMin + (j / res) * (gridMax - gridMin); // Imaginary(g)
+                
+                // Calculate true complex function Z(g) = 1 / (1 + g^2)
+                // g = x + iy
+                // g^2 = (x^2 - y^2) + i(2xy)
+                // 1 + g^2 = (1 + x^2 - y^2) + i(2xy)
+                
+                const realPart = 1 + x**2 - y**2;
+                const imagPart = 2 * x * y;
+                
+                const denomSq = realPart**2 + imagPart**2;
+                
+                // Magnitude |Z|
+                let magnitude = 1 / Math.sqrt(denomSq);
+                if(magnitude > maxZ) magnitude = maxZ; // Cap singularity
+                
+                // Phase arg(Z) = atan2(-imagPart, realPart) because 1/(a+ib) = (a-ib)/(a^2+b^2)
+                const phase = Math.atan2(-imagPart, realPart); 
+                const hue = (phase + Math.PI) / (2 * Math.PI); // Normalize [-PI, PI] to [0, 1]
+                
+                const color = new THREE.Color();
+                color.setHSL(hue, 1.0, 0.5);
+
+                vertices.push(x, magnitude, y); // Y is up in Three.js (Height)
+                colors.push(color.r, color.g, color.b);
+            }
+        }
+
+        // Generate Faces (Indices)
+        for(let i = 0; i < res; i++) {
+            for(let j = 0; j < res; j++) {
+                const a = i * (res + 1) + j;
+                const b = i * (res + 1) + (j + 1);
+                const c = (i + 1) * (res + 1) + j;
+                const d = (i + 1) * (res + 1) + (j + 1);
+
+                indices.push(a, b, d);
+                indices.push(a, d, c);
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({ 
+            vertexColors: true, 
+            side: THREE.DoubleSide,
+            roughness: 0.3,
+            metalness: 0.1
+        });
+        const surfaceMesh = new THREE.Mesh(geometry, material);
+        scene.add(surfaceMesh);
+
+        // --- 3. PHYSICAL MARKERS ---
+        const createMarker = (x, z, y, color, radius=0.12) => {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 32), new THREE.MeshStandardMaterial({ color: color, roughness: 0.2 }));
+            mesh.position.set(x, z, y);
+            scene.add(mesh); return mesh;
+        };
+        
+        // Origin g = 0 + 0i -> Z = 1
+        createMarker(0, 1.0, 0, 0xfbbf24, 0.15); 
+        
+        // Poles g = +i and g = -i -> Z = infinity (capped at maxZ)
+        createMarker(0, maxZ, 1, 0xef4444, 0.15);
+        createMarker(0, maxZ, -1, 0xef4444, 0.15);
+        
+        // Target g = 2 + 0i -> Z = 1/(1+4) = 0.2
+        createMarker(2, 0.2, 0, 0x10b981, 0.15);
+
+        // --- 4. RADIUS OF CONVERGENCE (Floor Ring) ---
+        // The infinite sum is strictly bounded by |g| < 1
+        const ringGeo = new THREE.BufferGeometry();
+        const ringVerts = [];
+        for(let theta = 0; theta <= 2 * Math.PI; theta += 0.05) {
+            ringVerts.push(Math.cos(theta), 0.02, Math.sin(theta)); // Hover slightly above Z=0
+        }
+        ringGeo.setAttribute('position', new THREE.Float32BufferAttribute(ringVerts, 3));
+        const ringMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
+        const ringLine = new THREE.LineLoop(ringGeo, ringMat);
+        scene.add(ringLine);
+
+        // --- 5. BASE PLANE GRID (Cartesian Reference) ---
+        const gridHelper = new THREE.GridHelper(10, 20, 0x475569, 0x1e293b);
+        gridHelper.position.y = 0; 
+        scene.add(gridHelper);
+
+        // --- RENDER LOOP ---
+        function animate() { 
+            requestAnimationFrame(animate); 
+            
+            // Slowly rotate the scene for a cinematic feel if the user isn't interacting
+            // scene.rotation.y += 0.001; 
+            
+            controls.update(); 
+            renderer.render(scene, camera); 
+        }
+        animate();
+
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+    </script>
+</body>
+</html>

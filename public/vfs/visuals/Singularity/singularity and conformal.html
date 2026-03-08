@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Conformal Homotopy & Mathematical Proofs</title>
+    
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', monospace; }
+        
+        /* Explicit Absolute Positioning for WebGL Canvas */
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; display: block; }
+        
+        /* Main UI Panel */
+        #ui {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85); padding: 20px; border-radius: 8px;
+            border: 1px solid #334155; border-left: 4px solid #38bdf8;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            width: 450px; backdrop-filter: blur(4px); z-index: 10;
+        }
+        
+        .label-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+        .math-text { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; text-align: center; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #38bdf8; margin-bottom: 15px; }
+        
+        .btn {
+            display: block; width: 100%; padding: 10px; background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px;
+            font-family: inherit; font-weight: bold; cursor: pointer; transition: all 0.2s;
+        }
+        .btn:hover { background: #38bdf8; color: #0f172a; }
+
+        /* Legend */
+        .legend { position: absolute; top: 30px; left: 30px; background: rgba(15, 23, 42, 0.8); padding: 15px; border-radius: 8px; border: 1px solid #334155; z-index: 10;}
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+
+        /* Math Modal */
+        #math-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center;
+            visibility: hidden; opacity: 0; transition: opacity 0.4s ease, visibility 0.4s; z-index: 100;
+        }
+        #math-modal.active { visibility: visible; opacity: 1; }
+        
+        .modal-card {
+            background: #1e293b; border: 1px solid #475569; border-top: 4px solid #38bdf8;
+            border-radius: 12px; width: 800px; max-width: 90%; max-height: 85vh;
+            overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transform: scale(0.95) translateY(20px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 30px; position: relative;
+        }
+        #math-modal.active .modal-card { transform: scale(1) translateY(0); }
+
+        .close-btn {
+            position: absolute; top: 20px; right: 25px; background: none; border: none;
+            color: #94a3b8; font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
+        }
+        .close-btn:hover { color: #ef4444; }
+
+        .modal-card h2 { margin-top: 0; color: #e2e8f0; font-weight: 300; letter-spacing: 1px; }
+        .modal-card h3 { color: #38bdf8; margin-top: 25px; margin-bottom: 10px; font-size: 1.1rem; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        .modal-card p { color: #cbd5e1; line-height: 1.6; font-family: sans-serif; font-size: 0.95rem; }
+        .equation-box { background: #0f172a; padding: 15px; border-radius: 6px; overflow-x: auto; margin: 15px 0; border: 1px solid #334155; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div class="legend">
+        <div class="legend-item"><div class="dot" style="background: #fbbf24;"></div> Origin (u = 0) [Fixed]</div>
+        <div class="legend-item"><div class="dot" style="background: #ef4444;"></div> Singularity (u = -1)</div>
+        <div class="legend-item"><div class="dot" style="background: #10b981;"></div> Target Eval (u = 4)</div>
+        <div class="legend-item"><div class="dot" style="border: 2px solid #38bdf8; background: transparent;"></div> Radius |w|=1</div>
+    </div>
+
+    <div id="ui">
+        <div class="label-row">
+            <span>Cartesian u-plane (τ = 0)</span>
+            <span>Conformal w-plane (τ = 1)</span>
+        </div>
+        <input type="range" id="tau-slider" min="0" max="1" step="0.001" value="0">
+        <button class="btn" onclick="openModal()">🧮 View Mathematical Framework</button>
+        <div class="math-text">
+            Deformation Parameter τ: <span id="tau-val" style="color:#38bdf8; font-weight: bold;">0.000</span>
+        </div>
+    </div>
+
+    <div id="math-modal">
+        <div class="modal-card">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h2>Rigorous Mathematical Framework</h2>
+
+            <h3>I. The Topological Wall and Singularities</h3>
+            <p>We begin with the infinite perturbation series, representing an observable dependent on coupling \( u = g^2 \). The limit as \( N \to \infty \) yields:</p>
+            <div class="equation-box">
+                $$ Z(u) = \sum_{n=0}^{\infty} (-u)^n = 1 - u + u^2 - u^3 + \dots $$
+            </div>
+            <p>By determining the Lee-Yang zeros of the partial sums, we proved that the roots form an infinitely dense unit circle \( |u|=1 \). This topological wall is created by a strict pole singularity at \( u = -1 \). Any attempt to evaluate the series in the strongly-coupled regime, such as \( u = 4 \), catastrophically diverges because it lies strictly outside the analytic domain.</p>
+
+            <h3>II. Conformal Mapping (Analytic Continuation)</h3>
+            <p>To evaluate \( Z(4) \), we must perform analytic continuation by warping the complex plane. We introduce a conformal map \( w(u) \) designed to map the singularity exactly to the boundary of a new unit disk, while pulling the target evaluation point strictly inside:</p>
+            <div class="equation-box">
+                $$ w(u) = \frac{u}{u+2} $$
+            </div>
+            <p>Under this mapping, the singularity \( u = -1 \implies w(-1) = -1 \). The target point \( u = 4 \implies w(4) = \frac{4}{6} = \frac{2}{3} \). Because \( \left|\frac{2}{3}\right| < 1 \), our target is now safely inside the radius of convergence.</p>
+
+            <h3>III. Construction of the Homotopy</h3>
+            <p>To visualize the transformation, we construct a continuous topological deformation (a Homotopy) \( H(u, \tau) \) bridging the identity map \( f_0(u) = u \) and the conformal map \( f_1(u) = w(u) \) over the parameter \( \tau \in [0, 1] \):</p>
+            <div class="equation-box">
+                $$ H(u, \tau) = (1 - \tau)u + \tau \left( \frac{u}{u+2} \right) $$
+            </div>
+            <p>To compute this in the 3D rendering pipeline, we decouple \( u = x + iy \) into strict real algebraic Cartesian vectors. Rationalizing the denominator of the complex conformal map yields:</p>
+            <div class="equation-box">
+                $$ X_1(x,y) = \frac{x^2 + 2x + y^2}{(x+2)^2 + y^2}, \quad Y_1(x,y) = \frac{2y}{(x+2)^2 + y^2} $$
+            </div>
+            <p>The vertex shader position at any frame \( \tau \) is calculated via linear interpolation, augmented with a Gaussian-damped sinusoidal arc through the Z-axis to visually express the spatial bending of the manifold:</p>
+            <div class="equation-box">
+                $$ X(\tau) = (1-\tau)x + \tau X_1 $$
+                $$ Y(\tau) = (1-\tau)y + \tau Y_1 $$
+                $$ Z(\tau) = 2.0 \cdot \sin(\pi \tau) \cdot e^{-0.1(x^2 + y^2)} $$
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- MODAL LOGIC ---
+        function openModal() {
+            document.getElementById('math-modal').classList.add('active');
+        }
+        function closeModal() {
+            document.getElementById('math-modal').classList.remove('active');
+        }
+        document.getElementById('math-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // --- 3D SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, -10, 8);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+
+        // --- MATHEMATICAL MAPPING LOGIC ---
+        function applyHomotopy(x, y, tau) {
+            const distToPoleSq = (x + 2)**2 + y**2;
+            if (distToPoleSq < 0.01) return new THREE.Vector3(999, 999, 999); 
+
+            const X1 = (x**2 + 2*x + y**2) / distToPoleSq;
+            const Y1 = (2*y) / distToPoleSq;
+
+            const X_tau = (1 - tau) * x + tau * X1;
+            const Y_tau = (1 - tau) * y + tau * Y1;
+            const Z_tau = 2.0 * Math.sin(Math.PI * tau) * Math.exp(-0.1 * (x**2 + y**2));
+
+            return new THREE.Vector3(X_tau, Y_tau, Z_tau);
+        }
+
+        // --- GEOMETRY GENERATION ---
+        const gridSize = 10; const resolution = 40;
+        const gridMaterial = new THREE.LineBasicMaterial({ color: 0x475569, transparent: true, opacity: 0.6 });
+        const gridGeometry = new THREE.BufferGeometry();
+        const baseCoords = []; 
+        
+        for (let i = -gridSize; i <= gridSize; i += 0.5) {
+            for (let j = -gridSize; j <= gridSize; j += gridSize / resolution) {
+                baseCoords.push({ x: i, y: j }); baseCoords.push({ x: i, y: j + gridSize / resolution });
+            }
+            for (let j = -gridSize; j <= gridSize; j += gridSize / resolution) {
+                baseCoords.push({ x: j, y: i }); baseCoords.push({ x: j + gridSize / resolution, y: i });
+            }
+        }
+
+        const positions = new Float32Array(baseCoords.length * 3);
+        gridGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const gridLines = new THREE.LineSegments(gridGeometry, gridMaterial);
+        scene.add(gridLines);
+
+        // --- PHYSICAL MARKERS ---
+        const createMarker = (color, radius=0.15) => {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 32), new THREE.MeshBasicMaterial({ color: color }));
+            scene.add(mesh); return mesh;
+        };
+        const originMesh = createMarker(0xfbbf24, 0.18);
+        const poleMesh = createMarker(0xef4444);
+        const targetMesh = createMarker(0x10b981);
+
+        // Radius of Convergence Boundary (Cyan Ring)
+        const ringGeo = new THREE.BufferGeometry();
+        const ringBase = [];
+        for(let theta = 0; theta <= 2 * Math.PI; theta += 0.05) {
+            const wx = Math.cos(theta); const wy = Math.sin(theta);
+            if(Math.abs(wx - 1) < 0.01 && Math.abs(wy) < 0.01) continue; 
+            const denom = (1 - wx)**2 + wy**2;
+            ringBase.push({x: (2*wx*(1-wx) - 2*wy**2)/denom, y: (2*wy*(1-wx) + 2*wx*wy)/denom});
+        }
+        const ringPos = new Float32Array(ringBase.length * 3);
+        ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
+        const ringLines = new THREE.Line(ringGeo, new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 }));
+        scene.add(ringLines);
+
+        // --- UPDATE LOOP ---
+        const slider = document.getElementById('tau-slider');
+        const tauDisplay = document.getElementById('tau-val');
+
+        function updateGeometry(tau) {
+            const posAttr = gridGeometry.attributes.position;
+            for (let i = 0; i < baseCoords.length; i++) {
+                const vec = applyHomotopy(baseCoords[i].x, baseCoords[i].y, tau);
+                posAttr.setXYZ(i, vec.x, vec.y, vec.z);
+            }
+            posAttr.needsUpdate = true;
+
+            originMesh.position.copy(applyHomotopy(0, 0, tau));
+            poleMesh.position.copy(applyHomotopy(-1, 0, tau));
+            targetMesh.position.copy(applyHomotopy(4, 0, tau));
+
+            const ringAttr = ringGeo.attributes.position;
+            for (let i = 0; i < ringBase.length; i++) {
+                const vec = applyHomotopy(ringBase[i].x, ringBase[i].y, tau);
+                ringAttr.setXYZ(i, vec.x, vec.y, vec.z);
+            }
+            ringAttr.needsUpdate = true;
+        }
+
+        slider.addEventListener('input', (e) => {
+            const tau = parseFloat(e.target.value);
+            tauDisplay.innerText = tau.toFixed(3);
+            updateGeometry(tau);
+        });
+        updateGeometry(0);
+
+        // --- RENDER LOOP ---
+        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+        animate();
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+    </script>
+</body>
+</html>

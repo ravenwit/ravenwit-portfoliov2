@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QED | Compton Scattering Topology</title>
+    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; box-sizing: border-box; }
+        
+        .panel { background: rgba(5, 10, 15, 0.85); backdrop-filter: blur(8px); border-left: 2px solid #0ff; padding: 20px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.1); border-radius: 0 4px 4px 0; width: 600px; pointer-events: auto; }
+        
+        h1 { font-size: 16px; margin: 0 0 10px 0; color: #0ff; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 8px rgba(0,255,255,0.5); }
+        p { font-size: 11px; color: #88ccdd; line-height: 1.5; margin-bottom: 10px; }
+        
+        /* Particle Family Color Coding */
+        .e-color { color: #00ffff; font-weight: bold; text-shadow: 0 0 5px rgba(0,255,255,0.5); }
+        .g-color { color: #ff00ff; font-weight: bold; text-shadow: 0 0 5px rgba(255,0,255,0.5); }
+        
+        #status-box { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 15px; padding: 10px; border: 1px dashed #555; transition: all 0.5s; }
+        .status-uncontracted { color: #aaa; border-color: #aaa; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .status-s-channel { color: #0ff; border-color: #0ff; text-shadow: 0 0 10px rgba(0,255,255,0.5); }
+        .status-u-channel { color: #f0f; border-color: #f0f; text-shadow: 0 0 10px rgba(255,0,255,0.5); }
+        .status-t-channel { color: #f00; border-color: #f00; text-shadow: 0 0 10px rgba(255,0,0,0.5); background: rgba(255,0,0,0.1); }
+        
+        #equation-display { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 4px; box-sizing: border-box; min-height: 180px; display: flex; flex-direction: column; justify-content: center;}
+        
+        .controls { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        button { flex: 1 1 45%; background: transparent; border: 1px solid #555; color: #fff; padding: 10px; font-family: 'Courier New', monospace; font-size: 11px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: rgba(255,255,255,0.1); }
+        button.active-btn { border-color: #0ff; color: #0ff; font-weight: bold; box-shadow: 0 0 10px rgba(0,255,255,0.3); }
+
+        #instructions { position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: #555; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="panel">
+            <h1>Compton Scattering (<span class="e-color">e⁻</span> <span class="g-color">γ</span> &rarr; <span class="e-color">e⁻</span> <span class="g-color">γ</span>)</h1>
+            <p>Evaluating the second-order S-Matrix operator for an <span class="e-color">electron</span> absorbing and emitting a <span class="g-color">photon</span>:</p>
+            <p style="text-align: center; margin: 15px 0;">$$ \langle f | S^{(2)} | i \rangle \propto \langle 0 | \color{#ff00ff}{c_{k'}} \color{#00ffff}{a_{p'}} \int d^4x d^4y \, \mathcal{T}\{ \mathcal{H}_{int}(x) \mathcal{H}_{int}(y) \} \color{#00ffff}{a_p^\dagger} \color{#ff00ff}{c_k^\dagger} | 0 \rangle $$</p>
+            <p>Wick's Theorem dictates that the orthogonal fermion and photon fields must contract independently. This visualizes how the combinations mathematically build the available topological chronologies.</p>
+        </div>
+
+        <div class="panel" style="border-left-color: #fff;" id="dynamic-panel">
+            <div id="status-box" class="status-uncontracted">PHASE 1: UNCONTRACTED FIELDS</div>
+            
+            <div id="equation-display">
+                <div style="text-align: center; color: #888;">Initializing Physics Kernel...</div>
+            </div>
+
+            <div class="controls">
+                <button id="btn-0" class="active-btn" onclick="setPhase(0)">UNCONTRACTED (Disconnected)</button>
+                <button id="btn-1" onclick="setPhase(1)">S-CHANNEL (Direct)</button>
+                <button id="btn-2" onclick="setPhase(2)">U-CHANNEL (Crossed)</button>
+                <button id="btn-3" onclick="setPhase(3)">T-CHANNEL (Forbidden)</button>
+            </div>
+        </div>
+        
+        <div id="instructions">DRAG TO ORBIT | SELECT CHANNELS TO OBSERVE TOPOLOGICAL MORPHING</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- 1. THREE.JS SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000510, 0.02);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 22);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- 2. MATHEMATICAL COORDINATES ---
+        const p_in  = new THREE.Vector3(-10, -4, 0); // e- in
+        const k_in  = new THREE.Vector3(-10,  4, 0); // photon in
+        const p_out = new THREE.Vector3( 10, -4, 0); // e- out
+        const k_out = new THREE.Vector3( 10,  4, 0); // photon out
+        
+        let v_x = new THREE.Vector3();
+        let v_y = new THREE.Vector3();
+
+        // --- 3. GEOMETRY GENERATORS ---
+        function createGlowingNode(colorHex, size) {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            g.addColorStop(0, '#fff'); g.addColorStop(0.2, '#' + colorHex); g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64);
+            const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, transparent: true });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(size, size, 1);
+            return sprite;
+        }
+
+        const vertexX = createGlowingNode('ffffff', 2.0); scene.add(vertexX);
+        const vertexY = createGlowingNode('ffffff', 2.0); scene.add(vertexY);
+
+        // Render External States with Correct Colors
+        scene.add(createGlowingNode('00ffff', 1.5)).position.copy(p_in);
+        scene.add(createGlowingNode('ff00ff', 1.5)).position.copy(k_in);
+        scene.add(createGlowingNode('00ffff', 1.5)).position.copy(p_out);
+        scene.add(createGlowingNode('ff00ff', 1.5)).position.copy(k_out);
+
+        // --- 4. THE PROPAGATORS ---
+        function createLine(colorHex) {
+            const mat = new THREE.LineBasicMaterial({ color: parseInt(colorHex, 16), linewidth: 2, transparent: true, opacity: 1 });
+            const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            return line;
+        }
+
+        function createWavyLine(colorHex, segments = 50) {
+            const mat = new THREE.LineBasicMaterial({ color: parseInt(colorHex, 16), linewidth: 2, transparent: true, opacity: 1 });
+            const points = new Float32Array((segments + 1) * 3);
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(points, 3));
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            return { line, geo, segments };
+        }
+
+        const f_in = createLine('00ffff');  
+        const f_out = createLine('00ffff'); 
+        const f_internal = createLine('00ffff'); // Virtual electron
+
+        const ph_in = createWavyLine('ff00ff');
+        const ph_out = createWavyLine('ff00ff');
+        const ph_internal = createWavyLine('ff0000'); // Used only for forbidden red virtual photon
+
+        function updateWavyLine(photonObj, pA, pB, time, amplitude=0.6, frequency=20.0) {
+            if(!photonObj.line.material.visible && photonObj.line.material.opacity === 0) return;
+            const { geo, segments } = photonObj;
+            const pos = geo.attributes.position.array;
+            const dir = new THREE.Vector3().subVectors(pB, pA);
+            if(dir.lengthSq() < 0.001) return; 
+            dir.normalize();
+            
+            let up = new THREE.Vector3(0, 0, 1);
+            if(Math.abs(dir.dot(up)) > 0.9) up.set(0, 1, 0);
+            const orth = new THREE.Vector3().crossVectors(dir, up).normalize();
+
+            for(let i=0; i<=segments; i++) {
+                const t = i / segments;
+                const basePos = new THREE.Vector3().lerpVectors(pA, pB, t);
+                const envelope = Math.sin(t * Math.PI); 
+                const waveOffset = Math.sin(t * frequency - time * 8.0) * amplitude * envelope;
+                basePos.addScaledVector(orth, waveOffset);
+                pos[i*3] = basePos.x; pos[i*3+1] = basePos.y; pos[i*3+2] = basePos.z;
+            }
+            geo.attributes.position.needsUpdate = true;
+        }
+
+        function setStraightLine(lineObj, pA, pB) {
+            const pos = lineObj.geometry.attributes.position.array;
+            pos[0] = pA.x; pos[1] = pA.y; pos[2] = pA.z;
+            pos[3] = pB.x; pos[4] = pB.y; pos[5] = pB.z;
+            lineObj.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // --- 5. TOPOLOGICAL STATE MACHINE & MATHJAX ---
+        let currentState = -1;
+        let transitionProgress = 0.0; 
+        
+        let target_Vx = new THREE.Vector3(); let prev_Vx = new THREE.Vector3();
+        let target_Vy = new THREE.Vector3(); let prev_Vy = new THREE.Vector3();
+
+        let target_f_in_end = new THREE.Vector3(); let prev_f_in_end = new THREE.Vector3();
+        let target_f_out_start = new THREE.Vector3(); let prev_f_out_start = new THREE.Vector3();
+        let target_ph_in_end = new THREE.Vector3(); let prev_ph_in_end = new THREE.Vector3();
+        let target_ph_out_start = new THREE.Vector3(); let prev_ph_out_start = new THREE.Vector3();
+
+        const mathDefs = {
+            0: `$$ : \\bar{\\psi}_x \\gamma^\\mu \\psi_x \\color{#ff00ff}{A_{\\mu,x}} \\, \\bar{\\psi}_y \\gamma^\\nu \\psi_y \\color{#ff00ff}{A_{\\nu,y}} : = 0 $$
+                <div style="font-size: 10px; color: #888; text-align: center;">Asymptotic states isolated. Operators do not contract, forcing amplitude to zero.</div>`,
+            
+            1: `<div style="font-size:11px; margin-bottom: 5px;">Exact Contraction Sequence (s-Channel):</div>
+                $$ \\color{#00ffff}{\\langle a_{p'} \\bar{\\psi}_y \\rangle} \\color{#ff00ff}{\\langle c_{k'} A_{\\nu,y} \\rangle} \\color{#00ffff}{\\langle \\psi_y \\bar{\\psi}_x \\rangle} \\color{#00ffff}{\\langle \\psi_x a^\\dagger_p \\rangle} \\color{#ff00ff}{\\langle A_{\\mu,x} c^\\dagger_k \\rangle} $$
+                <div style="font-size:11px; margin-top: 10px; margin-bottom: 5px;">Evaluating to S-Matrix Amplitude:</div>
+                $$ i\\mathcal{M}_s = (-ie)^2 \\color{#00ffff}{\\bar{u}(p')} \\color{#ff00ff}{\\notin'(k')} \\color{#00ffff}{\\left[ \\frac{i(\\not{p}+\\not{k}+m)}{(p+k)^2 - m^2} \\right]} \\color{#ff00ff}{\\notin(k)} \\color{#00ffff}{u(p)} $$`,
+            
+            2: `<div style="font-size:11px; margin-bottom: 5px;">Exact Contraction Sequence (u-Channel Crossed):</div>
+                $$ \\color{#00ffff}{\\langle a_{p'} \\bar{\\psi}_y \\rangle} \\color{#ff00ff}{\\langle c_{k'} A_{\\mu,x} \\rangle} \\color{#00ffff}{\\langle \\psi_y \\bar{\\psi}_x \\rangle} \\color{#00ffff}{\\langle \\psi_x a^\\dagger_p \\rangle} \\color{#ff00ff}{\\langle A_{\\nu,y} c^\\dagger_k \\rangle} $$
+                <div style="font-size:11px; margin-top: 10px; margin-bottom: 5px;">Evaluating to S-Matrix Amplitude:</div>
+                $$ i\\mathcal{M}_u = (-ie)^2 \\color{#00ffff}{\\bar{u}(p')} \\color{#ff00ff}{\\notin(k)} \\color{#00ffff}{\\left[ \\frac{i(\\not{p}-\\not{k}'+m)}{(p-k')^2 - m^2} \\right]} \\color{#ff00ff}{\\notin'(k')} \\color{#00ffff}{u(p)} $$`,
+                
+            3: `<div style="font-size:11px; margin-bottom: 5px;">Photon Vertex Violation (t-Channel Attempt):</div>
+                $$ \\color{#ff0000}{\\langle c_{k'} A_{\\nu,y} \\rangle \\langle A_{\\rho, y} A_{\\lambda, x} \\rangle \\langle A_{\\mu, y} c_k^\\dagger \\rangle} \\to \\text{Vertex Y requires 3 } \\color{#ff00ff}{\\gamma} \\text{ fields} $$
+                <div style="font-size:11px; margin-top: 10px; margin-bottom: 5px;">Mathematical Evaluation:</div>
+                $$ \\langle 0 | \\color{#ff00ff}{c_{k'}} \\color{#00ffff}{a_{p'}} \\, \\mathcal{T}\\{ \\mathcal{H}_{int} \\mathcal{H}_{int} \\} \\, \\color{#00ffff}{a^\\dagger_{p}} \\color{#ff00ff}{c^\\dagger_{k}} | 0 \\rangle = \\color{#ff0000}{0} $$
+                <div style="font-size: 10px; color: #ffaaaa; text-align: center; margin-top: 5px;">Standard QED Hamiltonians lack a photon self-interaction term ($A^3$).</div>`
+        };
+
+        function setPhase(phaseNum) {
+            if(currentState === phaseNum) return;
+            
+            prev_Vx.copy(target_Vx); prev_Vy.copy(target_Vy);
+            prev_f_in_end.copy(target_f_in_end); prev_f_out_start.copy(target_f_out_start);
+            prev_ph_in_end.copy(target_ph_in_end); prev_ph_out_start.copy(target_ph_out_start);
+            
+            currentState = phaseNum;
+            transitionProgress = 0.0;
+            
+            const box = document.getElementById('status-box');
+            const panel = document.getElementById('dynamic-panel');
+            const eqDisp = document.getElementById('equation-display');
+            
+            for(let i=0; i<=3; i++) {
+                document.getElementById(`btn-${i}`).className = '';
+                document.getElementById(`btn-${i}`).style.borderColor = '#555';
+                document.getElementById(`btn-${i}`).style.color = '#fff';
+            }
+            
+            let activeBtn = document.getElementById(`btn-${phaseNum}`);
+
+            // Reset Default Visual States
+            vertexX.material.color.setHex(0xffffff);
+            vertexY.material.color.setHex(0xffffff);
+            f_internal.material.opacity = 1;
+            ph_internal.line.material.opacity = 0;
+            
+            f_in.material.opacity = 1; f_out.material.opacity = 1;
+            ph_in.line.material.opacity = 1; ph_out.line.material.opacity = 1;
+            vertexX.material.opacity = 1; vertexY.material.opacity = 1;
+
+            if(phaseNum === 0) {
+                activeBtn.className = 'active-btn';
+                box.className = 'status-uncontracted';
+                panel.style.borderLeftColor = '#aaa';
+                box.innerText = "PHASE 1: UNCONTRACTED FIELDS";
+                
+                target_Vx.set(-2, 0, 0); target_Vy.set(2, 0, 0);
+                target_f_in_end.set(-6, -2.5, 0);
+                target_f_out_start.set(6, -2.5, 0);
+                target_ph_in_end.set(-6, 2.5, 0);
+                target_ph_out_start.set(6, 2.5, 0);
+                
+                f_internal.material.opacity = 0;
+                ph_in.line.material.opacity = 0.5;
+                ph_out.line.material.opacity = 0.5;
+            } 
+            else if (phaseNum === 1) {
+                activeBtn.className = 'active-btn';
+                activeBtn.style.borderColor = '#0ff'; activeBtn.style.color = '#0ff';
+                box.className = 'status-s-channel';
+                panel.style.borderLeftColor = '#0ff';
+                box.innerText = "PHASE 2: FULLY CONTRACTED (s-Channel Direct)";
+                
+                target_Vx.set(-3, 0, 0); target_Vy.set(3, 0, 0);
+                target_f_in_end.copy(target_Vx); target_ph_in_end.copy(target_Vx);
+                target_f_out_start.copy(target_Vy); target_ph_out_start.copy(target_Vy);
+            }
+            else if (phaseNum === 2) {
+                activeBtn.className = 'active-btn-u';
+                activeBtn.style.borderColor = '#f0f'; activeBtn.style.color = '#f0f';
+                box.className = 'status-u-channel';
+                panel.style.borderLeftColor = '#f0f';
+                box.innerText = "PHASE 3: FULLY CONTRACTED (u-Channel Crossed)";
+                
+                target_Vx.set(-3, 0, 0); target_Vy.set(3, 0, 0);
+                target_f_in_end.copy(target_Vx); target_ph_out_start.copy(target_Vx); // Photon emitted early
+                target_f_out_start.copy(target_Vy); target_ph_in_end.copy(target_Vy); // Photon absorbed late
+            }
+            else if (phaseNum === 3) {
+                activeBtn.className = 'active-btn-u';
+                activeBtn.style.borderColor = '#f00'; activeBtn.style.color = '#f00';
+                box.className = 'status-t-channel';
+                panel.style.borderLeftColor = '#f00';
+                box.innerText = "PHASE 4: FORBIDDEN TOPOLOGY (t-Channel)";
+                
+                f_internal.material.opacity = 0; // No internal electron
+                ph_internal.line.material.opacity = 0.6; // Replace with red virtual photon
+                
+                vertexX.material.color.setHex(0xffffff); // Electron vertex is theoretically fine
+                vertexY.material.color.setHex(0xff0000); // Photon vertex violates QED
+                
+                target_Vx.set(0, -2.5, 0); target_Vy.set(0, 2.5, 0);
+                target_f_in_end.copy(target_Vx); target_f_out_start.copy(target_Vx); // Electrons scatter at X
+                target_ph_in_end.copy(target_Vy); target_ph_out_start.copy(target_Vy); // Photons scatter at Y
+            }
+
+            eqDisp.innerHTML = mathDefs[phaseNum];
+            try { if(window.MathJax) { MathJax.typesetPromise([eqDisp]); } } catch(e) {}
+        }
+
+        // Initialize securely
+        target_Vx.set(-2, 0, 0); target_Vy.set(2, 0, 0);
+        target_f_in_end.set(-6, -2.5, 0); target_f_out_start.set(6, -2.5, 0);
+        target_ph_in_end.set(-6, 2.5, 0); target_ph_out_start.set(6, 2.5, 0);
+        setPhase(0);
+
+        // --- 6. ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            if(transitionProgress < 1.0) transitionProgress += 0.02;
+            if(transitionProgress > 1.0) transitionProgress = 1.0;
+            const ease = transitionProgress * transitionProgress * (3 - 2 * transitionProgress);
+
+            if(currentState > -1) {
+                const cur_Vx = new THREE.Vector3().lerpVectors(prev_Vx, target_Vx, ease);
+                const cur_Vy = new THREE.Vector3().lerpVectors(prev_Vy, target_Vy, ease);
+
+                const cur_f_in_end = new THREE.Vector3().lerpVectors(prev_f_in_end, target_f_in_end, ease);
+                const cur_f_out_start = new THREE.Vector3().lerpVectors(prev_f_out_start, target_f_out_start, ease);
+                const cur_ph_in_end = new THREE.Vector3().lerpVectors(prev_ph_in_end, target_ph_in_end, ease);
+                const cur_ph_out_start = new THREE.Vector3().lerpVectors(prev_ph_out_start, target_ph_out_start, ease);
+
+                setStraightLine(f_in, p_in, cur_f_in_end);
+                setStraightLine(f_out, cur_f_out_start, p_out);
+                setStraightLine(f_internal, cur_Vx, cur_Vy);
+
+                updateWavyLine(ph_in, k_in, cur_ph_in_end, time);
+                updateWavyLine(ph_out, cur_ph_out_start, k_out, time);
+                
+                // Animate forbidden internal photon
+                if(ph_internal.line.material.opacity > 0) {
+                    updateWavyLine(ph_internal, cur_Vx, cur_Vy, time);
+                }
+
+                vertexX.position.copy(cur_Vx);
+                vertexY.position.copy(cur_Vy);
+            }
+
+            const pulse = currentState === 3 ? 2.0 + Math.random() * 0.5 : 2.0 + Math.sin(time * 5) * 0.3;
+            vertexX.scale.set(pulse, pulse, 1);
+            vertexY.scale.set(pulse, pulse, 1);
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacetime Portfolio | State 1: Subluminal</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* --- HUD UI --- */
+        #hud {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            color: rgba(0, 255, 255, 0.8);
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 10, 20, 0.5);
+            padding: 15px;
+            border-left: 2px solid #0ff;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            width: 240px;
+            margin-bottom: 6px;
+        }
+        .metric-label { color: #5588aa; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;}
+        .metric-value { font-weight: bold; color: #ccffff; }
+
+        /* --- POST FX OVERLAYS --- */
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,0,0,0.3) 3px);
+            pointer-events: none; z-index: 5; opacity: 0.2;
+        }
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 40%, #000 150%);
+            pointer-events: none; z-index: 6;
+        }
+        
+        /* --- LABELS --- */
+        #labels-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 8;
+        }
+
+        .node-container {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.4s ease-out;
+            will-change: transform, opacity;
+        }
+
+        .node-connector {
+            width: 50px;
+            height: 1px;
+            background: linear-gradient(90deg, #0ff, transparent);
+            margin-right: 10px;
+        }
+
+        .node-label {
+            background: rgba(5, 10, 15, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-left: 3px solid #0ff;
+            padding: 10px 15px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+            min-width: 200px;
+        }
+
+        .node-title {
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        
+        .node-subtitle {
+            color: #88ccdd;
+            font-size: 11px;
+            font-style: italic;
+        }
+
+        .node-meta {
+            margin-top: 6px;
+            font-size: 9px;
+            color: #446677;
+            display: flex;
+            justify-content: space-between;
+            text-transform: uppercase;
+        }
+
+        .velocity-warning {
+            color: #ff0055;
+            text-shadow: 0 0 8px #ff0000;
+            display: none;
+            font-weight: bold;
+            margin-top: 5px;
+            text-align: center;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <div id="hud">
+        <div class="metric-row"><span class="metric-label">COORD. TIME (t)</span> <span id="coord-time" class="metric-value">0.00</span></div>
+        <div class="metric-row"><span class="metric-label">PROPER TIME (&tau;)</span> <span id="proper-time" class="metric-value">0.00</span></div>
+        <div class="metric-row"><span class="metric-label">VELOCITY (v)</span> <span id="velocity" class="metric-value">0.00c</span></div>
+        <div class="metric-row"><span class="metric-label">LORENTZ (&gamma;)</span> <span id="lorentz" class="metric-value">1.000</span></div>
+        <div id="warp-status" style="margin-top:10px; font-size: 10px; opacity: 0.7; color: #0ff;">SYSTEM STATUS: NOMINAL</div>
+        <div id="velocity-alert" class="velocity-warning">CAUSALITY BREAK IMMINENT</div>
+    </div>
+    
+    <div id="labels-container"></div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const CONFIG = {
+            c_sim: 120, 
+            scrollDamping: 0.08,
+            starCount: 15000, 
+            massStrength: 15.0, 
+            gridZStart: 100,
+            gridZEnd: -800,
+            gridWidth: 300, 
+            gridDensity: 0.6 
+        };
+
+        // --- DATA ---
+        const CAREER_NODES = [
+            { x: 30, y: 0, z: -50, mass: 1.5, title: "ACADEMIC RESEARCH", subtitle: "Quantum Optics Systems", date: "2021-2022" },
+            { x: -40, y: 0, z: -160, mass: 3.25, title: "CERN FELLOWSHIP", subtitle: "High Energy Particle Tracking", date: "2023" },
+            { x: 25, y: 0, z: -280, mass: 5.0, title: "MASTER'S THESIS", subtitle: "Topological Defects in Spacetime", date: "2024" },
+            { x: -20, y: 0, z: -420, mass: 2.25, title: "FULL STACK ENG", subtitle: "High-Performance WebGL Systems", date: "2025" }
+        ];
+
+        // --- SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x010103);
+        scene.fog = new THREE.FogExp2(0x010103, 0.0025); 
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        // --- CAMERA PATH ---
+        const curvePoints = [];
+        curvePoints.push(new THREE.Vector3(0, 5, 50));
+        CAREER_NODES.forEach(node => {
+            curvePoints.push(new THREE.Vector3(node.x * 0.6, 5 + node.mass * 0.3, node.z + 40));
+        });
+        curvePoints.push(new THREE.Vector3(0, 5, -500));
+
+        const cameraPath = new THREE.CatmullRomCurve3(curvePoints);
+        cameraPath.tension = 0.5;
+
+
+        // --- 1. THE SPACETIME MANIFOLD (BACKGROUND MESH) ---
+        
+        const gridVertexShader = `
+            uniform float uTime;
+            uniform vec3 uMassPositions[4]; 
+            uniform float uMassStrengths[4];
+            
+            attribute vec3 basePos;
+            
+            varying float vDistortion;
+            varying float vDepth;
+            
+            void main() {
+                vec3 pos = basePos;
+                
+                float totalDisplacement = 0.0;
+                
+                for(int i = 0; i < 4; i++) {
+                    float dx = pos.x - uMassPositions[i].x;
+                    float dz = pos.z - uMassPositions[i].z;
+                    float distSq = dx*dx + dz*dz;
+                    
+                    // Width logic: Heavier -> Wider
+                    float decay = 0.4 / (uMassStrengths[i] + 10.0);
+                    decay = clamp(decay, 0.002, 0.02);
+
+                    float force = uMassStrengths[i] * exp(-distSq * decay);
+                    totalDisplacement -= force;
+                }
+                
+                pos.y += totalDisplacement;
+                vDistortion = totalDisplacement;
+                vDepth = -pos.z; 
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_Position = projectionMatrix * mvPosition;
+                
+                // Fixed point size for coordinate look
+                gl_PointSize = 2.0; 
+                // Slight attenuation for distance
+                gl_PointSize *= (100.0 / -mvPosition.z);
+                gl_PointSize = clamp(gl_PointSize, 1.5, 3.5);
+            }
+        `;
+
+        const gridFragmentShader = `
+            varying float vDistortion;
+            
+            void main() {
+                // Base Color: Technical Grey/Cyan (Non-glowing)
+                vec3 color = vec3(0.1, 0.3, 0.4);
+                
+                // Visualization of curvature intensity
+                float shift = smoothstep(-2.0, -25.0, vDistortion);
+                
+                // Shift to a warning orange/red, but matte
+                color = mix(color, vec3(0.8, 0.3, 0.2), shift); 
+                
+                // Alpha logic: Solid points
+                float alpha = 0.5 + (shift * 0.5);
+                
+                // Shape: Sharp Square (Coordinate Pixel)
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                // Simple box clip
+                if(abs(coord.x) > 0.45 || abs(coord.y) > 0.45) discard;
+                
+                gl_FragColor = vec4(color, alpha);
+            }
+        `;
+
+        const gridGeo = new THREE.BufferGeometry();
+        const gridPoints = [];
+        for(let z = CONFIG.gridZStart; z > CONFIG.gridZEnd; z -= CONFIG.gridDensity) {
+            for(let x = -CONFIG.gridWidth/2; x < CONFIG.gridWidth/2; x += CONFIG.gridDensity) {
+                // STRUCTURED GRID: Removed random jitter (jx, jz)
+                gridPoints.push(x, 0, z);
+            }
+        }
+        gridGeo.setAttribute('basePos', new THREE.Float32BufferAttribute(gridPoints, 3));
+        gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(gridPoints, 3)); 
+
+        const gridMat = new THREE.ShaderMaterial({
+            vertexShader: gridVertexShader,
+            fragmentShader: gridFragmentShader,
+            uniforms: {
+                uMassPositions: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
+                uMassStrengths: { value: [0,0,0,0] }
+            },
+            transparent: true,
+            depthWrite: false,
+            // CHANGED: NormalBlending for solid, non-glowing points
+            blending: THREE.NormalBlending 
+        });
+
+        const gridMesh = new THREE.Points(gridGeo, gridMat);
+        scene.add(gridMesh);
+
+
+        // --- 2. THE EVENTS (FLOATING ENERGY NODES) ---
+        
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+            grad.addColorStop(0.3, 'rgba(100, 200, 255, 0.5)');
+            grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const glowTexture = createGlowTexture();
+        const glowMaterial = new THREE.SpriteMaterial({ 
+            map: glowTexture, 
+            color: 0xffffff, 
+            transparent: true, 
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const nodeGroup = new THREE.Group();
+        scene.add(nodeGroup);
+
+        CAREER_NODES.forEach((node, index) => {
+            if (index < 4) {
+                gridMat.uniforms.uMassPositions.value[index] = new THREE.Vector3(node.x, 0, node.z);
+                gridMat.uniforms.uMassStrengths.value[index] = node.mass * CONFIG.massStrength;
+            }
+
+            const wrapper = new THREE.Group();
+            const totalDepth = node.mass * CONFIG.massStrength;
+            wrapper.position.set(node.x, -totalDepth * 0.4, node.z); 
+
+            const scale = 12 + (node.mass * 1.5); 
+            
+            const sprite = new THREE.Sprite(glowMaterial);
+            sprite.scale.set(scale, scale, 1);
+            wrapper.add(sprite);
+            
+            const coreMat = new THREE.SpriteMaterial({ map: glowTexture, color: 0xffffff });
+            const core = new THREE.Sprite(coreMat);
+            core.scale.set(scale * 0.2, scale * 0.2, 1);
+            wrapper.add(core);
+
+            const ringGeo = new THREE.BufferGeometry();
+            const ringCount = 80; 
+            const ringPos = [];
+            for(let i=0; i<ringCount; i++) {
+                const theta = Math.random() * Math.PI * 2;
+                const r = scale * 0.4 + Math.random() * (scale * 0.2);
+                ringPos.push(r * Math.cos(theta), (Math.random()-0.5) * 2.0, r * Math.sin(theta));
+            }
+            ringGeo.setAttribute('position', new THREE.Float32BufferAttribute(ringPos, 3));
+            const ringMat = new THREE.PointsMaterial({
+                color: 0xffcc88,
+                size: 0.3, 
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            const ring = new THREE.Points(ringGeo, ringMat);
+            wrapper.add(ring);
+            
+            nodeGroup.add(wrapper);
+
+            const label = document.createElement('div');
+            label.className = 'node-container';
+            label.innerHTML = `
+                <div class="node-label">
+                    <div class="node-title">${node.title}</div>
+                    <div class="node-subtitle">${node.subtitle}</div>
+                    <div class="node-meta">
+                        <span>${node.date}</span>
+                        <span>M: ${node.mass.toFixed(1)}</span>
+                    </div>
+                </div>
+                <div class="node-connector"></div>
+            `;
+            document.getElementById('labels-container').appendChild(label);
+            node.element = label;
+        });
+
+
+        // --- 3. INFINITE STARFIELD ---
+        const starVertexShader = `
+            uniform float uTime;
+            uniform float uCameraZ;
+            uniform float uSpeed; 
+            attribute float size;
+            attribute vec3 basePos;
+            varying float vAlpha;
+
+            void main() {
+                vec3 pos = basePos;
+                float wrapDepth = 1000.0;
+                float relZ = pos.z - uCameraZ;
+                float wrappedZ = mod(relZ + 500.0, wrapDepth) - 500.0;
+                pos.z = uCameraZ + wrappedZ;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_Position = projectionMatrix * mvPosition;
+                
+                float dist = length(mvPosition.xyz);
+                float sizeFactor = size * (400.0 / dist);
+                float twinkle = sin(uTime * 3.0 + basePos.x);
+                
+                gl_PointSize = sizeFactor * (1.0 + uSpeed * 0.1 + twinkle * 0.3);
+                float edgeFade = 1.0 - smoothstep(400.0, 500.0, abs(wrappedZ));
+                vAlpha = (0.5 + 0.5 * twinkle) * edgeFade;
+            }
+        `;
+
+        const starFragmentShader = `
+            varying float vAlpha;
+            void main() {
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                float dist = length(coord);
+                if(dist > 0.5) discard;
+                float glow = 1.0 - (dist * 2.0);
+                glow = pow(glow, 2.0);
+                gl_FragColor = vec4(1.0, 1.0, 1.0, vAlpha * glow);
+            }
+        `;
+
+        const starsGeo = new THREE.BufferGeometry();
+        const starPos = [];
+        const starSizes = [];
+        
+        for(let i=0; i<CONFIG.starCount; i++) {
+            const x = (Math.random() - 0.5) * 800;
+            const y = (Math.random() - 0.5) * 800;
+            const z = (Math.random() - 0.5) * 1000; 
+            starPos.push(x, y, z);
+            starSizes.push(0.5 + Math.random() * 1.5);
+        }
+        
+        starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        starsGeo.setAttribute('basePos', new THREE.Float32BufferAttribute(starPos, 3));
+        starsGeo.setAttribute('size', new THREE.Float32BufferAttribute(starSizes, 1));
+        
+        const starsMat = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uCameraZ: { value: 0 },
+                uSpeed: { value: 0 }
+            },
+            vertexShader: starVertexShader,
+            fragmentShader: starFragmentShader,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        
+        const starField = new THREE.Points(starsGeo, starsMat);
+        starField.frustumCulled = false; 
+        scene.add(starField);
+
+
+        // --- LOGIC ---
+        let scrollY = 0;
+        let targetScrollY = 0;
+        let velocity = 0;
+        let properTime = 0;
+        let coordinateTime = 0;
+
+        window.addEventListener('wheel', (e) => {
+            targetScrollY += e.deltaY * 0.2; 
+            targetScrollY = Math.max(0, Math.min(targetScrollY, 6000));
+        });
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // Physics
+            const diff = targetScrollY - scrollY;
+            scrollY += diff * CONFIG.scrollDamping;
+            velocity = diff * CONFIG.scrollDamping;
+
+            // --- CAMERA PATH LOGIC ---
+            const pathProgress = Math.min(Math.max(scrollY / 1500, 0), 1.0);
+            const camPos = cameraPath.getPoint(pathProgress);
+            const lookPos = cameraPath.getPoint(Math.min(pathProgress + 0.05, 1.0)); 
+            
+            camera.position.copy(camPos);
+            camera.position.y += Math.sin(time * 0.5) * 1.0;
+            camera.lookAt(lookPos);
+            
+            const turnStrength = (lookPos.x - camPos.x) * 0.02;
+            camera.rotation.z = -turnStrength;
+
+
+            // Update Uniforms
+            starsMat.uniforms.uTime.value = time;
+            starsMat.uniforms.uCameraZ.value = camera.position.z;
+            starsMat.uniforms.uSpeed.value = velocity;
+
+            gridMat.uniforms.uTime = { value: time };
+            
+            // HUD
+            const v_norm = Math.min(Math.abs(velocity) / CONFIG.c_sim, 0.999);
+            const lorentz = 1.0 / Math.sqrt(1.0 - (v_norm * v_norm));
+            
+            coordinateTime += delta;
+            properTime += delta / lorentz;
+
+            document.getElementById('coord-time').innerText = coordinateTime.toFixed(2);
+            document.getElementById('proper-time').innerText = properTime.toFixed(2);
+            document.getElementById('velocity').innerText = v_norm.toFixed(2) + "c";
+            document.getElementById('lorentz').innerText = lorentz.toFixed(3);
+
+            // Warning
+            const hud = document.getElementById('hud');
+            const alert = document.getElementById('velocity-alert');
+            
+            if (v_norm > 0.9) {
+                hud.style.borderLeftColor = '#ff0055';
+                alert.style.display = 'block';
+                camera.position.x += (Math.random() - 0.5) * 0.5;
+            } else {
+                hud.style.borderLeftColor = '#0ff';
+                alert.style.display = 'none';
+            }
+
+            // Animate Nodes
+            nodeGroup.children.forEach((wrapper, i) => {
+                const node = CAREER_NODES[i];
+                const baseScale = 12 + (node.mass * 1.5);
+                
+                // Gentle pulse
+                wrapper.children[0].scale.setScalar(baseScale + Math.sin(time * 2 + i) * 2);
+                
+                if(wrapper.children[2]) wrapper.children[2].rotation.y += 0.01;
+                
+                const nodePos = wrapper.position.clone();
+                // Label floats significantly above
+                nodePos.y += 30 + (node.mass * 2); 
+                nodePos.project(camera);
+                
+                const x = (nodePos.x * .5 + .5) * window.innerWidth;
+                const y = -(nodePos.y * .5 - .5) * window.innerHeight;
+                
+                const el = node.element;
+                if(el) {
+                    if (nodePos.z < 1 && Math.abs(node.z - camera.position.z) < 300) {
+                        el.style.transform = `translate(${x}px, ${y}px)`;
+                        
+                        if (x > window.innerWidth / 2) {
+                            el.style.flexDirection = "row-reverse";
+                            el.children[1].style.marginRight = "0";
+                            el.children[1].style.marginLeft = "10px";
+                            el.children[0].style.borderLeft = "none";
+                            el.children[0].style.borderRight = "3px solid #0ff";
+                        } else {
+                            el.style.flexDirection = "row";
+                            el.children[1].style.marginRight = "10px";
+                            el.children[1].style.marginLeft = "0";
+                            el.children[0].style.borderLeft = "3px solid #0ff";
+                            el.children[0].style.borderRight = "none";
+                        }
+
+                        el.style.opacity = 1;
+                    } else {
+                        el.style.opacity = 0;
+                    }
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

@@ -2,58 +2,259 @@
 <html lang="en">
 
 <head>
+
+    <!-- <a href="https://iconscout.com/icons/cv" class="text-underline font-size-sm" target="_blank">Cv</a> by <a href="https://iconscout.com/contributors/kiran-shastry" class="text-underline font-size-sm" target="_blank">Kiran Shastry</a> -->
+    <!-- <a href="https://iconscout.com/icons/resume" class="text-underline font-size-sm" target="_blank">resume</a> by <a href="https://iconscout.com/contributors/iconmarketpk" class="text-underline font-size-sm" target="_blank">IconMarket</a> -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spacetime Portfolio | Organic Transition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Shakir Ahmed (Ravenwit)</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Portfolio of Shakir Ahmed (Ravenwit).">
+    <meta name="keywords" content="Shakir Ahmed, Ravenwit">
+    <meta name="author" content="Shakir Ahmed">
+
+    <!-- Open Graph / LinkedIn / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ravenwit.github.io/">
+    <meta property="og:title" content="Shakir Ahmed (Ravenwit) | Portfolio">
+    <meta property="og:description" content="Interactive Spacetime Portfolio.">
+    <meta property="og:image" content="https://ravenwit.github.io/og-image.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://ravenwit.github.io/">
+    <meta name="twitter:title" content="Shakir Ahmed (Ravenwit) | Portfolio">
+    <meta name="twitter:description" content="Interactive Spacetime Portfolio.">
+    <meta name="twitter:image" content="https://ravenwit.github.io/og-image.png">
+
+    <!-- Favicons (Placeholders, add actual files to /public) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="canonical" href="https://ravenwit.github.io/" />
+
+    <!-- Resource Hints: Preload critical CSS -->
+    <link rel="preload" href="/src/styles/main.css" as="style">
+    <script>
+        // Mobile fallback mechanism: redirect to previous portfolio on small screens dynamically
+        function checkMobileFallback() {
+            if (window.innerWidth <= 768 && !window.location.pathname.startsWith('/mobile/')) {
+                window.location.replace('/mobile/index.html');
+            }
+        }
+
+        // Check on load
+        checkMobileFallback();
+        // Check on resize
+        window.addEventListener('resize', checkMobileFallback);
+    </script>
     <link rel="stylesheet" href="/src/styles/main.css">
+    <!-- Jersey 10 Charted Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+10+Charted&display=swap" rel="stylesheet">
+    <!-- Micro 5 Charted Google Font for industrial aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&display=swap" rel="stylesheet">
+    <!-- Sixtyfour Google Font for industrial aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&family=Sixtyfour&display=swap"
+        rel="stylesheet">
+    <!-- Doto Google Font for industrial aesthetic -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Micro+5+Charted&family=Sixtyfour&display=swap"
+        rel="stylesheet">
+    <!-- Fonts for the Research Phase Dimension -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
 <body>
 
     <div class="scanlines"></div>
     <div class="vignette"></div>
+    <div id="optical-flash"></div>
 
     <div id="canvas-container"></div>
     <div id="labels-container"></div>
 
-    <div id="ui-loader" class="ui-layer">
-        <div class="text-center space-y-4">
-            <h1
-                class="text-2xl font-light tracking-widest uppercase mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-400">
-                System Initialization</h1>
-            <div class="w-64 h-1 bg-gray-900 rounded overflow-hidden relative mx-auto border border-gray-800">
-                <div id="progress-bar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-500 to-purple-500"
-                    style="width: 0%"></div>
-            </div>
-            <div class="data-readout text-xs text-cyan-100 opacity-90 text-left">
-                <div>k_B T (Temp): <span id="temp-display">50.000</span></div>
-                <div>Ω (Order): <span id="order-display">0.000</span></div>
-                <div>Status: <span id="status-display">ENTROPY_MAXIMIZED</span></div>
+    <div id="hobbies-ui-layer" class="ui-layer">
+        <div id="hobbies-viewport">
+            <div id="triptych-container">
+                <div id="triptych">
+                    <div class="triptych-master-title">INTERESTS / TOYS</div>
+                    <div class="matrix-wrapper" id="wrapper-areas">
+                        <div class="bracket left"></div>
+                        <div class="bracket right"></div>
+                        <div id="matrix-areas" class="matrix matrix-6x6"></div>
+                    </div>
+                    <div class="matrix-wrapper" id="wrapper-categories">
+                        <div class="bracket left" style="border-width: 3px;"></div>
+                        <div class="bracket right" style="border-width: 3px;"></div>
+                        <div id="matrix-categories" class="matrix matrix-7x7"></div>
+                    </div>
+                    <div class="matrix-wrapper" id="wrapper-tools">
+                        <div class="bracket left"></div>
+                        <div class="bracket right"></div>
+                        <div id="matrix-tools" class="matrix matrix-6x6"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+
+
     <div id="ui-hero" class="ui-layer">
-        <h1 class="hero-title">SPACETIME<br>ARCHITECT</h1>
-        <div class="hero-prompt">> SCROLL TO INITIATE TRAJECTORY <<< /div>
+        <div id="liquid-name-container"
+            style="position: absolute; width: 500px; height: 120px; top: calc(50% - 170px); left: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: auto; cursor: crosshair;">
+            <canvas id="liquidNameCanvas" width="500" height="120"
+                style="width:100%; height:100%; pointer-events: auto;" aria-label="Interactive liquid name animation"
+                role="img"></canvas>
+        </div>
+        <div id="fourier-container"
+            style="position: absolute; width: 600px; height: 600px; top: calc(50% + 30px);; left: 50%; transform: translate(-50%, -50%); z-index: 5;">
+            <canvas id="fourierCanvas" width="600" height="600" style="width:100%; height:100%; border-radius: 50%;"
+                aria-label="Fourier series orbital animation" role="img"></canvas>
         </div>
 
-        <div id="hud">
-            <div class="metric-row"><span class="metric-label">COORD. TIME (t)</span> <span id="coord-time"
-                    class="metric-value">0.00</span></div>
-            <div class="metric-row"><span class="metric-label">PROPER TIME (&tau;)</span> <span id="proper-time"
-                    class="metric-value">0.00</span></div>
-            <div class="metric-row"><span class="metric-label">VELOCITY (v)</span> <span id="velocity"
-                    class="metric-value">0.00c</span></div>
-            <div class="metric-row"><span class="metric-label">LORENTZ (&gamma;)</span> <span id="lorentz"
-                    class="metric-value">1.000</span></div>
-            <div style="margin-top:10px; font-size: 10px; opacity: 0.7; color: #0ff;">SYSTEM: OPTICAL LENSING ACTIVE
+        <!-- Orbital CV Button -->
+        <div id="cv-satellite-container" class="satellite-container">
+            <a id="cv-satellite" class="satellite-button" href="/Shakir_Ahmed_CV.pdf" target="_blank"
+                aria-label="Open CV">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="cv" class="satellite-icon">
+                    <path
+                        d="M365.5,30.274a7,7,0,0,0-5.022-2.124h-176a37.041,37.041,0,0,0-37,37V98.387h-53a37.042,37.042,0,0,0-37,37V446.85a37.042,37.042,0,0,0,37,37H327.518a37.042,37.042,0,0,0,37-37V413.582h53a37.041,37.041,0,0,0,37-37V124.808a7,7,0,0,0-1.978-4.876Zm1.977,22.136,63.485,65.4H376.781a9.311,9.311,0,0,1-9.3-9.3V52.41ZM350.518,446.85a23.026,23.026,0,0,1-23,23H94.482a23.026,23.026,0,0,1-23-23V135.386a23.026,23.026,0,0,1,23-23h53v264.2a37.041,37.041,0,0,0,37,37H350.518Zm67-47.268H184.482a23.025,23.025,0,0,1-23-23V65.147a23.025,23.025,0,0,1,23-23h169v66.358a23.327,23.327,0,0,0,23.3,23.3h63.736V376.583A23.026,23.026,0,0,1,417.518,399.582Z">
+                    </path>
+                    <path
+                        d="M392.3 339.3H204.68a7 7 0 0 0 0 14H392.3a7 7 0 0 0 0-14zM204.68 309.362H317a7 7 0 0 0 0-14H204.68a7 7 0 0 0 0 14zM230.494 257.556a6 6 0 0 0 6 5.922h.063l129.675-1.333a6 6 0 0 0 5.938-6.078L371.7 220.15A36.558 36.558 0 0 0 334.9 180.6l-7.426.075a6 6 0 0 0-5.728 4.42l-7.54 27.638-3.938-6.867 4.946-16.371a6 6 0 0 0-5.744-7.735h-.061l-18.779.191a6 6 0 0 0-5.646 7.851l5.311 16.366-2.91 5.758-7.137-26.205a6 6 0 0 0-5.789-4.423h-8.427a36.559 36.559 0 0 0-36 40.3zm70.868-63.708l-1.184 3.917-1.263-3.892zm-53.357 7.736a24.577 24.577 0 0 1 18.084-8.28h3.782L279.9 230.148a6 6 0 0 0 10.592 2.02 5.923 5.923 0 0 0 .555-.894l9.344-18.488 10.586 18.461a6 6 0 0 0 10.994-1.406l10.15-37.208 2.892-.029a24.558 24.558 0 0 1 24.705 26.783 5.888 5.888 0 0 0-.024.623l.391 30.2-117.675 1.209-.392-30.247a5.764 5.764 0 0 0-.037-.588A24.269 24.269 0 0 1 248.005 201.584zM299.056 180.084c.122 0 .244 0 .366 0a35.412 35.412 0 0 0 35.052-35.769l-.279-27.479a27.82 27.82 0 0 0-28.037-27.471l-31.432.319a11.636 11.636 0 0 0-11.518 11.754l.443 43.6A35.45 35.45 0 0 0 299.056 180.084zM279.5 113.208a31.246 31.246 0 0 0-4.15 2.629l-.067-6.647C276.6 110.54 278.008 111.888 279.5 113.208zm36.282 47.85a23.414 23.414 0 0 1-40.136-16.147l-.107-10.526c3.411-7.166 8.872-11.521 15.9-12.673a46.325 46.325 0 0 0 22.41 6.217 39.274 39.274 0 0 0 8.442-.923l.177 17.43A23.255 23.255 0 0 1 315.785 161.058zm-9.506-59.7a15.774 15.774 0 0 1 15.709 13.321c-9.608 2.954-19.559.76-29.635-6.575a64.646 64.646 0 0 1-7.581-6.527z">
+                    </path>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Orbital Resume Button -->
+        <div id="resume-satellite-container" class="satellite-container">
+            <a id="resume-satellite" class="satellite-button" href="/Shakir_Ahmed_Resume.pdf" target="_blank"
+                aria-label="Open Resume">
+                <svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 512 512" viewBox="0 0 512 512"
+                    id="resume" class="satellite-icon">
+                    <path d="M436,66.68v378.64c0,27.99-22.69,50.68-50.68,50.68H126.68C98.69,496,76,473.31,76,445.32V66.68
+                                C76,38.69,98.69,16,126.68,16h258.64C413.31,16,436,38.69,436,66.68z"></path>
+                    <circle cx="173.5" cy="91" r="30"></circle>
+                    <path d="M385.317,511H126.683C90.465,511,61,481.535,61,445.317V66.683C61,30.465,90.465,1,126.683,1
+                                h258.635C421.535,1,451,30.465,451,66.683v378.635C451,481.535,421.535,511,385.317,511z M126.683,31
+                                C107.007,31,91,47.007,91,66.683v378.635C91,464.993,107.007,481,126.683,481h258.635C404.993,481,421,464.993,421,445.317
+                                V66.683C421,47.007,404.993,31,385.317,31H126.683z"></path>
+                    <path d="M211,188.5c-8.284,0-15-6.716-15-15c0-12.406-10.094-22.5-22.5-22.5S151,161.094,151,173.5
+                                c0,8.284-6.716,15-15,15s-15-6.716-15-15c0-28.948,23.552-52.5,52.5-52.5s52.5,23.552,52.5,52.5
+                                C226,181.784,219.284,188.5,211,188.5z"></path>
+                    <path
+                        d="M211 256h-75c-8.284 0-15-6.716-15-15s6.716-15 15-15h75c8.284 0 15 6.716 15 15S219.284 256 211 256zM211 316h-75c-8.284 0-15-6.716-15-15s6.716-15 15-15h75c8.284 0 15 6.716 15 15S219.284 316 211 316zM211 376h-75c-8.284 0-15-6.716-15-15s6.716-15 15-15h75c8.284 0 15 6.716 15 15S219.284 376 211 376zM376 196H271c-8.284 0-15-6.716-15-15s6.716-15 15-15h105c8.284 0 15 6.716 15 15S384.284 196 376 196zM376 256H271c-8.284 0-15-6.716-15-15s6.716-15 15-15h105c8.284 0 15 6.716 15 15S384.284 256 376 256zM316 316h-45c-8.284 0-15-6.716-15-15s6.716-15 15-15h45c8.284 0 15 6.716 15 15S324.284 316 316 316zM376 376H271c-8.284 0-15-6.716-15-15s6.716-15 15-15h105c8.284 0 15 6.716 15 15S384.284 376 376 376zM316 436H136c-8.284 0-15-6.716-15-15s6.716-15 15-15h180c8.284 0 15 6.716 15 15S324.284 436 316 436z">
+                    </path>
+                </svg>
+            </a>
+        </div>
+        <div class="scroll-icon-container">
+            <div class="mouse-icon">
+                <div class="wheel"></div>
             </div>
-            <div id="velocity-alert" class="velocity-warning">CAUSALITY BREAK IMMINENT</div>
+        </div>
+    </div>
+
+    <div id="hud">
+        <div class="telemetry-grid">
+            <div class="telemetry-cell">
+                <span class="telemetry-label">YEAR</span>
+                <span id="current-year" class="telemetry-value">2025</span>
+            </div>
+            <div class="telemetry-cell">
+                <span class="telemetry-label">t</span>
+                <span id="coord-time" class="telemetry-value">0.00</span>
+            </div>
+            <div class="telemetry-cell" style="border-right: none;">
+                <span class="telemetry-label">&tau;</span>
+                <span id="proper-time" class="telemetry-value">0.00</span>
+            </div>
+            <div class="speedo-container">
+                <div class="speedometer-arc"></div>
+                <div id="speedo-needle" class="needle"></div>
+            </div>
         </div>
 
-        <script type="module" src="/src/main.js"></script>
+        <div class="telemetry-footer">
+            <span id="velocity-alert" class="velocity-warning">CAUSALITY BREAK IMMINENT</span>
+        </div>
+    </div>
+
+    <!-- QUANTUM SOCIAL LINKS -->
+    <div id="quantum-world-line">
+        <div class="trajectory-line"></div>
+        <!-- 5 Quanta Nodes hovering on the string -->
+        <a href="#" target="_blank" class="quanta-node" style="top: 20%;">
+            <div class="node-core"></div>
+            <div class="node-label-container"><span class="node-label"></span></div>
+        </a>
+        <a href="#" target="_blank" class="quanta-node" style="top: 40%;">
+            <div class="node-core"></div>
+            <div class="node-label-container"><span class="node-label"></span></div>
+        </a>
+        <a href="#" target="_blank" class="quanta-node" style="top: 60%;">
+            <div class="node-core"></div>
+            <div class="node-label-container"><span class="node-label"></span></div>
+        </a>
+        <a href="#" target="_blank" class="quanta-node" style="top: 80%;">
+            <div class="node-core"></div>
+            <div class="node-label-container"><span class="node-label"></span></div>
+        </a>
+    </div>
+    <!-- RESEARCH PHASE UI -->
+    <div id="ui-research" class="ui-layer" style="display: none; opacity: 0;">
+        <div id="noise-overlay"></div>
+        <canvas id="research-bg-canvas" aria-label="Research phase background animation" role="img"></canvas>
+        <div id="left-hemi"></div>
+        <div id="right-hemi">
+            <div id="research-cards-container"></div>
+        </div>
+        <div id="research-hud-overlay">
+            <div class="stat-col"><span class="stat-label">TOPOLOGY PHASE</span><span id="hud-phase"
+                    class="stat-value hud-accent">INITIALIZING</span></div>
+            <div class="stat-col"><span class="stat-label">S-COORDINATE</span><span id="hud-s"
+                    class="stat-value">0.00</span></div>
+            <div class="stat-col"><span class="stat-label">PARTICLE Ω</span><span id="hud-omega" class="stat-value">0.00
+                    rad/s</span></div>
+        </div>
+    </div>
+
+    <!-- TERMINAL OVERLAY UI -->
+    <div id="terminal-overlay" class="terminal-hidden">
+        <div class="terminal-crt-overlay"></div>
+        <div class="terminal-scanlines"></div>
+        <div class="terminal-container">
+            <div id="terminal-history"></div>
+            <div class="terminal-input-row">
+                <span id="terminal-prompt" class="terminal-prompt">[user@raven ~]$</span>
+                <input type="text" id="terminal-input" class="terminal-input" autocomplete="off" spellcheck="false"
+                    aria-labelledby="terminal-prompt" />
+                <span class="terminal-cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
 </body>
 
 </html>

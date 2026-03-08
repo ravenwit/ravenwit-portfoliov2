@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riemann Sphere | Complex Infinity</title>
+    
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', monospace; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; display: block; }
+        
+        #ui {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85); padding: 20px; border-radius: 8px;
+            border: 1px solid #334155; border-top: 4px solid #f59e0b;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            width: 480px; backdrop-filter: blur(4px); z-index: 10; text-align: center;
+        }
+        
+        .math-text { font-size: 1rem; color: #cbd5e1; margin-bottom: 10px; }
+        
+        .legend { position: absolute; top: 30px; left: 30px; background: rgba(15, 23, 42, 0.8); padding: 15px; border-radius: 8px; border: 1px solid #334155; z-index: 10;}
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        
+        .instructions {
+            position: absolute; top: 30px; right: 30px; background: rgba(15, 23, 42, 0.6);
+            padding: 10px 15px; border-radius: 6px; font-size: 0.85rem; color: #94a3b8; z-index: 10;
+            border: 1px solid #334155; text-align: right;
+        }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div class="legend">
+        <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: #f59e0b;">Riemann Sphere S²</h3>
+        <div class="legend-item"><div class="dot" style="background: linear-gradient(90deg, #ff0000, #00ff00, #0000ff);"></div> Surface Color: Phase arg(Z)</div>
+        <div class="legend-item"><div class="dot" style="background: #fbbf24;"></div> South Pole (g = 0)</div>
+        <div class="legend-item"><div class="dot" style="background: #ef4444;"></div> Equator Poles (g = ±i)</div>
+        <div class="legend-item"><div class="dot" style="background: #a855f7;"></div> North Pole (g = ∞)</div>
+    </div>
+
+    <div class="instructions">
+        <strong>Extrusion = Magnitude |Z|</strong><br><br>
+        🖱️ Drag to Orbit Sphere<br>
+        🖱️ Scroll to Zoom
+    </div>
+
+    <div id="ui">
+        <div class="math-text">
+            <strong>Global Topology of Z(g) = 1/(1+g²)</strong><br><br>
+            Infinity is compacted to the North Pole.<br>
+            $$ \lim_{g \to \infty} Z(g) = 0 $$
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 3, 6);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+        controls.autoRotate = true; controls.autoRotateSpeed = 1.0;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
+
+        // --- RIEMANN SPHERE GENERATION ---
+        const radius = 2.0;
+        const widthSegments = 200;
+        const heightSegments = 200;
+        const geometry = new THREE.SphereGeometry(radius, widthSegments, heightSegments);
+        
+        const positions = geometry.attributes.position;
+        const colors = [];
+        const maxExtrusion = 2.5; // Cap the infinite spires
+        
+        // We will modify the vertices directly
+        for (let i = 0; i < positions.count; i++) {
+            const X = positions.getX(i);
+            const Y = positions.getY(i);
+            const Z = positions.getZ(i);
+            
+            // Normalize the coordinates to standard unit sphere [-1, 1]
+            const sX = X / radius;
+            const sY = Y / radius;
+            const sZ = Z / radius; // sZ = 1 is North Pole, sZ = -1 is South Pole
+
+            // Inverse Stereographic Projection: Map (sX, sY, sZ) back to flat complex plane g = x + iy
+            // Ignore the absolute North Pole to prevent division by zero
+            let x = 0, y = 0;
+            if (sZ < 0.999) {
+                x = sX / (1 - sZ);
+                y = sY / (1 - sZ); // Note: standard math maps y to the Z-axis in 3D, but Three.js uses Y as UP. We will map complex Y to 3D Z.
+            } else {
+                // At infinity, g is effectively extremely large.
+                x = 1000; y = 1000;
+            }
+
+            // Complex Function Z(g) = 1 / (1 + g^2)
+            // g^2 = (x^2 - y^2) + i(2xy)
+            const realPart = 1 + x**2 - y**2;
+            const imagPart = 2 * x * y;
+            const denomSq = realPart**2 + imagPart**2;
+            
+            let magnitude = 1 / Math.sqrt(denomSq);
+            if (magnitude > maxExtrusion) magnitude = maxExtrusion;
+            
+            // Phase arg(Z)
+            const phase = Math.atan2(-imagPart, realPart); 
+            const hue = (phase + Math.PI) / (2 * Math.PI); 
+            
+            const color = new THREE.Color();
+            color.setHSL(hue, 1.0, 0.5);
+            colors.push(color.r, color.g, color.b);
+
+            // Extrude the vertex outwards along its normal by the magnitude of the function
+            // Base sphere radius + extrusion
+            const totalRadius = radius + (magnitude * 0.5);
+            positions.setXYZ(i, sX * totalRadius, sZ * totalRadius, sY * totalRadius); 
+            // Note the axis swap: sZ (math Z/poles) becomes Three.js Y (up/down). sY becomes Three.js Z (depth).
+        }
+
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({ 
+            vertexColors: true, 
+            side: THREE.DoubleSide,
+            roughness: 0.3,
+            metalness: 0.2
+        });
+        const sphereMesh = new THREE.Mesh(geometry, material);
+        scene.add(sphereMesh);
+
+        // --- MARKERS ON THE SPHERE ---
+        const createMarker = (x, y, z, color, r=0.1) => {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 32), new THREE.MeshStandardMaterial({ color: color, roughness: 0.2 }));
+            mesh.position.set(x, y, z);
+            scene.add(mesh); return mesh;
+        };
+
+        // South Pole (g=0, |Z|=1) -> Extruded radius = 2.0 + 0.5(1) = 2.5. Y is down.
+        createMarker(0, -2.5, 0, 0xfbbf24, 0.15); 
+
+        // North Pole (g=inf, |Z|=0) -> Extruded radius = 2.0 + 0 = 2.0. Y is up.
+        createMarker(0, 2.0, 0, 0xa855f7, 0.15); 
+
+        // Equator Poles (g=±i, |Z|=inf) -> Capped at maxExtrusion (2.0 + 0.5*2.5 = 3.25). 
+        // Equator is Y=0. g=i maps to (0, 1) in flat plane, which maps to (0, 0, 1) on unit sphere. In Three.js coords (X, Z, Y) = (0, 1, 0) -> scaled (0, 0, 3.25)
+        createMarker(0, 0, 3.25, 0xef4444, 0.15); 
+        createMarker(0, 0, -3.25, 0xef4444, 0.15); 
+
+        // --- EQUATOR RING ---
+        const ringGeo = new THREE.TorusGeometry(2.0, 0.02, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.rotation.x = Math.PI / 2; // Lie flat on XZ plane
+        scene.add(ringMesh);
+
+        function animate() { 
+            requestAnimationFrame(animate); 
+            controls.update(); 
+            renderer.render(scene, camera); 
+        }
+        animate();
+
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+    </script>
+</body>
+</html>

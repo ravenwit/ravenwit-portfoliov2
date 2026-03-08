@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topological Homotopy: Refined Sequence</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            color: #ffffff;
+        }
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            background: rgba(10, 10, 10, 0.7);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            backdrop-filter: blur(4px);
+        }
+        h1 { margin: 0 0 10px 0; font-size: 1.2rem; letter-spacing: 1px; color: #00ffcc; }
+        .stat { margin: 5px 0; font-size: 0.9rem; color: #aaaaaa; }
+        .value { color: #ffffff; font-weight: bold; font-family: monospace; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <h1>REFINED TOPOLOGY</h1>
+        <div class="stat">Phase: <span id="phase-text" class="value">Initializing...</span></div>
+        <div class="stat">Master T: <span id="time-text" class="value">0.00</span></div>
+        <div class="stat">Twist (τ): <span id="tau-text" class="value">0.00</span></div>
+        <div class="stat">v_max: <span id="vmax-text" class="value">0.00</span></div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(8, 6, 8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const dirLight1 = new THREE.DirectionalLight(0x00ffcc, 1.5);
+        dirLight1.position.set(5, 5, 5);
+        scene.add(dirLight1);
+
+        const dirLight2 = new THREE.DirectionalLight(0xff0066, 1.0);
+        dirLight2.position.set(-5, -2, -5);
+        scene.add(dirLight2);
+
+        const segmentsU = 150;
+        const segmentsV = 60;
+        const geometry = new THREE.BufferGeometry();
+        
+        const vertices = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 3);
+        const indices = [];
+
+        for (let i = 0; i < segmentsU; i++) {
+            for (let j = 0; j < segmentsV; j++) {
+                const a = i * (segmentsV + 1) + j;
+                const b = a + (segmentsV + 1);
+                const c = a + 1;
+                const d = b + 1;
+                indices.push(a, b, d);
+                indices.push(a, d, c);
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geometry.setIndex(indices);
+
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff,
+            roughness: 0.2,
+            metalness: 0.8,
+            side: THREE.DoubleSide,
+            wireframe: false
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        const R = 3.0; 
+        const clock = new THREE.Clock();
+        const animationDuration = 15.0; 
+
+        const phaseEl = document.getElementById('phase-text');
+        const timeEl = document.getElementById('time-text');
+        const tauEl = document.getElementById('tau-text');
+        const vmaxEl = document.getElementById('vmax-text');
+
+        const phaseNames = [
+            "Torus -> Double Ribbon",
+            "Double Ribbon -> Single Ribbon",
+            "Single Ribbon -> Twisted Ribbon",
+            "Twisted Ribbon -> Half Tube",
+            "Half Tube -> Twisted Torus"
+        ];
+
+        function updateGeometry(T) {
+            const positions = geometry.attributes.position.array;
+            let index = 0;
+
+            let phase = Math.floor(T);
+            if (phase >= 5) phase = 4; 
+            
+            let rawLambda = T - phase;
+            let lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda); 
+
+            for (let i = 0; i <= segmentsU; i++) {
+                const u_norm = i / segmentsU;
+                const u = u_norm * 2.0 * Math.PI;
+
+                for (let j = 0; j <= segmentsV; j++) {
+                    const v_norm = j / segmentsV;
+                    let f1, f2, v, tau, vmax;
+
+                    if (phase === 0) {
+                        vmax = 2.0 * Math.PI;
+                        v = v_norm * vmax;
+                        f1 = (1.0 - lambda) * Math.cos(v) + lambda * Math.sin(v);
+                        f2 = Math.sin(v);
+                        tau = 0.0;
+                    } 
+                    else if (phase === 1) {
+                        vmax = Math.PI * (2.0 - lambda);
+                        v = v_norm * vmax;
+                        f1 = Math.sin(v);
+                        f2 = Math.sin(v);
+                        tau = 0.0;
+                    } 
+                    else if (phase === 2) {
+                        vmax = Math.PI;
+                        v = v_norm * vmax;
+                        f1 = Math.sin(v);
+                        f2 = Math.sin(v);
+                        tau = lambda;
+                    } 
+                    else if (phase === 3) {
+                        vmax = Math.PI;
+                        v = v_norm * vmax;
+                        f1 = (1.0 - lambda) * Math.sin(v) + lambda * Math.cos(v);
+                        f2 = Math.sin(v);
+                        tau = 1.0;
+                    } 
+                    else if (phase === 4) {
+                        vmax = Math.PI * (1.0 + lambda);
+                        v = v_norm * vmax;
+                        f1 = Math.cos(v);
+                        f2 = Math.sin(v);
+                        tau = 1.0;
+                    }
+
+                    const twistAngle = tau * u;
+                    const x_prime = f1 * Math.cos(twistAngle) - f2 * Math.sin(twistAngle);
+                    const z_prime = f1 * Math.sin(twistAngle) + f2 * Math.cos(twistAngle);
+
+                    const x = (R + x_prime) * Math.cos(u);
+                    const y = (R + x_prime) * Math.sin(u);
+                    const z = z_prime;
+
+                    positions[index++] = x;
+                    positions[index++] = z; 
+                    positions[index++] = -y; 
+                }
+            }
+
+            geometry.attributes.position.needsUpdate = true;
+            geometry.computeVertexNormals();
+
+            phaseEl.innerText = phaseNames[phase];
+            timeEl.innerText = T.toFixed(2);
+            
+            // Re-evaluating the boundary parameters just for the UI
+            let ui_tau = phase === 2 ? lambda : (phase < 2 ? 0.0 : 1.0);
+            let ui_vmax = phase === 1 ? Math.PI * (2.0 - lambda) : (phase === 4 ? Math.PI * (1.0 + lambda) : (phase === 0 ? 2.0 * Math.PI : Math.PI));
+            
+            tauEl.innerText = ui_tau.toFixed(2);
+            vmaxEl.innerText = (ui_vmax / Math.PI).toFixed(2) + "π";
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsed = clock.getElapsedTime();
+            const progress = (elapsed % animationDuration) / animationDuration; 
+            const T = progress * 5.0; 
+
+            updateGeometry(T);
+            
+            mesh.rotation.y += 0.005;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

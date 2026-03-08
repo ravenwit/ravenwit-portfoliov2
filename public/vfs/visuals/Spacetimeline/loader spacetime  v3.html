@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacetime Portfolio | Production Release</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* --- LAYOUT & TRANSITIONS --- */
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+            transition: opacity 0.8s ease-in-out;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        /* --- POST FX OVERLAYS --- */
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,0,0,0.3) 3px);
+            pointer-events: none; z-index: 50; opacity: 0.15;
+        }
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 40%, #000 150%);
+            pointer-events: none; z-index: 51;
+        }
+
+        /* --- LOADER UI --- */
+        #ui-loader { opacity: 1; }
+        #progress-bar-container { width: 200px; height: 2px; background: #111; position: relative; overflow: hidden; }
+        #progress-bar { height: 100%; background: #0ff; width: 0%; box-shadow: 0 0 10px #0ff; }
+        .data-readout {
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 1rem; border-left: 2px solid cyan;
+            backdrop-filter: blur(4px); margin-top: 20px;
+            color: #0ff; font-size: 12px;
+        }
+
+        /* --- HERO UI --- */
+        #ui-hero { opacity: 0; pointer-events: none; }
+        .hero-title {
+            font-size: 4rem; font-weight: 100; letter-spacing: 0.5rem;
+            color: transparent; -webkit-text-stroke: 1px cyan;
+            text-shadow: 0 0 20px rgba(0,255,255,0.5);
+            text-align: center;
+        }
+        .hero-prompt {
+            margin-top: 2rem; font-size: 1rem; color: #fff;
+            animation: blink 1s infinite;
+        }
+
+        /* --- HUD / TIMELINE UI --- */
+        #ui-timeline { opacity: 0; justify-content: flex-end; align-items: flex-start; padding: 0; }
+        #hud-panel {
+            position: fixed; bottom: 30px; left: 30px;
+            background: rgba(0, 10, 20, 0.5); padding: 15px;
+            border-left: 2px solid #0ff; backdrop-filter: blur(4px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+            pointer-events: none;
+        }
+        .metric-row { display: flex; justify-content: space-between; width: 240px; margin-bottom: 6px; }
+        .metric-label { color: #5588aa; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;}
+        .metric-value { font-weight: bold; color: #ccffff; font-size: 12px; }
+        .velocity-warning {
+            color: #ff0055; text-shadow: 0 0 8px #ff0000;
+            display: none; font-weight: bold; margin-top: 5px; text-align: center; font-size: 12px;
+        }
+
+        /* --- 3D LABELS & CARDS --- */
+        #labels-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20;
+        }
+
+        .node-container {
+            position: absolute; transform: translate(-50%, -50%);
+            display: flex; align-items: center; pointer-events: auto; 
+            cursor: crosshair; transition: opacity 0.3s, transform 0.3s;
+        }
+        .node-anchor { 
+            width: 12px; height: 12px; border: 2px solid #0ff; border-radius: 50%; 
+            background: rgba(0,0,0,0.5); box-shadow: 0 0 10px #0ff; flex-shrink: 0;
+        }
+        .node-connector { 
+            width: 40px; height: 2px; background: linear-gradient(90deg, #0ff, transparent); flex-shrink: 0;
+        }
+        
+        /* --- COMPLEX HUD CARD --- */
+        .hud-card {
+            background: rgba(10, 15, 20, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-left: 2px solid #0ff;
+            padding: 0;
+            min-width: 240px; 
+            color: #fff; font-family: 'Courier New', monospace;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            position: relative; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .hud-card::before { content: ''; position: absolute; top: 0; right: 0; width: 10px; height: 10px; border-top: 2px solid #0ff; border-right: 2px solid #0ff; opacity: 0.5; }
+        .hud-card::after { content: ''; position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-bottom: 2px solid #0ff; border-right: 2px solid #0ff; opacity: 0.5; }
+
+        .hud-card.minimized {
+            min-width: 0px; width: auto;
+            background: rgba(0, 10, 20, 0.4); 
+            border-color: rgba(0, 255, 255, 0.1);
+            border-left: 2px solid rgba(0, 255, 255, 0.3);
+            box-shadow: none;
+            transform: scale(0.9);
+        }
+
+        .hud-card.minimized .card-body,
+        .hud-card.minimized .card-footer,
+        .hud-card.minimized .card-mass-bar,
+        .hud-card.minimized .card-logs { display: none; }
+        
+        .hud-card.minimized .card-header { border-bottom: none; padding: 4px 8px; justify-content: center; }
+        .hud-card.minimized .card-id { font-size: 10px; color: #0ff; opacity: 0.8; letter-spacing: 2px; }
+
+        .hud-card.expanded { transform: scale(1.05); z-index: 1000; background: rgba(15, 30, 45, 0.95); box-shadow: 0 0 20px 2px rgba(0, 255, 255, 0.6); }
+
+        .card-header {
+            background: rgba(0, 255, 255, 0.1); padding: 6px 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        .card-id { font-size: 10px; color: #5588aa; letter-spacing: 1px; }
+        .card-mass-bar { width: 60px; height: 4px; background: #334455; border-radius: 2px; overflow: hidden; }
+        .card-mass-fill { height: 100%; background: #0ff; box-shadow: 0 0 5px #0ff; }
+
+        .card-body { padding: 12px; padding-bottom: 8px; }
+        .card-title { font-size: 14px; font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; text-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
+        .card-subtitle { font-size: 11px; color: #88ccdd; margin-bottom: 0; }
+
+        .card-logs {
+            max-height: 0; opacity: 0; overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+            transition: all 0.4s ease;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .hud-card.expanded .card-logs { max-height: 150px; opacity: 1; border-top: 1px dashed rgba(0, 255, 255, 0.2); padding: 8px 12px; }
+
+        .log-line { font-size: 10px; color: #0ff; white-space: nowrap; display: flex; align-items: center; opacity: 0.9; }
+        .log-prefix { margin-right: 8px; opacity: 0.5; font-size: 9px; }
+        
+        .card-footer {
+            padding: 8px 12px; border-top: 1px solid rgba(0, 255, 255, 0.1);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 10px; color: #667788;
+        }
+        .expander-btn {
+            background: transparent; border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #0ff; font-size: 9px; padding: 2px 6px; cursor: pointer;
+            text-transform: uppercase; font-family: 'Courier New', monospace;
+        }
+        .expander-btn:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 5px #0ff; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <div id="canvas-container"></div>
+    <div id="labels-container"></div>
+
+    <div id="ui-loader" class="ui-layer">
+        <div class="text-center" style="text-align: center;">
+            <h1 style="font-size: 20px; letter-spacing: 5px; color: #0ff; margin-bottom: 20px;">SYSTEM INITIALIZATION</h1>
+            <div id="progress-bar-container" style="margin: 0 auto;">
+                <div id="progress-bar"></div>
+            </div>
+            <div class="data-readout">
+                <div>k_B T (Temp): <span id="temp-display">50.000</span></div>
+                <div>Ω (Entropy): <span id="order-display">MAX</span></div>
+                <div>Status: <span id="status-display">PLASMA_CONDENSATION</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui-hero" class="ui-layer">
+        <h1 class="hero-title">SPACETIME<br>ARCHITECT</h1>
+        <div class="hero-prompt">> SCROLL TO ENTER TIMELINE <</div>
+    </div>
+
+    <div id="ui-timeline" class="ui-layer">
+        <div id="hud-panel">
+            <div class="metric-row"><span class="metric-label">COORD. TIME (t)</span> <span id="coord-time" class="metric-value">0.00</span></div>
+            <div class="metric-row"><span class="metric-label">PROPER TIME (&tau;)</span> <span id="proper-time" class="metric-value">0.00</span></div>
+            <div class="metric-row"><span class="metric-label">VELOCITY (v)</span> <span id="velocity" class="metric-value">0.00c</span></div>
+            <div class="metric-row"><span class="metric-label">LORENTZ (&gamma;)</span> <span id="lorentz" class="metric-value">1.000</span></div>
+            <div id="warp-status" style="margin-top:10px; font-size: 10px; opacity: 0.7; color: #0ff;">OPTICS: LENSING ACTIVE</div>
+            <div id="velocity-alert" class="velocity-warning">CAUSALITY BREAK IMMINENT</div>
+        </div>
+    </div>
+
+    <script type="x-shader/x-vertex" id="vertexParticle">
+        uniform float uTime;
+        uniform float uNoiseTime;
+        uniform float uTemperature;
+        uniform float uStretch;
+        attribute float aRandom;
+        varying float vAlpha;
+        varying vec3 vColor;
+
+        vec3 getChaoticNoise(float time, float seed) {
+            float t = time;
+            float x = sin(t + seed * 100.0) + cos(t * 0.4 + seed * 43.0) * 1.5;
+            float y = cos(t + seed * 76.0) + sin(t * 0.6 + seed * 21.0) * 1.5;
+            float z = sin(t * 0.8 + seed * 123.0) + cos(t * 0.3 + seed * 99.0);
+            return vec3(x, y, z);
+        }
+
+        vec3 palette(float t) {
+            vec3 a = vec3(0.5, 0.5, 0.5);
+            vec3 b = vec3(0.5, 0.5, 0.5);
+            vec3 c = vec3(1.0, 1.0, 1.0);
+            vec3 d = vec3(0.263, 0.416, 0.557);
+            return a + b * cos(6.28318 * (c * t + d));
+        }
+
+        void main() {
+            vec3 targetPos = position;
+            vec3 noise = getChaoticNoise(uNoiseTime, aRandom);
+            vec3 brownianTerm = noise * uTemperature;
+            
+            // Swirl Logic
+            float dist = length(targetPos);
+            float swirlAngle = uNoiseTime * 0.2 + dist * 0.05;
+            float c = cos(swirlAngle); float s = sin(swirlAngle);
+            mat2 rot = mat2(c, -s, s, c);
+            if (uTemperature > 1.0) brownianTerm.xy = rot * brownianTerm.xy;
+            
+            vec3 pos = targetPos + brownianTerm;
+            pos.z += pos.z * uStretch * 2.0; 
+            pos.z += uStretch * (aRandom * 100.0); 
+
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            
+            float tempSize = clamp(uTemperature, 0.0, 20.0);
+            float warpThinning = 1.0 / (1.0 + uStretch * 5.0);
+            gl_PointSize = (2.0 + tempSize * 0.2) * (150.0 / -mvPosition.z) * warpThinning;
+            
+            float disorder = clamp(uTemperature / 15.0, 0.0, 1.0);
+            vec3 nebulaColor = palette(length(pos) * 0.02 - uTime * 0.2 + aRandom);
+            nebulaColor = mix(nebulaColor, vec3(1.0, 0.2, 0.8), 0.3);
+            vec3 crystalColor = vec3(0.1, 0.9, 1.0);
+            vColor = mix(crystalColor, nebulaColor, disorder);
+            
+            float twinkle = sin(uTime * 1.5 + aRandom * 100.0) * 0.5 + 0.5;
+            float baseAlpha = mix(0.8, 0.25 + twinkle * 0.3, disorder);
+            vAlpha = baseAlpha * (1.0 - smoothstep(0.0, 15.0, uStretch));
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragmentParticle">
+        varying float vAlpha;
+        varying vec3 vColor;
+        void main() {
+            vec2 center = gl_PointCoord - 0.5;
+            float dist = length(center);
+            if (dist > 0.5) discard;
+            float glow = exp(-dist * 8.0); 
+            float core = 1.0 - smoothstep(0.0, 0.5, dist);
+            gl_FragColor = vec4(vColor, vAlpha * (core * 0.6 + glow * 1.2));
+        }
+    </script>
+
+    <script type="x-shader/x-vertex" id="vertexGrid">
+        uniform float uTime;
+        uniform vec3 uMassPositions[4]; 
+        uniform float uMassStrengths[4];
+        uniform float uOpacity; 
+        attribute vec3 basePos;
+        varying float vDistortion;
+        void main() {
+            vec3 pos = basePos;
+            float totalDisplacement = 0.0;
+            for(int i = 0; i < 4; i++) {
+                float dx = pos.x - uMassPositions[i].x;
+                float dz = pos.z - uMassPositions[i].z;
+                float distSq = dx*dx + dz*dz;
+                float decay = 0.4 / (uMassStrengths[i] + 10.0);
+                decay = clamp(decay, 0.002, 0.02);
+                float force = uMassStrengths[i] * exp(-distSq * decay);
+                totalDisplacement -= force;
+            }
+            pos.y += totalDisplacement;
+            vDistortion = totalDisplacement;
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            gl_PointSize = 2.0 * (100.0 / -mvPosition.z);
+            gl_PointSize = clamp(gl_PointSize, 1.5, 3.5);
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragmentGrid">
+        varying float vDistortion;
+        uniform float uOpacity;
+        void main() {
+            vec3 color = vec3(0.1, 0.3, 0.4);
+            float shift = smoothstep(-2.0, -25.0, vDistortion);
+            color = mix(color, vec3(0.8, 0.3, 0.2), shift); 
+            vec2 coord = gl_PointCoord - vec2(0.5);
+            if(abs(coord.x) > 0.45 || abs(coord.y) > 0.45) discard;
+            gl_FragColor = vec4(color, uOpacity * 0.6);
+        }
+    </script>
+
+    <script type="x-shader/x-vertex" id="vertexStars">
+        uniform float uTime; uniform float uCameraZ; uniform float uSpeed; 
+        uniform vec3 uMassPositions[4]; uniform float uMassStrengths[4];
+        uniform vec3 uCameraPos; uniform float uLensing; uniform float uOpacity;
+        attribute float size; attribute vec3 basePos; varying float vAlpha;
+        
+        void main() {
+            vec3 pos = basePos;
+            // Infinite Scroll Wrap
+            float wrapDepth = 1000.0;
+            float relZ = pos.z - uCameraZ;
+            float wrappedZ = mod(relZ + 500.0, wrapDepth) - 500.0;
+            pos.z = uCameraZ + wrappedZ;
+
+            // Gravitational Lensing Calculation
+            vec3 viewDir = normalize(pos - uCameraPos);
+            vec3 lensingOffset = vec3(0.0);
+            
+            for(int i = 0; i < 4; i++) {
+                vec3 massToCam = uMassPositions[i] - uCameraPos;
+                float distToMass = length(massToCam);
+                vec3 massDir = normalize(massToCam);
+                float cosTheta = dot(viewDir, massDir);
+                if (cosTheta > 0.9) { 
+                    float angle = acos(clamp(cosTheta, -1.0, 1.0));
+                    float thetaE = sqrt(uMassStrengths[i] * uLensing * 0.00002);
+                    float deflection = (thetaE * thetaE) / max(angle, 0.005);
+                    vec3 perp = normalize(viewDir - massDir * cosTheta);
+                    lensingOffset += perp * deflection * distToMass;
+                }
+            }
+
+            vec4 mvPosition = viewMatrix * vec4(pos + lensingOffset, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            float dist = length(mvPosition.xyz);
+            float sizeFactor = size * (400.0 / dist);
+            float twinkle = sin(uTime * 3.0 + basePos.x);
+            gl_PointSize = sizeFactor * (1.0 + uSpeed * 0.1 + twinkle * 0.3);
+            vAlpha = uOpacity * (0.5 + 0.5 * twinkle) * (1.0 - smoothstep(400.0, 500.0, abs(wrappedZ)));
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragmentStars">
+        varying float vAlpha;
+        void main() {
+            vec2 coord = gl_PointCoord - vec2(0.5);
+            if(length(coord) > 0.5) discard;
+            gl_FragColor = vec4(1.0, 1.0, 1.0, vAlpha * pow(1.0 - length(coord)*2.0, 2.0));
+        }
+    </script>
+
+    <script>
+        // --- DATA ---
+        const CONFIG = {
+            starCount: 15000,
+            particleCount: 40000,
+            gridZStart: 100, gridZEnd: -800, gridWidth: 400, gridDensity: 0.6,
+            scrollDamping: 0.06,
+            coolingRate: 0.96,
+            minTemp: 0.005,
+            massStrength: 15.0,
+            lensingStrength: 120.0,
+            c_sim: 120
+        };
+
+        const CAREER_NODES = [
+            { 
+                x: 25, y: 0, z: -50, mass: 1.5, 
+                title: "ACADEMIC RESEARCH", subtitle: "Quantum Optics", date: "2021-2022",
+                responsibilities: ["SIMULATING PHOTON ENTANGLEMENT","OPTIMIZING LASER ARRAYS","PUBLISHING RESEARCH DATA"], 
+                skills: ["MATLAB", "Lasers"] 
+            },
+            { 
+                x: -30, y: 0, z: -160, mass: 3.25, 
+                title: "CERN FELLOWSHIP", subtitle: "Particle Tracking", date: "2023",
+                responsibilities: ["ANALYZING COLLIDER EVENTS","GRID COMPUTING MANAGEMENT","DEVELOPING TRACKING ALGORITHMS"], 
+                skills: ["C++", "ROOT", "Linux"] 
+            },
+            { 
+                x: 20, y: 0, z: -280, mass: 5.0, 
+                title: "MASTER'S THESIS", subtitle: "Spacetime Topology", date: "2024",
+                responsibilities: ["FIELD EQUATION DERIVATION","MANIFOLD VISUALIZATION","DEFENDING THESIS DISSERTATION"], 
+                skills: ["Python", "Geometry", "LaTeX"] 
+            },
+            { 
+                x: -15, y: 0, z: -420, mass: 2.25, 
+                title: "FULL STACK ENG", subtitle: "WebGL Systems", date: "2025",
+                responsibilities: ["IMMERSIVE UI ARCHITECTURE","SHADER OPTIMIZATION","DEPLOYING CLOUD INFRASTRUCTURE"], 
+                skills: ["React", "Three.js", "WebGL"] 
+            }
+        ];
+
+        const STATE = {
+            phase: 'LOADING', // LOADING -> HERO -> TRANSITION -> TIMELINE
+            temperature: 50.0,
+            loadProgress: 0,
+            scrollY: 0,
+            targetScrollY: 0,
+            warpFactor: 0,
+            transitioning: false,
+            velocity: 0,
+            properTime: 0,
+            coordTime: 0
+        };
+
+        const typingState = {};
+
+        // --- SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x000000, 0.0015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 0, 90);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // --- ASSETS HELPERS ---
+        function createIconTexture(skillName) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#00ffff"; ctx.lineWidth = 4; ctx.fillStyle = "#00ffff";
+            ctx.shadowColor = "#00ffff"; ctx.shadowBlur = 15;
+            const cx = 64; const cy = 64;
+            const name = skillName.toLowerCase();
+            
+            if (name.includes("react")) {
+                ctx.beginPath(); ctx.ellipse(cx, cy, 20, 50, Math.PI/4, 0, Math.PI*2); ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(cx, cy, 20, 50, -Math.PI/4, 0, Math.PI*2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2); ctx.fill();
+            } else if (name.includes("c++")) {
+                ctx.font = "bold 40px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("C++", cx, cy);
+            } else if (name.includes("linux")) {
+                ctx.font = "bold 50px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(">_", cx, cy);
+            } else if (name.includes("geometry")) {
+                ctx.font = "italic bold 50px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("dx", cx, cy);
+            } else {
+                ctx.strokeRect(20, 20, 88, 88); ctx.font = "bold 40px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText(skillName.substring(0, 2).toUpperCase(), cx, cy);
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+            grad.addColorStop(0.3, 'rgba(100, 200, 255, 0.5)');
+            grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- OBJECTS ---
+
+        // 1. TORUS (Hero)
+        const torusGeo = new THREE.BufferGeometry();
+        const positions = []; const randoms = [];
+        const R = 35; const r = 12;
+        for(let i=0; i<CONFIG.particleCount; i++) {
+            const u = Math.random() * Math.PI * 2;
+            const v = Math.random() * Math.PI * 2;
+            positions.push((R + r * Math.cos(v)) * Math.cos(u), (R + r * Math.cos(v)) * Math.sin(u), r * Math.sin(v));
+            randoms.push(Math.random());
+        }
+        torusGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        torusGeo.setAttribute('aRandom', new THREE.Float32BufferAttribute(randoms, 1));
+        const torusMat = new THREE.ShaderMaterial({
+            uniforms: { uTime: { value: 0 }, uNoiseTime: { value: 0 }, uTemperature: { value: 50.0 }, uStretch: { value: 0.0 } },
+            vertexShader: document.getElementById('vertexParticle').textContent,
+            fragmentShader: document.getElementById('fragmentParticle').textContent,
+            transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+        });
+        const torusMesh = new THREE.Points(torusGeo, torusMat);
+        scene.add(torusMesh);
+
+        // 2. GRID (Timeline)
+        const gridGeo = new THREE.BufferGeometry();
+        const gridPoints = [];
+        for(let z = CONFIG.gridZStart; z > CONFIG.gridZEnd; z -= CONFIG.gridDensity) {
+            for(let x = -CONFIG.gridWidth/2; x < CONFIG.gridWidth/2; x += CONFIG.gridDensity) {
+                gridPoints.push(x, 0, z);
+            }
+        }
+        gridGeo.setAttribute('basePos', new THREE.Float32BufferAttribute(gridPoints, 3));
+        gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(gridPoints, 3));
+        const gridMat = new THREE.ShaderMaterial({
+            vertexShader: document.getElementById('vertexGrid').textContent,
+            fragmentShader: document.getElementById('fragmentGrid').textContent,
+            uniforms: { 
+                uTime: { value: 0 },
+                uMassPositions: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] }, 
+                uMassStrengths: { value: [0,0,0,0] }, 
+                uOpacity: { value: 0.0 } 
+            },
+            transparent: true, depthWrite: false, blending: THREE.NormalBlending
+        });
+        const gridMesh = new THREE.Points(gridGeo, gridMat);
+        scene.add(gridMesh);
+
+        // 3. STARS (Timeline - Lensing)
+        const starsGeo = new THREE.BufferGeometry();
+        const starPos = []; const starSizes = [];
+        for(let i=0; i<CONFIG.starCount; i++) {
+            starPos.push((Math.random()-0.5)*800, (Math.random()-0.5)*800, (Math.random()-0.5)*1000);
+            starSizes.push(0.5 + Math.random() * 1.5);
+        }
+        starsGeo.setAttribute('basePos', new THREE.Float32BufferAttribute(starPos, 3));
+        starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3)); // Needs this to init
+        starsGeo.setAttribute('size', new THREE.Float32BufferAttribute(starSizes, 1));
+        const starsMat = new THREE.ShaderMaterial({
+            uniforms: { 
+                uTime: { value: 0 }, uCameraZ: { value: 0 }, uSpeed: { value: 0 },
+                uMassPositions: { value: gridMat.uniforms.uMassPositions.value },
+                uMassStrengths: { value: gridMat.uniforms.uMassStrengths.value },
+                uCameraPos: { value: new THREE.Vector3() },
+                uLensing: { value: CONFIG.lensingStrength },
+                uOpacity: { value: 0.0 }
+            },
+            vertexShader: document.getElementById('vertexStars').textContent,
+            fragmentShader: document.getElementById('fragmentStars').textContent,
+            transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+        });
+        const starField = new THREE.Points(starsGeo, starsMat);
+        scene.add(starField);
+
+        // 4. 3D NODES & HUD (Timeline)
+        const nodeGroup = new THREE.Group();
+        nodeGroup.visible = false;
+        scene.add(nodeGroup);
+        const nodesDOM = [];
+        
+        const glowTexture = createGlowTexture();
+        const glowMaterial = new THREE.SpriteMaterial({ map: glowTexture, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+        const skillCoreMat = new THREE.MeshBasicMaterial({ color: 0x001122, transparent: true, opacity: 0.9 });
+        const skillShellMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.5 });
+        const orbitLineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.15 });
+
+        CAREER_NODES.forEach((node, i) => {
+            // Update Uniforms
+            gridMat.uniforms.uMassPositions.value[i] = new THREE.Vector3(node.x, 0, node.z);
+            gridMat.uniforms.uMassStrengths.value[i] = node.mass * CONFIG.massStrength;
+            typingState[i] = { lineIndex: 0, charIndex: 0, isTyping: false };
+
+            // 3D Object
+            const wrapper = new THREE.Group();
+            const totalDepth = node.mass * CONFIG.massStrength;
+            wrapper.position.set(node.x, -totalDepth * 0.4, node.z);
+            
+            // Glow
+            const scale = 12 + (node.mass * 1.5);
+            const sprite = new THREE.Sprite(glowMaterial); sprite.scale.set(scale, scale, 1);
+            wrapper.add(sprite);
+            
+            // Accretion
+            const ringGeo = new THREE.BufferGeometry();
+            const ringPoints = [];
+            for(let k=0; k<80; k++) {
+                const theta = Math.random() * Math.PI * 2;
+                const r = scale * 0.4 + Math.random() * (scale * 0.2);
+                ringPoints.push(r * Math.cos(theta), (Math.random()-0.5)*2.0, r * Math.sin(theta));
+            }
+            ringGeo.setAttribute('position', new THREE.Float32BufferAttribute(ringPoints, 3));
+            wrapper.add(new THREE.Points(ringGeo, new THREE.PointsMaterial({color: 0xffcc88, size: 0.3, transparent: true, opacity:0.8, blending: THREE.AdditiveBlending})));
+            
+            // Skills
+            const skillShell = new THREE.Group(); skillShell.position.y = 12;
+            const orbitRadius = 12;
+            const orbitCurve = new THREE.EllipseCurve(0, 0, orbitRadius, orbitRadius, 0, 2 * Math.PI, false, 0);
+            const orbitG = new THREE.BufferGeometry().setFromPoints(orbitCurve.getPoints(64)); orbitG.rotateX(-Math.PI/2);
+            skillShell.add(new THREE.Line(orbitG, orbitLineMat));
+            
+            if(node.skills){
+                node.skills.forEach((s, idx) => {
+                    const angle = (Math.PI*2 / node.skills.length) * idx;
+                    const p = new THREE.Group();
+                    p.position.set(Math.cos(angle)*orbitRadius, 0, Math.sin(angle)*orbitRadius);
+                    p.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.5,0), skillCoreMat));
+                    p.add(new THREE.Mesh(new THREE.IcosahedronGeometry(2.5,0), skillShellMat));
+                    const icon = new THREE.Sprite(new THREE.SpriteMaterial({map: createIconTexture(s), transparent: true, opacity: 0.95}));
+                    icon.scale.set(2,2,1); p.add(icon);
+                    p.userData = { phase: Math.random()*Math.PI*2 };
+                    skillShell.add(p);
+                });
+            }
+            wrapper.add(skillShell);
+            nodeGroup.add(wrapper);
+
+            // DOM UI
+            const el = document.createElement('div');
+            el.className = 'node-container'; el.style.opacity = '0'; el.style.display = 'none';
+            const massPct = Math.min((node.mass/6)*100, 100);
+            el.innerHTML = `
+                <div class="node-anchor"></div><div class="node-connector"></div>
+                <div class="hud-card minimized" id="card-${i}">
+                    <div class="card-header"><span class="card-id">EVT-0${i+1}</span><div class="card-mass-bar"><div class="card-mass-fill" style="width: ${massPct}%"></div></div></div>
+                    <div class="card-body"><div class="card-title">${node.title}</div><div class="card-subtitle">${node.subtitle} [${node.date}]</div></div>
+                    <div class="card-logs" id="logs-${i}"></div>
+                    <div class="card-footer"><span>G-POTENTIAL: ${node.mass.toFixed(2)}</span><button class="expander-btn" id="btn-${i}">[ + ]</button></div>
+                </div>`;
+            document.getElementById('labels-container').appendChild(el);
+            
+            // Interaction
+            const card = el.querySelector(`#card-${i}`);
+            const btn = el.querySelector(`#btn-${i}`);
+            card.onclick = (e) => {
+                e.stopPropagation();
+                if(card.classList.contains('expanded')) {
+                    card.classList.remove('expanded'); btn.innerHTML = "[ + ]"; typingState[i].isTyping = false;
+                } else {
+                    document.querySelectorAll('.hud-card').forEach((c, idx) => { if(c !== card) {c.classList.remove('expanded'); document.getElementById(`btn-${idx}`).innerHTML="[ + ]"; typingState[idx].isTyping=false;}});
+                    card.classList.remove('minimized'); card.classList.add('expanded'); btn.innerHTML = "[ - ]";
+                    document.getElementById(`logs-${i}`).innerHTML = "";
+                    typingState[i] = { isTyping: true, lineIndex: 0, charIndex: 0 };
+                }
+            };
+            nodesDOM.push({ el, pos: new THREE.Vector3(node.x, 0, node.z), wrapper });
+        });
+
+        // --- CAMERA PATH ---
+        const curvePoints = [new THREE.Vector3(0, 20, 100)];
+        CAREER_NODES.forEach((node, i) => {
+            const prevZ = i === 0 ? 100 : CAREER_NODES[i-1].z;
+            const midZ = (prevZ + node.z) / 2;
+            const dir = (i % 2 === 0) ? 1 : -1;
+            curvePoints.push(new THREE.Vector3(dir * 30, 20, midZ));
+            curvePoints.push(new THREE.Vector3(node.x, 0, node.z));
+        });
+        curvePoints.push(new THREE.Vector3(0, 30, -600));
+        const cameraPath = new THREE.CatmullRomCurve3(curvePoints);
+        cameraPath.tension = 0.3;
+
+        // --- INPUT & TYPING ---
+        window.addEventListener('wheel', (e) => {
+            if (STATE.phase === 'HERO') {
+                if (e.deltaY > 0) initiateTransition();
+            } else if (STATE.phase === 'TIMELINE' && !STATE.transitioning) {
+                if (STATE.scrollY < 5 && e.deltaY < -20) initiateBackToHero();
+                else {
+                    STATE.targetScrollY += e.deltaY * 0.25;
+                    STATE.targetScrollY = Math.max(0, Math.min(STATE.targetScrollY, 8000));
+                    if(Math.abs(e.deltaY) > 5) { // Close cards on fast scroll
+                        document.querySelectorAll('.hud-card.expanded').forEach(c => c.classList.remove('expanded'));
+                        Object.keys(typingState).forEach(k => typingState[k].isTyping = false);
+                    }
+                }
+            }
+        });
+
+        setInterval(() => {
+            CAREER_NODES.forEach((node, i) => {
+                if(typingState[i].isTyping) {
+                    const s = typingState[i];
+                    if(s.lineIndex < node.responsibilities.length) {
+                        const lineTxt = node.responsibilities[s.lineIndex];
+                        const container = document.getElementById(`logs-${i}`);
+                        let lineEl = document.getElementById(`log-${i}-${s.lineIndex}`);
+                        if(!lineEl) {
+                            lineEl = document.createElement('div'); lineEl.className = 'log-line'; lineEl.id = `log-${i}-${s.lineIndex}`;
+                            lineEl.innerHTML = `<span class="log-prefix">>></span><span></span>`; container.appendChild(lineEl);
+                        }
+                        const span = lineEl.children[1];
+                        if(s.charIndex <= lineTxt.length) { span.innerText = lineTxt.substring(0, s.charIndex) + "█"; s.charIndex++; }
+                        else { span.innerText = lineTxt; s.lineIndex++; s.charIndex = 0; }
+                    } else typingState[i].isTyping = false;
+                }
+            });
+        }, 30);
+
+        // --- TRANSITIONS ---
+        function initiateTransition() {
+            if (STATE.phase !== 'HERO' || STATE.transitioning) return;
+            STATE.phase = 'TRANSITION'; STATE.transitioning = true;
+            document.getElementById('ui-hero').style.opacity = 0;
+            
+            const startCam = camera.position.clone();
+            const endCam = cameraPath.getPointAt(0);
+            const startTime = performance.now();
+
+            const loop = (now) => {
+                const t = Math.min((now - startTime) / 2000, 1);
+                const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                
+                // Torus Explode
+                torusMat.uniforms.uStretch.value = ease * 20.0;
+                torusMat.uniforms.uTemperature.value = CONFIG.minTemp + (ease * 5.0);
+                
+                // Camera Move
+                camera.position.lerpVectors(startCam, endCam, ease);
+                const lookAtT = new THREE.Vector3().lerpVectors(new THREE.Vector3(0,0,0), cameraPath.getPointAt(0.01), ease*ease);
+                camera.lookAt(lookAtT);
+
+                // Fade In Grid/Stars
+                gridMat.uniforms.uOpacity.value = ease;
+                starsMat.uniforms.uOpacity.value = ease;
+
+                if (t < 1) requestAnimationFrame(loop);
+                else {
+                    STATE.phase = 'TIMELINE'; STATE.transitioning = false;
+                    document.getElementById('ui-timeline').style.opacity = 1;
+                    nodeGroup.visible = true; // Show 3D nodes
+                    nodesDOM.forEach(n => n.el.style.display = 'flex');
+                }
+            };
+            requestAnimationFrame(loop);
+        }
+
+        function initiateBackToHero() {
+            if (STATE.phase !== 'TIMELINE' || STATE.transitioning) return;
+            STATE.phase = 'TRANSITION'; STATE.transitioning = true;
+            document.getElementById('ui-timeline').style.opacity = 0;
+            nodesDOM.forEach(n => { n.el.style.opacity = 0; n.el.style.display = 'none'; });
+            nodeGroup.visible = false;
+
+            const startCam = camera.position.clone();
+            const endCam = new THREE.Vector3(0, 0, 90);
+            const startTime = performance.now();
+
+            const loop = (now) => {
+                const t = Math.min((now - startTime) / 1500, 1);
+                const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                const invEase = 1 - ease;
+
+                torusMat.uniforms.uStretch.value = invEase * 20.0;
+                camera.position.lerpVectors(startCam, endCam, ease);
+                
+                // Smooth quaternion reset
+                const dummy = camera.clone(); dummy.position.copy(camera.position); dummy.lookAt(0,0,0);
+                camera.quaternion.slerp(dummy.quaternion, 0.1);
+
+                gridMat.uniforms.uOpacity.value = invEase;
+                starsMat.uniforms.uOpacity.value = invEase;
+
+                if (t < 1) requestAnimationFrame(loop);
+                else {
+                    STATE.phase = 'HERO'; STATE.transitioning = false;
+                    document.getElementById('ui-hero').style.opacity = 1;
+                    STATE.scrollY = 0; STATE.targetScrollY = 0;
+                    camera.rotation.set(0,0,0); // Force reset
+                }
+            };
+            requestAnimationFrame(loop);
+        }
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta(); const time = clock.getElapsedTime();
+            
+            // Uniforms
+            torusMat.uniforms.uTime.value = time;
+            torusMat.uniforms.uNoiseTime.value += dt * (0.1 + STATE.temperature * 0.05);
+            torusMat.uniforms.uTemperature.value = STATE.temperature;
+            gridMat.uniforms.uTime.value = time;
+            starsMat.uniforms.uTime.value = time;
+
+            // Phase Logic
+            if (STATE.phase === 'LOADING') {
+                if (STATE.loadProgress < 100) { 
+                    STATE.loadProgress += 0.5; 
+                    STATE.temperature = 50.0 + Math.sin(time * 2.0) * 5.0; 
+                }
+                document.getElementById('progress-bar').style.width = `${STATE.loadProgress}%`;
+                if (STATE.loadProgress >= 100) {
+                    if (STATE.temperature > CONFIG.minTemp) STATE.temperature *= CONFIG.coolingRate;
+                    else { 
+                        STATE.temperature = CONFIG.minTemp; 
+                        STATE.phase = 'HERO'; 
+                        document.getElementById('ui-loader').style.opacity = 0; 
+                        setTimeout(() => document.getElementById('ui-hero').style.opacity = 1, 1000); 
+                    }
+                }
+                torusMesh.rotation.z += 0.002;
+
+            } else if (STATE.phase === 'HERO' && !STATE.transitioning) {
+                torusMesh.rotation.z += 0.001;
+                camera.position.x = Math.sin(time * 0.5) * 1.5; 
+                camera.position.y = Math.cos(time * 0.3) * 1.5;
+                camera.lookAt(0, 0, 0);
+
+            } else if (STATE.phase === 'TIMELINE' && !STATE.transitioning) {
+                // Physics & Camera
+                const diff = STATE.targetScrollY - STATE.scrollY;
+                STATE.scrollY += diff * CONFIG.scrollDamping;
+                STATE.velocity = diff * CONFIG.scrollDamping;
+                
+                const prog = Math.min(Math.max(STATE.scrollY / 8000, 0), 1.0);
+                const camPos = cameraPath.getPointAt(prog);
+                const lookPos = cameraPath.getPointAt(Math.min(prog + 0.01, 1.0));
+                
+                camera.position.copy(camPos);
+                camera.position.y += Math.sin(time * 0.5) * 0.5; // Bob
+                camera.lookAt(lookPos);
+                
+                // Roll
+                const xTurn = (lookPos.x - camPos.x);
+                camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, -xTurn * 0.5, 0.1);
+
+                // Relativistic UI
+                const v_norm = Math.min(Math.abs(STATE.velocity) / CONFIG.c_sim, 0.999);
+                STATE.coordTime += dt; 
+                STATE.properTime += dt / (1.0 / Math.sqrt(1.0 - v_norm*v_norm));
+                
+                document.getElementById('coord-time').innerText = STATE.coordTime.toFixed(2);
+                document.getElementById('proper-time').innerText = STATE.properTime.toFixed(2);
+                document.getElementById('velocity').innerText = v_norm.toFixed(3) + "c";
+                document.getElementById('lorentz').innerText = (1.0 / Math.sqrt(1.0 - v_norm*v_norm)).toFixed(3);
+                document.getElementById('velocity-alert').style.display = v_norm > 0.9 ? 'block' : 'none';
+
+                // Update Stars Uniforms
+                starsMat.uniforms.uCameraPos.value.copy(camera.position);
+                starsMat.uniforms.uCameraZ.value = camera.position.z;
+                starsMat.uniforms.uSpeed.value = STATE.velocity;
+
+                // Update Nodes (DOM & 3D)
+                nodesDOM.forEach((n, i) => {
+                    const dist = camera.position.distanceTo(n.pos);
+                    // 3D Animation
+                    if (n.wrapper.children[2]) { // Skills
+                        n.wrapper.children[2].rotation.y -= 0.005;
+                        n.wrapper.children[2].children.forEach(c => {
+                            c.position.y = Math.sin(time*2 + c.userData.phase)*1.5;
+                            c.children[0].rotation.x += 0.01;
+                            c.children[1].rotation.y -= 0.02;
+                        });
+                    }
+                    
+                    // DOM Layout
+                    const screenPos = n.pos.clone(); screenPos.y += 30 + (CAREER_NODES[i].mass*2);
+                    screenPos.project(camera);
+                    const x = (screenPos.x * .5 + .5) * window.innerWidth;
+                    const y = -(screenPos.y * .5 - .5) * window.innerHeight;
+                    
+                    if ((n.pos.z - camera.position.z) > 10 || dist > 500) {
+                        n.el.style.opacity = 0; n.el.style.pointerEvents = 'none';
+                    } else {
+                        n.el.style.pointerEvents = 'auto';
+                        if (dist < 120) {
+                             n.el.querySelector('.hud-card').classList.remove('minimized');
+                             n.el.style.opacity = 1; n.el.style.zIndex = 100;
+                             n.el.style.transform = `translate(${x}px, ${y}px) scale(1)`;
+                        } else {
+                             const card = n.el.querySelector('.hud-card');
+                             if(!card.classList.contains('expanded')) card.classList.add('minimized');
+                             n.el.style.opacity = Math.max(0.2, 1.0 - ((dist-120)/280));
+                             n.el.style.zIndex = 50;
+                             n.el.style.transform = `translate(${x}px, ${y}px) scale(0.8)`;
+                        }
+                        // Orientation
+                        if (n.pos.x < 0) {
+                            n.el.style.flexDirection = "row-reverse";
+                            n.el.querySelector('.node-connector').style.background = "linear-gradient(-90deg, #0ff, transparent)";
+                        } else {
+                            n.el.style.flexDirection = "row";
+                            n.el.querySelector('.node-connector').style.background = "linear-gradient(90deg, #0ff, transparent)";
+                        }
+                    }
+                });
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        animate();
+    </script>
+</body>
+</html>

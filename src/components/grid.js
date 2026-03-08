@@ -17,8 +17,9 @@ export function createGrid() {
         vertexShader: gridVertexShader, fragmentShader: gridFragmentShader,
         uniforms: {
             uTime: { value: 0 }, uOpacity: { value: 0.0 },
-            uMassPositions: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
-            uMassStrengths: { value: [0, 0, 0, 0] }
+            uMassCount: { value: 0 },
+            uMassPositions: { value: Array.from({ length: 10 }, () => new THREE.Vector3()) },
+            uMassStrengths: { value: Array.from({ length: 10 }, () => 0) }
         },
         transparent: true, depthWrite: false, blending: THREE.NormalBlending
     });

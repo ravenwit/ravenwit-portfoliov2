@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path Integral & Braiding Hero</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        .math-overlay {
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-black select-none">
+
+    <!-- Hero Content Overlay -->
+    <div class="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-4xl math-overlay">
+            <h1 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tighter glow-text bg-clip-text text-transparent bg-gradient-to-b from-sky-300 to-indigo-500 uppercase">
+                The Sum Over Histories
+            </h1>
+            <p class="text-lg md:text-2xl font-light text-sky-200/70 italic mb-8">
+                "The probability amplitude $\psi(b, a)$ is the sum over all possible paths..."
+            </p>
+            <div class="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-sky-500/20 inline-block">
+                <p class="text-xl md:text-2xl font-mono text-sky-400">
+                    $K(x_b, t_b; x_a, t_a) = \int \mathcal{D}[x(t)] e^{\frac{i}{\hbar} S[x(t)]}$
+                </p>
+            </div>
+            <div class="mt-12 flex gap-4 justify-center pointer-events-auto">
+                <button class="px-8 py-3 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-medium transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(2,132,199,0.4)]">
+                    Explore Braiding
+                </button>
+                <button class="px-8 py-3 rounded-full border border-sky-500/50 hover:bg-sky-500/10 text-sky-300 font-medium transition-all">
+                    View Equations
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Elements -->
+    <div class="absolute bottom-8 left-8 z-20 hidden md:block">
+        <div class="flex flex-col gap-2 text-xs font-mono text-sky-400/50 uppercase tracking-widest">
+            <span>Lagrangian $\mathcal{L} = T - (V_{base} + V_{ext})$</span>
+            <span>Quantum Coherence: <span id="interference-stat" class="text-sky-300">100%</span></span>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <!-- MathJax for rendering -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script>
+        /**
+         * PATH INTEGRAL VISUALIZER
+         * Implements a real-time "Sum over Histories" calculation.
+         * The cursor acts as an external potential perturbing the action S.
+         */
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statEl = document.getElementById('interference-stat');
+
+        let width, height;
+        let paths = [];
+        const PATH_COUNT = 200; 
+        const SEGMENTS = 30; 
+        let mouse = { x: -1000, y: -1000, active: false };
+        let time = 0;
+
+        // Physical Constants (scaled for visualization)
+        const H_BAR = 0.15; // Lower h-bar makes interference patterns more "sensitive"
+        const PARTICLE_MASS = 1.0;
+        
+        class Path {
+            constructor(index) {
+                this.index = index;
+                this.points = [];
+                this.action = 0;
+                this.phase = 0;
+                this.opacity = 0;
+                this.color = '';
+                this.offset = Math.random() * Math.PI * 2;
+                this.init();
+            }
+
+            init() {
+                this.points = [];
+                const spread = (this.index / PATH_COUNT - 0.5) * 2;
+                this.variation = spread;
+            }
+
+            update(start, end, mousePos) {
+                this.points = [];
+                this.action = 0;
+                
+                const steps = SEGMENTS;
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    
+                    // Linear interpolation x(t)
+                    let x = start.x + (end.x - start.x) * t;
+                    let y = start.y + (end.y - start.y) * t;
+
+                    // Fluctuation around the classical path
+                    const envelope = Math.sin(t * Math.PI);
+                    const arc = envelope * 200 * this.variation;
+                    const jitter = Math.sin(t * Math.PI * 4 + time * 3 + this.offset) * 4;
+                    
+                    y += arc + jitter;
+
+                    // Interaction with Cursor (Potential Well V_ext)
+                    if (mousePos.active) {
+                        const dx = x - mousePos.x;
+                        const dy = y - mousePos.y;
+                        const distSq = dx*dx + dy*dy;
+                        const influence = Math.exp(-distSq / (100 * 100)); // Gaussian field
+                        
+                        // Path deformation (particle "attracted" to potential)
+                        y -= dy * influence * 0.4;
+                        
+                        // Lagrangian L = T - V
+                        // We treat potential as positive here to increase action S
+                        const kinetic = 200; // Baseline
+                        const potential = influence * 1200; 
+                        this.action += (kinetic + potential) * (1/steps);
+                    } else {
+                        this.action += 200 * (1/steps);
+                    }
+
+                    this.points.push({ x, y });
+                }
+
+                // Propagator phase calculation: exp(iS/hbar)
+                // Interference is constructive when phase is a multiple of 2pi
+                this.phase = (this.action / H_BAR) + (time * 2);
+                const interference = Math.cos(this.phase);
+                
+                // Opacity represents the real part of the probability amplitude
+                // Paths near the classical path (stationary action) have consistent phase.
+                // Perturbed paths oscillate quickly, fading out.
+                this.opacity = Math.max(0.01, (interference + 1) / 2 * 0.45);
+                
+                const hue = 190 + Math.sin(this.phase * 0.5) * 30;
+                this.color = `hsla(${hue}, 80%, 65%, ${this.opacity})`;
+            }
+
+            draw() {
+                if (this.points.length < 2) return;
+
+                ctx.beginPath();
+                ctx.moveTo(this.points[0].x, this.points[0].y);
+
+                for (let i = 1; i < this.points.length - 2; i++) {
+                    const xc = (this.points[i].x + this.points[i + 1].x) / 2;
+                    const yc = (this.points[i].y + this.points[i + 1].y) / 2;
+                    ctx.quadraticCurveTo(this.points[i].x, this.points[i].y, xc, yc);
+                }
+
+                ctx.quadraticCurveTo(
+                    this.points[this.points.length - 2].x,
+                    this.points[this.points.length - 2].y,
+                    this.points[this.points.length - 1].x,
+                    this.points[this.points.length - 1].y
+                );
+
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = this.opacity * 8;
+                ctx.stroke();
+
+                // Glow particle tracing the path
+                if (this.index % 12 === 0) {
+                    const progress = (time * 0.5 + this.index * 0.01) % 1;
+                    const idx = Math.floor(progress * (this.points.length - 1));
+                    const p = this.points[idx];
+                    ctx.fillStyle = `rgba(125, 211, 252, ${this.opacity * 1.5})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            
+            paths = [];
+            for (let i = 0; i < PATH_COUNT; i++) {
+                paths.push(new Path(i));
+            }
+        }
+
+        const handleInput = (x, y) => {
+            mouse.x = x;
+            mouse.y = y;
+            mouse.active = true;
+        };
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', (e) => handleInput(e.clientX, e.clientY));
+        window.addEventListener('mouseleave', () => mouse.active = false);
+        window.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            handleInput(touch.clientX, touch.clientY);
+        });
+        window.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            handleInput(touch.clientX, touch.clientY);
+        });
+
+        function animate() {
+            time += 0.016; // Approx 60fps
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, width, height);
+
+            // Add a global faint glow to the background
+            const bgGrad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width*0.8);
+            bgGrad.addColorStop(0, 'rgba(12, 74, 110, 0.05)');
+            bgGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            const start = { x: width * 0.1, y: height * 0.5 };
+            const end = { x: width * 0.9, y: height * 0.5 };
+
+            // Render source/sink
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#0ea5e9';
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(start.x, start.y, 3, 0, Math.PI * 2);
+            ctx.arc(end.x, end.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Render Potential (Cursor)
+            if (mouse.active) {
+                ctx.beginPath();
+                const g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 120);
+                g.addColorStop(0, 'rgba(56, 189, 248, 0.15)');
+                g.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                ctx.fillStyle = g;
+                ctx.arc(mouse.x, mouse.y, 120, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Update/Draw Paths
+            let totalOpacity = 0;
+            ctx.globalCompositeOperation = 'lighter';
+            paths.forEach(path => {
+                path.update(start, end, mouse);
+                path.draw();
+                totalOpacity += path.opacity;
+            });
+            ctx.globalCompositeOperation = 'source-over';
+
+            // Stats Update
+            if (Math.floor(time * 60) % 10 === 0) {
+                const coherence = Math.min(100, (totalOpacity / (PATH_COUNT * 0.25)) * 100).toFixed(0);
+                statEl.innerText = `${coherence}%`;
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        resize();
+        animate();
+
+    </script>
+</body>
+</html>

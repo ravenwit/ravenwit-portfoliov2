@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chaos Lab v2 | Interactive Lorenz RK4</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            color: #0ff;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* UI Panels */
+        .panel {
+            position: absolute;
+            z-index: 10;
+            background: rgba(0, 10, 20, 0.85);
+            padding: 15px;
+            border-left: 2px solid #0ff;
+            backdrop-filter: blur(5px);
+        }
+
+        #info {
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+        }
+
+        #controls {
+            top: 20px;
+            right: 20px;
+            width: 220px;
+        }
+
+        .title {
+            font-size: 14px;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 5px;
+            color: #5588aa;
+        }
+
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #0ff;
+        }
+
+        .value-disp {
+            color: #0ff;
+            font-weight: bold;
+        }
+
+        #instruction {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="info" class="panel">
+        <div class="title">System Diagnostics</div>
+        <div style="font-size: 12px;">SOLVER: RK4 (Δt=0.01)</div>
+        <div style="font-size: 12px;">THREAD: WORKER_CONCURRENCY_OK</div>
+    </div>
+
+    <div id="controls" class="panel">
+        <div class="title">Constants (σ, ρ, β)</div>
+
+        <div class="control-group">
+            <div class="label-row"><span>SIGMA (σ)</span> <span id="val-sigma" class="value-disp">10.0</span></div>
+            <input type="range" id="param-sigma" min="0" max="50" step="0.1" value="10">
+        </div>
+
+        <div class="control-group">
+            <div class="label-row"><span>RHO (ρ)</span> <span id="val-rho" class="value-disp">28.0</span></div>
+            <input type="range" id="param-rho" min="0" max="100" step="0.5" value="28">
+        </div>
+
+        <div class="control-group">
+            <div class="label-row"><span>BETA (β)</span> <span id="val-beta" class="value-disp">2.67</span></div>
+            <input type="range" id="param-beta" min="0" max="10" step="0.01" value="2.666">
+        </div>
+
+        <button id="reset-btn"
+            style="width:100%; background:transparent; border:1px solid #0ff; color:#0ff; padding:5px; cursor:pointer; font-family:inherit; font-size:10px;">RESET
+            TRAJECTORY</button>
+    </div>
+
+    <div id="instruction">LEFT CLICK: ROTATE | RIGHT CLICK: PAN | SCROLL: ZOOM</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script id="worker-script" type="text/javascript-worker">
+        let h = 0.01;
+        let sigma = 10, rho = 28, beta = 8/3;
+        let state = [0.1, 0.0, 0.0];
+        let points = [];
+        const MAX_POINTS = 40000;
+
+        // Message handler for constant updates
+        self.onmessage = function(e) {
+            if (e.data.type === 'UPDATE_PARAMS') {
+                sigma = e.data.sigma;
+                rho = e.data.rho;
+                beta = e.data.beta;
+            }
+            if (e.data.type === 'RESET') {
+                state = [0.1, 0.0, 0.0];
+                points = [];
+            }
+        };
+
+        function f(s) {
+            return [
+                sigma * (s[1] - s[0]),
+                s[0] * (rho - s[2]) - s[1],
+                s[0] * s[1] - beta * s[2]
+            ];
+        }
+
+        function rk4() {
+            const k1 = f(state);
+            const k2 = f(state.map((v, i) => v + h/2 * k1[i]));
+            const k3 = f(state.map((v, i) => v + h/2 * k2[i]));
+            const k4 = f(state.map((v, i) => v + h * k3[i]));
+            state = state.map((v, i) => v + (h/6) * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i]));
+        }
+
+        setInterval(() => {
+            for(let i=0; i<15; i++) {
+                rk4();
+                points.push(...state);
+                if (points.length > MAX_POINTS * 3) points.splice(0, 3);
+            }
+            // Use Transferable Objects for zero-copy performance
+            const buffer = new Float32Array(points);
+            self.postMessage(buffer, [buffer.buffer]);
+        }, 16);
+    </script>
+
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(40, 40, 60);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // --- 1. CAMERA CONTROLS ---
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 0.8;
+
+        const geometry = new THREE.BufferGeometry();
+        const material = new THREE.PointsMaterial({
+            size: 0.35,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.7,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const pointsMesh = new THREE.Points(geometry, material);
+        scene.add(pointsMesh);
+
+        // --- 2. WORKER SETUP ---
+        const blob = new Blob([document.getElementById('worker-script').textContent], { type: 'text/javascript' });
+        const worker = new Worker(window.URL.createObjectURL(blob));
+
+        worker.onmessage = (e) => {
+            const positions = e.data;
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const colors = new Float32Array(positions.length);
+            for (let i = 0; i < positions.length; i += 3) {
+                // Mapping color to velocity magnitude for physical intuition
+                const vel = Math.sqrt(positions[i] ** 2 + positions[i + 1] ** 2 + positions[i + 2] ** 2) / 60;
+                colors[i] = 0.1 + vel * 0.5; // R
+                colors[i + 1] = 0.6 + vel * 0.4; // G
+                colors[i + 2] = 0.9;            // B
+            }
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.attributes.position.needsUpdate = true;
+        };
+
+        // --- 3. UI EVENT LISTENERS ---
+        const updateParams = () => {
+            const s = parseFloat(document.getElementById('param-sigma').value);
+            const r = parseFloat(document.getElementById('param-rho').value);
+            const b = parseFloat(document.getElementById('param-beta').value);
+
+            document.getElementById('val-sigma').innerText = s.toFixed(1);
+            document.getElementById('val-rho').innerText = r.toFixed(1);
+            document.getElementById('val-beta').innerText = b.toFixed(2);
+
+            worker.postMessage({ type: 'UPDATE_PARAMS', sigma: s, rho: r, beta: b });
+        };
+
+        ['param-sigma', 'param-rho', 'param-beta'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateParams);
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            worker.postMessage({ type: 'RESET' });
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // Required for damping
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+
+</html>

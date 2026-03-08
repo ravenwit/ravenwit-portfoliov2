@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scroll Topology: Master Equation</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; color: #fff; }
+        #ui-container { position: absolute; top: 20px; left: 20px; pointer-events: none; background: rgba(10, 10, 10, 0.7); padding: 20px; border-radius: 8px; border: 1px solid #333; backdrop-filter: blur(4px); }
+        h1 { margin: 0 0 10px 0; font-size: 1.2rem; color: #00ffcc; text-transform: uppercase; letter-spacing: 1px; }
+        .stat { margin: 5px 0; font-size: 0.9rem; color: #aaa; }
+        .value { color: #fff; font-weight: bold; font-family: monospace; }
+        #scroll-hint { position: absolute; bottom: 30px; width: 100%; text-align: center; color: #aaa; font-size: 1.1rem; pointer-events: none; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <h1>SCROLL TOPOLOGY</h1>
+        <div class="stat">State: <span id="phase-text" class="value">Initializing...</span></div>
+        <div class="stat">Scroll T: <span id="time-text" class="value">0.00</span></div>
+        <div class="stat">Twist (τ): <span id="tau-text" class="value">0.00</span></div>
+        <div class="stat">Domain v: <span id="vmax-text" class="value">2.00π</span></div>
+        <hr style="border-color: #333; margin: 10px 0;">
+        <div class="stat">Particle u: <span id="pu-text" class="value">--</span></div>
+        <div class="stat">Particle v: <span id="pv-text" class="value">--</span></div>
+    </div>
+    
+    <div id="scroll-hint">Scroll Down to Evolve Topology</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        
+        // --- NEW IMPORTS: OPTICAL POST-PROCESSING PIPELINE ---
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // 1. Scene Setup
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(8, 6, 8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.enabled = false; 
+
+        // --- OPTICAL PIPELINE INITIALIZATION ---
+        const renderScene = new RenderPass(scene, camera);
+        
+        // UnrealBloomPass(resolution, strength, radius, threshold)
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.6, 0.15);
+        
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+        // ---------------------------------------
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); 
+        scene.add(ambientLight);
+        
+        const dirLight1 = new THREE.DirectionalLight(0x00ffcc, 2.5); 
+        dirLight1.position.set(5, 5, 5);
+        scene.add(dirLight1);
+        
+        const dirLight2 = new THREE.DirectionalLight(0xff0066, 2.0); 
+        dirLight2.position.set(-5, -2, -5);
+        scene.add(dirLight2);
+
+        // 2. Geometry Buffer Setup
+        const R = 3.0;
+        const segmentsU = 150; 
+        const segmentsV = 60;
+        const geometry = new THREE.BufferGeometry();
+        const vertices = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 3);
+        const indices = [];
+
+        for (let i = 0; i < segmentsU; i++) {
+            for (let j = 0; j < segmentsV; j++) {
+                const a = i * (segmentsV + 1) + j;
+                const b = a + (segmentsV + 1);
+                const c = a + 1;
+                const d = b + 1;
+                indices.push(a, b, d);
+                indices.push(a, d, c);
+            }
+        }
+        geometry.setIndex(indices);
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x4488ff, 
+            roughness: 0.3,  
+            metalness: 0.4,  
+            side: THREE.DoubleSide, 
+            transparent: true, 
+            opacity: 0.9     
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        // 3. Particle & Normal Vector
+        const particle = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1, 16, 16), 
+            new THREE.MeshBasicMaterial({ color: 0xffcc00 })
+        );
+        scene.add(particle);
+
+        const normalArrow = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), 1.5, 0x00ffcc, 0.3, 0.2);
+        scene.add(normalArrow);
+        
+        particle.visible = false;
+        normalArrow.visible = false;
+
+        // --- UPGRADED VERTICAL STRING CURTAIN ---
+        const stringClock = new THREE.Clock(); 
+        const stringGroup = new THREE.Group();
+        
+        // Balanced string count with dramatically increased vertex density for mathematical smoothness
+        const numStrings = 400; 
+        const pointsPerString = 120; // Increased to satisfy the Nyquist limit of the wave
+        
+        // Lowered opacity because the Bloom Pass will multiply the brightness of overlapping pixels
+        const matCyan = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false });
+        const matMagenta = new THREE.LineBasicMaterial({ color: 0xff0066, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false });
+        
+        const stringsData = [];
+
+        for (let i = 0; i < numStrings; i++) {
+            const geo = new THREE.BufferGeometry();
+            const points = new Float32Array(pointsPerString * 3);
+            geo.setAttribute('position', new THREE.BufferAttribute(points, 3));
+            
+            const line = new THREE.Line(geo, i % 2 === 0 ? matCyan : matMagenta);
+
+            stringsData.push({
+                points: points,
+                geo: geo,
+                ox: (Math.random() - 0.5) * 80, 
+                oz: -15 + (Math.random() - 0.5) * 8, 
+                rx: Math.random() * Math.PI * 2, 
+                rz: Math.random() * Math.PI * 2,
+                speed: 1.0 + Math.random() * 1.5 
+            });
+            stringGroup.add(line);
+        }
+        scene.add(stringGroup);
+
+        const mouse = new THREE.Vector2(-1000, -1000); 
+        const mouseTarget = new THREE.Vector3();
+        
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // 4. Scroll Control Logic
+        let targetT = 0.0;
+        let currentT = 0.0;
+        const scrollSpeed = 0.002;
+
+        window.addEventListener('wheel', (event) => {
+            targetT += event.deltaY * scrollSpeed;
+            if (targetT < 0.0) targetT = 0.0; 
+            
+            document.getElementById('scroll-hint').style.display = 'none';
+        });
+
+        // 5. Mathematical Core
+        function evaluateMasterEquation(u_norm, v_norm, T_val) {
+            const u = u_norm * 2.0 * Math.PI;
+            
+            const geomT = Math.min(T_val, 4.0);
+            const phase = Math.floor(geomT) === 4 ? 3 : Math.floor(geomT);
+            
+            let rawLambda = geomT - phase;
+            if (geomT >= 4.0) rawLambda = 1.0; 
+            const lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda); 
+
+            let f1, f2, v, tau, vmax;
+
+            if (phase === 0) { 
+                vmax = 2.0 * Math.PI;
+                v = v_norm * vmax;
+                f1 = (1.0 - lambda) * Math.cos(v) + lambda * Math.sin(v);
+                f2 = Math.sin(v);
+                tau = 0.0;
+            } else if (phase === 1) { 
+                vmax = Math.PI * (2.0 - lambda);
+                v = v_norm * vmax;
+                f1 = Math.sin(v);
+                f2 = Math.sin(v);
+                tau = 0.0;
+            } else if (phase === 2) { 
+                vmax = Math.PI;
+                v = v_norm * vmax;
+                f1 = Math.sin(v);
+                f2 = Math.sin(v);
+                tau = 0.5 * lambda;
+            } else if (phase === 3) { 
+                vmax = Math.PI * (1.0 + lambda);
+                v = v_norm * vmax;
+                f1 = Math.sin(v);
+                f2 = Math.sin(v);
+                tau = 0.5;
+            }
+
+            const twistAngle = tau * u;
+            const x_prime = f1 * Math.cos(twistAngle) - f2 * Math.sin(twistAngle);
+            const z_prime = f1 * Math.sin(twistAngle) + f2 * Math.cos(twistAngle);
+
+            const x = (R + x_prime) * Math.cos(u);
+            const y = (R + x_prime) * Math.sin(u);
+            const z = z_prime;
+
+            return { pos: new THREE.Vector3(x, z, -y), tau: tau, vmax: vmax };
+        }
+
+        const phaseNames = [
+            "Torus -> Double Ribbon",
+            "Double Ribbon -> Single Ribbon",
+            "Inducing Half-Twist",
+            "Extending Domain (Möbius)",
+            "Particle Traversal Active"
+        ];
+
+        // 6. Update Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            currentT += (targetT - currentT) * 0.1;
+
+            const positions = geometry.attributes.position.array;
+            let index = 0;
+            let currentTau = 0;
+            let currentVmax = 0;
+
+            for (let i = 0; i <= segmentsU; i++) {
+                const u_norm = i / segmentsU;
+                for (let j = 0; j <= segmentsV; j++) {
+                    const v_norm = j / segmentsV;
+                    const data = evaluateMasterEquation(u_norm, v_norm, currentT);
+                    positions[index++] = data.pos.x;
+                    positions[index++] = data.pos.y;
+                    positions[index++] = data.pos.z;
+                    
+                    if (i===0 && j===0) {
+                        currentTau = data.tau;
+                        currentVmax = data.vmax;
+                    }
+                }
+            }
+            geometry.attributes.position.needsUpdate = true;
+            geometry.computeVertexNormals();
+
+            if (currentT >= 4.0) {
+                particle.visible = true;
+                normalArrow.visible = true;
+                
+                const t_kin = currentT - 4.0;
+                
+                let particle_u_norm = (t_kin * 0.2) % 2.0; 
+                let particle_v_norm = 0.5 + 0.1 * Math.sin(t_kin * 3.0); 
+
+                const pData = evaluateMasterEquation(particle_u_norm, particle_v_norm, 4.0);
+                particle.position.copy(pData.pos);
+
+                const delta = 0.0001; 
+                let u_plus = particle_u_norm + delta;
+                const p_u = evaluateMasterEquation(u_plus, particle_v_norm, 4.0).pos;
+                const T_u = new THREE.Vector3().subVectors(p_u, pData.pos);
+
+                let v_plus = particle_v_norm + delta; 
+                const p_v = evaluateMasterEquation(particle_u_norm, v_plus, 4.0).pos;
+                const T_v = new THREE.Vector3().subVectors(p_v, pData.pos);
+
+                const normal = new THREE.Vector3().crossVectors(T_u, T_v).normalize();
+                
+                if (normal.lengthSq() > 0.0001) {
+                    normalArrow.position.copy(pData.pos);
+                    normalArrow.setDirection(normal);
+                }
+
+                document.getElementById('pu-text').innerText = (particle_u_norm * 2).toFixed(2) + "π";
+                document.getElementById('pv-text').innerText = (particle_v_norm * 2).toFixed(2) + "π";
+            } else {
+                particle.visible = false;
+                normalArrow.visible = false;
+                document.getElementById('pu-text').innerText = "--";
+                document.getElementById('pv-text').innerText = "--";
+            }
+
+            let displayPhase = Math.floor(currentT);
+            if (displayPhase >= 4) displayPhase = 4;
+            document.getElementById('phase-text').innerText = phaseNames[displayPhase];
+            document.getElementById('time-text').innerText = currentT.toFixed(2);
+            document.getElementById('tau-text').innerText = currentTau.toFixed(2);
+            document.getElementById('vmax-text').innerText = (currentVmax / Math.PI).toFixed(2) + "π";
+
+            // --- SMOOTH KINEMATIC WAVE EVALUATION ---
+            const stringTime = stringClock.getElapsedTime();
+            
+            const vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+            vec.unproject(camera);
+            vec.sub(camera.position).normalize();
+            const distanceToPlane = (-15 - camera.position.z) / vec.z;
+            mouseTarget.copy(camera.position).add(vec.multiplyScalar(distanceToPlane));
+
+            for (let i = 0; i < numStrings; i++) {
+                const sd = stringsData[i];
+                const localT = stringTime * sd.speed;
+
+                for (let j = 0; j < pointsPerString; j++) {
+                    // With 120 points, the step delta is much smaller, guaranteeing visual smoothness
+                    const baseY = 50.0 - (j * 0.85); 
+                    const baseX = sd.ox;
+                    const baseZ = sd.oz;
+
+                    const k = 0.12; 
+                    let dx = Math.sin(baseY * k - localT + sd.rx) * 1.5;
+                    let dz = Math.cos(baseY * k - localT + sd.rz) * 1.5;
+
+                    let finalX = baseX + dx;
+                    let finalY = baseY;
+                    let finalZ = baseZ + dz;
+
+                    const distX = finalX - mouseTarget.x;
+                    const distY = finalY - mouseTarget.y;
+                    const rSq = distX * distX + distY * distY;
+
+                    // Widened the interaction radius and the Gaussian variance so the curve is physically broader
+                    if (rSq < 400.0) { 
+                        const gaussian = Math.exp(-rSq / 150.0); // Smooth falloff curve (Variance 150)
+                        
+                        finalX += distX * gaussian * 0.5;
+                        finalZ += Math.cos(rSq * 0.05) * gaussian * 4.0; // Pushes depth inward and outward smoothly
+                    }
+
+                    sd.points[j * 3] = finalX;
+                    sd.points[j * 3 + 1] = finalY;
+                    sd.points[j * 3 + 2] = finalZ;
+                }
+                sd.geo.attributes.position.needsUpdate = true;
+            }
+
+            // --- RENDER VIA COMPOSER (NOT RENDERER) ---
+            // This applies the UnrealBloom optical effect over the entire frame
+            composer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // Must also update the composer resolution map to prevent pixelation
+            composer.setSize(window.innerWidth, window.innerHeight); 
+        });
+
+        animate();
+    </script>
+</body>
+</html>

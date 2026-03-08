@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum HUD Portfolio v3</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --neon-cyan: #0ff;
+            --neon-pink: #f0f;
+            --bg-color: #050505;
+            --cell-size: 85px; 
+            --gap: 10px;
+            --grid-dim: 6; 
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 40, 60, 0.4) 0%, transparent 80%);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: hidden;
+            height: 600vh;
+        }
+
+        #viewport {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        #hud-ui {
+            position: fixed;
+            top: 20px; left: 20px;
+            z-index: 10;
+            text-shadow: 0 0 5px var(--neon-cyan);
+            pointer-events: none;
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border-left: 2px solid var(--neon-cyan);
+            backdrop-filter: blur(2px);
+        }
+
+        #year-label { font-size: 0.8rem; color: rgba(255,255,255,0.7); letter-spacing: 2px; text-transform: uppercase; }
+        #year-display { font-size: 3rem; font-weight: bold; color: white; line-height: 1; margin: 5px 0; }
+        #timeline-bar { width: 180px; height: 3px; background: rgba(255,255,255,0.1); margin-top: 5px; position: relative; }
+        #timeline-progress { height: 100%; background: var(--neon-cyan); width: 0%; box-shadow: 0 0 8px var(--neon-cyan); transition: width 0.1s linear; }
+
+        #matrix {
+            display: grid;
+            grid-template-columns: repeat(var(--grid-dim), var(--cell-size));
+            grid-template-rows: repeat(var(--grid-dim), var(--cell-size));
+            gap: var(--gap);
+            transform-style: preserve-3d;
+            transform: rotateX(15deg) scale(0.9); 
+            animation: floating-hud 8s ease-in-out infinite;
+        }
+
+        @keyframes floating-hud {
+            0% { transform: rotateX(15deg) rotateY(0deg) scale(0.9); }
+            50% { transform: rotateX(18deg) rotateY(2deg) scale(0.92); }
+            100% { transform: rotateX(15deg) rotateY(0deg) scale(0.9); }
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background: rgba(0, 255, 255, 0.02);
+            border: 1px solid rgba(0, 255, 255, 0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+        }
+
+        /* --- ITEM STYLING --- */
+        .item {
+            width: 92%; height: 92%;
+            background: rgba(5, 12, 20, 0.9);
+            border: 1px solid var(--neon-cyan);
+            display: flex;
+            justify-content: center; /* Center Icon */
+            align-items: center;     /* Center Icon */
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+            position: absolute;
+            backface-visibility: hidden;
+            transform: translateZ(5px);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        /* Large Icon */
+        .item i {
+            font-size: 2.5rem; /* Increased size since text is gone */
+            color: inherit;
+        }
+
+        /* TOOLTIP (Hidden Text) */
+        .item span {
+            position: absolute;
+            bottom: 110%; /* Float above */
+            left: 50%;
+            transform: translateX(-50%) translateZ(20px);
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid currentColor;
+            color: white;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            box-shadow: 0 0 10px currentColor;
+            z-index: 1000;
+        }
+
+        /* Hover Effects */
+        .item:hover {
+            transform: translateZ(30px) scale(1.1); /* Pop out towards user */
+            box-shadow: 0 0 20px currentColor;
+            z-index: 500; /* Ensure it overlays neighbors */
+        }
+
+        .item:hover span {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Category Colors */
+        .cat-physics { border-color: #d8b4fe; color: #d8b4fe; } 
+        .cat-math { border-color: #60a5fa; color: #60a5fa; } 
+        .cat-ai { border-color: #f87171; color: #f87171; } 
+        .cat-security { border-color: #4ade80; color: #4ade80; } 
+        .cat-dev { border-color: #fbbf24; color: #fbbf24; }
+        .cat-arts { border-color: #f472b6; color: #f472b6; }
+        .cat-tools { border-color: #94a3b8; color: #94a3b8; }
+
+        /* Animations */
+        @keyframes spawn-pop {
+            0% { opacity: 0; transform: translateZ(50px) scale(0); }
+            100% { opacity: 1; transform: translateZ(5px) scale(1); }
+        }
+        .spawning { animation: spawn-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        .long-term { animation: pulse-glow 3s infinite ease-in-out; }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px currentColor; transform: translateZ(5px); }
+            50% { box-shadow: 0 0 15px currentColor; transform: translateZ(8px); }
+        }
+
+        .short-term { animation: glitch-shake 2.5s infinite linear alternate-reverse; }
+        .short-term::before {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            background: inherit; opacity: 0.3;
+            transform: translate(2px,0);
+            clip-path: inset(20% 0 80% 0);
+            animation: glitch-slice 3s infinite linear alternate-reverse;
+            pointer-events: none;
+        }
+        @keyframes glitch-shake {
+            0% { transform: translateZ(5px) skew(0deg); }
+            5% { transform: translateZ(5px) skew(-3deg); }
+            10% { transform: translateZ(5px) skew(3deg); }
+            15% { transform: translateZ(5px) skew(0deg); }
+            100% { transform: translateZ(5px) skew(0deg); }
+        }
+        @keyframes glitch-slice {
+            0% { clip-path: inset(10% 0 80% 0); transform: translate(-2px,0); }
+            100% { clip-path: inset(80% 0 10% 0); transform: translate(2px,0); }
+        }
+
+        .merging { z-index: 999; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="hud-ui">
+        <div id="year-label">System Time</div>
+        <div id="year-display">2004</div>
+        <div id="timeline-bar"><div id="timeline-progress"></div></div>
+    </div>
+
+    <div id="viewport">
+        <div id="matrix">
+            </div>
+    </div>
+
+    <script>
+        // --- 1. DATA ---
+        const RAW_DATA = [
+          { "id": "physics", "items": [
+              { "name": "AdS/CFT", "start": 2021, "end": 9999 },
+              { "name": "Holography", "start": 2021, "end": 9999 },
+              { "name": "Grav. Waves", "start": 2021, "end": 9999 },
+              { "name": "Q. Error Corr.", "start": 2025, "end": 9999 },
+              { "name": "Phase Trans.", "start": 2024, "end": 9999 },
+              { "name": "Renormalization", "start": 2024, "end": 9999 }
+            ]},
+          { "id": "math", "items": [
+              { "name": "Category Thy.", "start": 2020, "end": 9999 },
+              { "name": "Elliptic Crv.", "start": 2017, "end": 9999 },
+              { "name": "Sympy", "start": 2018, "end": 2021 },
+              { "name": "Sagemath", "start": 2019, "end": 2021 }
+            ]},
+          { "id": "ai", "items": [
+              { "name": "GANs", "start": 2021, "end": 9999 },
+              { "name": "Neural Nets", "start": 2020, "end": 9999 },
+              { "name": "Keras", "start": 2020, "end": 9999 },
+              { "name": "TensorFlow", "start": 2020, "end": 9999 },
+              { "name": "Scipy", "start": 2019, "end": 9999 },
+              { "name": "Numpy", "start": 2019, "end": 9999 },
+              { "name": "Pandas", "start": 2019, "end": 9999 },
+              { "name": "Scikit-learn", "start": 2019, "end": 9999 },
+              { "name": "OpenCV", "start": 2017, "end": 2021 },
+              { "name": "Matplotlib", "start": 2017, "end": 9999 }
+            ]},
+          { "id": "security", "items": [
+              { "name": "Cryptography", "start": 2016, "end": 2020 },
+              { "name": "Metasploit", "start": 2016, "end": 2018 },
+              { "name": "Wireshark", "start": 2016, "end": 2018 },
+              { "name": "Linux Admin", "start": 2013, "end": 2017 },
+              { "name": "Aircrack-ng", "start": 2016, "end": 2018 },
+              { "name": "Ettercap", "start": 2016, "end": 2018 },
+              { "name": "BeEF", "start": 2016, "end": 2018 },
+              { "name": "Hexdump", "start": 2016, "end": 2018 }
+            ]},
+          { "id": "dev", "items": [
+              { "name": "Node.js", "start": 2022, "end": 2023 },
+              { "name": "Gatsby", "start": 2022, "end": 2023 },
+              { "name": "HTML", "start": 2012, "end": 2015 },
+              { "name": "JavaScript", "start": 2012, "end": 2016 },
+              { "name": "PHP", "start": 2013, "end": 2019 },
+              { "name": "Laravel", "start": 2015, "end": 2019 },
+              { "name": ".NET", "start": 2012, "end": 2016 },
+              { "name": "C", "start": 2011, "end": 2013 },
+              { "name": "C++", "start": 2011, "end": 2020 },
+              { "name": "Qt", "start": 2016, "end": 2019 },
+              { "name": "Arduino", "start": 2013, "end": 2017 },
+              { "name": "Git", "start": 2017, "end": 9999 },
+              { "name": "LaTeX", "start": 2018, "end": 9999 },
+              { "name": "VS Code", "start": 2022, "end": 9999 },
+              { "name": "Arch Linux", "start": 2018, "end": 2020 },
+              { "name": "Ubuntu", "start": 2016, "end": 2022 }
+            ]},
+          { "id": "arts", "items": [
+              { "name": "Violin", "start": 2013, "end": 2014 },
+              { "name": "Origami", "start": 2012, "end": 9999 },
+              { "name": "Kirigami", "start": 2024, "end": 9999 },
+              { "name": "Paper Crafts", "start": 2004, "end": 9999 },
+              { "name": "Rubik's Cube", "start": 2012, "end": 9999 },
+              { "name": "Photoshop", "start": 2012, "end": 2021 },
+              { "name": "Music", "start": 2004, "end": 9999 },
+              { "name": "Movies", "start": 2007, "end": 9999 }
+            ]}
+        ];
+
+        // --- 2. CONFIG ---
+        const ICON_MAP = {
+            'AdS/CFT': 'fa-atom', 'Holography': 'fa-globe',
+            'Grav. Waves': 'fa-water', 'Q. Error Corr.': 'fa-microchip',
+            'Phase Trans.': 'fa-snowflake', 'Renormalization': 'fa-infinity',
+            'Category Thy.': 'fa-project-diagram', 'Elliptic Crv.': 'fa-bezier-curve',
+            'Sympy': 'fa-calculator', 'Sagemath': 'fa-square-root-variable',
+            'GANs': 'fa-mask', 'Neural Nets': 'fa-network-wired',
+            'Keras': 'fa-layer-group', 'TensorFlow': 'fa-cubes',
+            'Scipy': 'fa-flask', 'Numpy': 'fa-th', 'Pandas': 'fa-table',
+            'Scikit-learn': 'fa-brain', 'OpenCV': 'fa-eye', 'Matplotlib': 'fa-chart-line',
+            'Cryptography': 'fa-key', 'Metasploit': 'fa-bomb', 'Wireshark': 'fa-fish',
+            'Linux Admin': 'fa-server', 'Aircrack-ng': 'fa-wifi', 'BeEF': 'fa-cow',
+            'Hexdump': 'fa-file-code', 'Node.js': 'fa-brands fa-node', 'Gatsby': 'fa-ghost',
+            'HTML': 'fa-brands fa-html5', 'JavaScript': 'fa-brands fa-js', 'PHP': 'fa-brands fa-php',
+            'Laravel': 'fa-brands fa-laravel', '.NET': 'fa-brands fa-windows', 'C': 'fa-copyright',
+            'C++': 'fa-code', 'Qt': 'fa-window-maximize', 'Arduino': 'fa-microchip',
+            'Git': 'fa-brands fa-git-alt', 'LaTeX': 'fa-superscript', 'VS Code': 'fa-code',
+            'Arch Linux': 'fa-brands fa-linux', 'Ubuntu': 'fa-brands fa-ubuntu', 'Violin': 'fa-music',
+            'Origami': 'fa-paper-plane', 'Kirigami': 'fa-cut', 'Paper Crafts': 'fa-scroll',
+            'Rubik\'s Cube': 'fa-cube', 'Photoshop': 'fa-image', 'Music': 'fa-headphones',
+            'Movies': 'fa-film'
+        };
+
+        const getIcon = (name) => ICON_MAP[name] || 'fa-circle';
+        const getCatClass = (catId) => `cat-${catId}`;
+
+        // Collapse Map
+        const COLLAPSE_MAP = {
+            'Violin': 'Music',
+            'Metasploit': 'Cryptography',
+            'Wireshark': 'Cryptography',
+            'Aircrack-ng': 'Cryptography',
+            'BeEF': 'Cryptography',
+            'Ettercap': 'Cryptography',
+            'Hexdump': 'Cryptography',
+            'Cryptography': 'Elliptic Crv.',
+            'Linux Admin': 'Arch Linux',
+            'Ubuntu': 'Arch Linux',
+            'Arch Linux': 'Phase Trans.',
+            'OpenCV': 'Neural Nets',
+            'Photoshop': 'Kirigami',
+            'HTML': 'JavaScript',
+            'C': 'C++'
+        };
+
+        let allHobbies = [];
+        RAW_DATA.forEach(cat => {
+            cat.items.forEach(item => {
+                allHobbies.push({ ...item, catId: cat.id, duration: (item.end === 9999 ? 2026 : item.end) - item.start });
+            });
+        });
+
+        const START_YEAR = 2004;
+        const END_YEAR = 2027;
+        const GRID_DIM = 6; 
+
+        // --- 3. GRID SETUP ---
+        const matrixEl = document.getElementById('matrix');
+        const gridState = Array(GRID_DIM * GRID_DIM).fill(null);
+        
+        for(let i=0; i<GRID_DIM * GRID_DIM; i++) {
+            let cell = document.createElement('div');
+            cell.className = 'cell';
+            matrixEl.appendChild(cell);
+        }
+
+        const activeItems = {}; 
+
+        function getAvailableCell() {
+            const available = gridState.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+            return available.length ? available[Math.floor(Math.random() * available.length)] : null;
+        }
+
+        // --- 4. LOGIC ---
+        function update(year) {
+            document.getElementById('year-display').innerText = year;
+            
+            const totalYears = END_YEAR - START_YEAR;
+            const progressPct = ((year - START_YEAR) / totalYears) * 100;
+            document.getElementById('timeline-progress').style.width = `${progressPct}%`;
+
+            const itemsShouldBeActive = allHobbies.filter(h => year >= h.start && year <= h.end);
+            
+            // Spawn
+            itemsShouldBeActive.forEach(hobby => {
+                if (!activeItems[hobby.name]) {
+                    const cellIdx = getAvailableCell();
+                    if (cellIdx !== null) spawnItem(hobby, cellIdx);
+                }
+            });
+
+            // Despawn
+            Object.keys(activeItems).forEach(name => {
+                const itemObj = activeItems[name];
+                const stillActive = itemsShouldBeActive.find(h => h.name === name);
+                if (!stillActive) mergeAndRemove(name);
+            });
+        }
+
+        function spawnItem(hobby, cellIndex) {
+            const cell = matrixEl.children[cellIndex];
+            const isShortTerm = hobby.duration < 3 && hobby.end !== 9999;
+            const typeClass = isShortTerm ? 'short-term' : 'long-term';
+            
+            const div = document.createElement('div');
+            div.className = `item spawning ${getCatClass(hobby.catId)} ${typeClass}`;
+            div.innerHTML = `<i class="fa ${getIcon(hobby.name)}"></i><span>${hobby.name}</span>`;
+            
+            cell.appendChild(div);
+            gridState[cellIndex] = hobby.name;
+            activeItems[hobby.name] = {
+                element: div,
+                cellIndex: cellIndex,
+                isShortTerm: isShortTerm,
+                name: hobby.name
+            };
+        }
+
+        function mergeAndRemove(name) {
+            const itemObj = activeItems[name];
+            if(!itemObj || itemObj.isExiting) return;
+
+            itemObj.isExiting = true;
+            const el = itemObj.element;
+            const currentIdx = itemObj.cellIndex;
+
+            // Target Logic
+            let targetName = null;
+            if (COLLAPSE_MAP[name] && activeItems[COLLAPSE_MAP[name]]) {
+                targetName = COLLAPSE_MAP[name];
+            } else {
+                const potentialTargets = Object.values(activeItems).filter(i => !i.isShortTerm && i.name !== name && !i.isExiting);
+                if(potentialTargets.length > 0) {
+                    targetName = potentialTargets[Math.floor(Math.random() * potentialTargets.length)].name;
+                }
+            }
+            const targetObj = targetName ? activeItems[targetName] : null;
+
+            // Geometry
+            const stride = 95; // 85 cell + 10 gap
+            const cRow = Math.floor(currentIdx / GRID_DIM);
+            const cCol = currentIdx % GRID_DIM;
+            
+            let tx = 0, ty = -150; 
+
+            if (targetObj) {
+                const tRow = Math.floor(targetObj.cellIndex / GRID_DIM);
+                const tCol = targetObj.cellIndex % GRID_DIM;
+                tx = (tCol - cCol) * stride;
+                ty = (tRow - cRow) * stride;
+            }
+
+            // Animate
+            el.classList.add('merging');
+            el.classList.remove('short-term', 'long-term');
+            el.style.transition = 'all 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19)';
+            
+            requestAnimationFrame(() => {
+                el.style.transform = `translate(${tx}px, ${ty}px) scale(0.1)`;
+                el.style.opacity = '0.5';
+                el.style.filter = 'blur(5px) brightness(2)';
+            });
+
+            setTimeout(() => {
+                if(el.parentNode) el.parentNode.removeChild(el);
+                gridState[currentIdx] = null;
+                delete activeItems[name];
+            }, 600);
+        }
+
+        // --- 5. SCROLL ---
+        window.addEventListener('scroll', () => {
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+            const currentYear = Math.floor(START_YEAR + (progress * (END_YEAR - START_YEAR)));
+            update(currentYear);
+        });
+
+        update(START_YEAR);
+    </script>
+</body>
+</html>

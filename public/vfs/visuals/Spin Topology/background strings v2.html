@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refraction and Impedance Field</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #050505; cursor: crosshair; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+<canvas id="field"></canvas>
+
+<script>
+const canvas = document.getElementById('field');
+const ctx = canvas.getContext('2d');
+
+let width, height;
+let strings = [];
+
+const stringCount = 90; 
+const pointsPerString = 170; 
+
+// The global constant is removed.
+const baseRestoring = 0.00004; 
+const baseDamping = 0.9976; 
+
+const spongeWidth = 25; 
+const maxExtraDamping = 0.15; 
+
+const sourceAmplitude = 0.08;
+const sourceFrequency = 0.003; 
+const sourceRadius = 400; 
+const waveNumber = 0.035; 
+
+let hasInteracted = false;
+let mouse = { x: -1000, y: -1000, px: -1000, py: -1000, vx: 0, vy: 0 };
+
+class Point {
+    constructor(x, y, gridX, gridY) {
+        this.x = x;
+        this.y = y;
+        this.baseY = y;
+        this.vy = 0;
+        
+        // 1. Assign local wave speed based on screen half
+        // Right side is fast (0.006), Left side is dense/slow (0.0015)
+        this.c2 = (x < window.innerWidth / 2) ? 0.0015 : 0.006;
+        
+        this.localDamping = baseDamping;
+        
+        let distToLeft = gridX;
+        let distToTop = gridY;
+        let minDist = Math.min(distToLeft, distToTop);
+        
+        if (minDist < spongeWidth) {
+            let penetration = (spongeWidth - minDist) / spongeWidth;
+            this.localDamping = baseDamping - (maxExtraDamping * Math.pow(penetration, 2));
+        }
+    }
+
+    update() {
+        let restoringForce = (this.baseY - this.y) * baseRestoring;
+        this.vy += restoringForce;
+        this.vy *= this.localDamping;
+        this.y += this.vy;
+    }
+}
+
+function init() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    strings = [];
+
+    const xStep = width / (pointsPerString - 1);
+    const yStep = height / (stringCount + 1);
+
+    for (let i = 0; i < stringCount; i++) {
+        let points = [];
+        let rowY = (i + 1) * yStep;
+        for (let j = 0; j < pointsPerString; j++) {
+            points.push(new Point(j * xStep, rowY, j, i));
+        }
+        strings.push(points);
+    }
+}
+
+function animate(currentTime) {
+    // Draw background with a subtle split to indicate the two physical mediums
+    ctx.fillStyle = 'rgba(5, 5, 5, 0.3)'; 
+    ctx.fillRect(width / 2, 0, width / 2, height); // Fast medium (Right)
+    ctx.fillStyle = 'rgba(10, 15, 20, 0.3)'; // Slightly blue-tinted dense medium
+    ctx.fillRect(0, 0, width / 2, height); // Slow medium (Left)
+
+    mouse.vx *= 0.5;
+    mouse.vy *= 0.5;
+
+    const sourceX = width;
+    const sourceY = height;
+
+    for (let i = 0; i < stringCount; i++) {
+        for (let j = 0; j < pointsPerString; j++) {
+            let p = strings[i][j];
+
+            let dx = mouse.x - p.x;
+            let dy = mouse.y - p.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist < 120) {
+                let influence = 1 - (dist / 120); 
+                p.vy += mouse.vy * 0.05 * influence; 
+            }
+
+            let s_dx = sourceX - p.x; 
+            let s_dy = sourceY - p.baseY; 
+            let s_dist = Math.sqrt(s_dx*s_dx + s_dy*s_dy);
+            
+            if (s_dist < sourceRadius) {
+                let s_influence = Math.pow(1 - (s_dist / sourceRadius), 2); 
+                let projected_d = (s_dx + s_dy) / Math.SQRT2;
+                p.vy += Math.cos(currentTime * sourceFrequency - waveNumber * projected_d) * sourceAmplitude * s_influence;
+            }
+
+            // Pure Displacement Laplacian Approximation
+            let u = p.y - p.baseY;
+
+            let forceLeft = (j > 0) ? (strings[i][j-1].y - p.y) : (strings[i][j+1].y - p.y);
+            let forceRight = (j < pointsPerString - 1) ? (strings[i][j+1].y - p.y) : (strings[i][j-1].y - p.y);
+
+            let u_up = (i > 0) ? (strings[i-1][j].y - strings[i-1][j].baseY) : (strings[i+1][j].y - strings[i+1][j].baseY);
+            let u_down = (i < stringCount - 1) ? (strings[i+1][j].y - strings[i+1][j].baseY) : (strings[i-1][j].y - strings[i-1][j].baseY);
+
+            let forceUp = u_up - u;
+            let forceDown = u_down - u;
+
+            // 2. Apply the LOCAL c^2 parameter (p.c2) to calculate acceleration
+            p.vy += (forceLeft + forceRight + forceUp + forceDown) * p.c2;
+        }
+    }
+
+    ctx.strokeStyle = '#00f2ff';
+    ctx.lineWidth = 1.0; 
+
+    for (let i = 0; i < stringCount; i++) {
+        ctx.beginPath();
+        for (let j = 0; j < pointsPerString; j++) {
+            let p = strings[i][j];
+            p.update();
+
+            if (j === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+        }
+        ctx.globalAlpha = 0.35; 
+        ctx.stroke();
+    }
+
+    requestAnimationFrame(animate);
+}
+
+window.addEventListener('mousemove', e => {
+    if (!hasInteracted) {
+        mouse.px = e.clientX;
+        mouse.py = e.clientY;
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+        hasInteracted = true;
+        return; 
+    }
+
+    mouse.px = mouse.x;
+    mouse.py = mouse.y;
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    
+    mouse.vx = mouse.x - mouse.px;
+    mouse.vy = mouse.y - mouse.py;
+});
+
+window.addEventListener('resize', init);
+
+init();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
