@@ -13,7 +13,7 @@
     height: 96vh;
     box-sizing: border-box;
     font-family: 'VT323', 'Courier New', Courier, monospace;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     line-height: 1.4;
     color: #ffb000;
     /* Amber phosphor */
@@ -29,8 +29,8 @@
     /* Darker, richer base */
     background-image: radial-gradient(circle at 50% 45%,
             transparent 10%,
-            rgba(0, 0, 0, 0.45) 55%,
-            rgba(0, 0, 0, 0.95) 100%);
+            rgba(0, 0, 0, 0.25) 55%,
+            rgba(0, 0, 0, 0.45) 100%);
 
     /* Deep interior shadow and massive document 100vw shadow to block the site out */
     box-shadow:
@@ -110,8 +110,8 @@
     background: repeating-linear-gradient(to bottom,
             rgba(0, 0, 0, 0) 0px,
             rgba(0, 0, 0, 0) 2px,
-            rgba(0, 0, 0, 0.45) 2px,
-            rgba(0, 0, 0, 0.45) 4px);
+            rgba(255, 176, 0, 0.15) 2px,
+            rgba(255, 176, 0, 0.15) 4px);
     animation: scanlines-drift 10s linear infinite;
 }
 
@@ -131,9 +131,71 @@
     inset: 0;
     z-index: 11;
     pointer-events: none;
+    overflow: hidden;
     /* Subtle dimming flicker overlay */
     background: rgba(0, 0, 0, 0.1);
-    animation: crt-flicker 0.15s infinite;
+    animation: crt-flicker 2s infinite;
+}
+
+/* Cosmic Microwave Background Noise */
+.terminal-crt-overlay::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    inset: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity: 0.12;
+    pointer-events: none;
+    animation: cmb-static 0.2s steps(2) infinite;
+    mix-blend-mode: screen;
+}
+
+@keyframes cmb-static {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    10% {
+        transform: translate(-2%, -2%);
+    }
+
+    20% {
+        transform: translate(-4%, 2%);
+    }
+
+    30% {
+        transform: translate(2%, -4%);
+    }
+
+    40% {
+        transform: translate(-2%, 6%);
+    }
+
+    50% {
+        transform: translate(-4%, 2%);
+    }
+
+    60% {
+        transform: translate(6%, 0);
+    }
+
+    70% {
+        transform: translate(0, 4%);
+    }
+
+    80% {
+        transform: translate(-6%, 0);
+    }
+
+    90% {
+        transform: translate(4%, 2%);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
 }
 
 /* A slow moving bright/dark refresh bar */
@@ -144,12 +206,14 @@
     top: 0;
     left: 0;
     width: 100vw;
-    height: 15vh;
+    height: 30vh;
+    /* Increased from 15vh for a wider sweep */
     background: linear-gradient(to bottom,
-            rgba(255, 176, 0, 0) 0%,
-            rgba(255, 176, 0, 0.03) 50%,
-            rgba(0, 0, 0, 0.1) 51%,
-            rgba(255, 176, 0, 0) 100%);
+            rgba(255, 255, 255, 0.0) 0%,
+            rgba(255, 255, 255, 0.05) 15%,
+            rgba(219, 202, 130, 0.25) 60%,
+            rgba(0, 0, 0, 0.15) 70%,
+            rgba(0, 0, 0, 0) 100%);
     opacity: 0.5;
     animation: refresh-bar 6s linear infinite;
 }
@@ -253,6 +317,16 @@
     opacity: 0.9;
     color: #ffcc66;
     /* Slightly lighter amber for outputs */
+}
+
+/* Maintain tight line height and perfect spaces for ASCII blocks */
+pre.ascii-logo {
+    margin: 0;
+    padding: 0.5rem 0;
+    font-family: inherit;
+    white-space: pre-wrap;
+    line-height: 1.1;
+    color: #ffb000;
 }
 
 .terminal-error {

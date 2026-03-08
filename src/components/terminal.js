@@ -3,6 +3,7 @@ import { playKeystroke, playEnterKey, playCRTBoot } from './terminalUtils/audio.
 import { cmdPing, cmdNmap } from './terminalUtils/network.js';
 import { cmdChat } from './terminalUtils/ai.js';
 import { cmdHexdump } from './terminalUtils/visualizers.js';
+import { ASCII_LOGO } from './terminalUtils/graphics.js';
 
 // Terminal overlay component
 // Implements the hidden diegetic command line interface
@@ -44,7 +45,8 @@ export class TerminalController {
                     "ping": (args) => cmdPing(args, this),
                     "nmap": (args) => cmdNmap(args, this),
                     "chat": (args) => cmdChat(args, this),
-                    "hexdump": (args) => cmdHexdump(args, this)
+                    "hexdump": (args) => cmdHexdump(args, this),
+                    "whoami": this.cmdWhoami.bind(this)
                 }
             }
         };
@@ -360,16 +362,39 @@ export class TerminalController {
     cmdHelp() {
         return `Available commands:
   cd [dir]    Change directory
-  ls [dir]    List directory contents
+  ls [opts] [dir] List directory contents (-a, -l, -al)
   open [file] Open a file in a new tab
   htop        View real-time WebGL performance metrics
+  ping        Network diagnostic
+  nmap        Network security scanner
+  chat        Initialize local LLM chat interface
+  hexdump     Read memory ranges
+  whoami      Display system insignia
   clear       Clear terminal output
   sudo        Elevate privileges
   help        Show this message`;
     }
 
+    cmdWhoami() {
+        // Enclose in <pre> to preserve all whitespace and line breaks perfectly in HTML
+        return `<pre class="ascii-logo">${ASCII_LOGO}</pre>`;
+    }
+
     cmdLs(args) {
-        const targetPathStr = args.length > 0 ? args[0] : '.';
+        let showHidden = false;
+        let showDetails = false;
+        let targetPathStr = '.';
+
+        // Parse arguments
+        for (const arg of args) {
+            if (arg.startsWith('-')) {
+                if (arg.includes('a')) showHidden = true;
+                if (arg.includes('l')) showDetails = true;
+            } else {
+                targetPathStr = arg;
+            }
+        }
+
         const targetPath = this.resolvePath(targetPathStr);
 
         if (!targetPath) {
@@ -380,19 +405,58 @@ export class TerminalController {
 
         if (typeof node === 'object') {
             // It's a directory
-            return Object.keys(node).map(key => {
-                const child = node[key];
-                // Simple styling indicator for directories vs files
-                if (typeof child === 'object' && child !== null) {
-                    return `<span style="color: #61afef; font-weight: bold;">${key}/</span>`;
-                } else if (typeof child === 'function') {
-                    return `<span style="color: #98c379;">${key}*</span>`;
-                } else {
-                    return key;
-                }
-            }).join('  ');
+            let entries = Object.keys(node);
+
+            // Mock hidden files
+            if (showHidden && targetPathStr === '.') {
+                entries = ['.', '..', '.DS_Store', '.bashrc', ...entries];
+            } else if (!showHidden) {
+                entries = entries.filter(e => !e.startsWith('.'));
+            }
+
+            if (!showDetails) {
+                return entries.map(key => {
+                    const child = node[key] || (key === '.' || key === '..' ? {} : null);
+                    if (typeof child === 'object' && child !== null) {
+                        return `<span style="color: #61afef; font-weight: bold;">${key}${key !== '.' && key !== '..' ? '/' : ''}</span>`;
+                    } else if (typeof child === 'function') {
+                        return `<span style="color: #98c379;">${key}*</span>`;
+                    } else {
+                        return key;
+                    }
+                }).join('  ');
+            } else {
+                // Detailed view (-l or -al)
+                const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+                return entries.map(key => {
+                    const child = node[key] || (key === '.' || key === '..' ? {} : null);
+                    let perms = '-rw-r--r--';
+                    let size = '4096';
+                    let linkCount = 1;
+
+                    let nameDisplay = key;
+
+                    if (typeof child === 'object' && child !== null) {
+                        perms = 'drwxr-xr-x';
+                        linkCount = 2;
+                        nameDisplay = `<span style="color: #61afef; font-weight: bold;">${key}${key !== '.' && key !== '..' ? '/' : ''}</span>`;
+                    } else if (typeof child === 'function') {
+                        perms = '-rwxr-xr-x';
+                        size = '12K';
+                        nameDisplay = `<span style="color: #98c379;">${key}*</span>`;
+                    } else {
+                        size = Math.floor(Math.random() * 500 + 120) + 'K';
+                    }
+
+                    return `${perms}  ${linkCount} user  staff  ${size.padStart(5, ' ')} ${dateStr} ${nameDisplay}`;
+                }).join('\n');
+            }
         } else {
             // It's a file
+            if (showDetails) {
+                const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+                return `-rw-r--r--  1 user  staff   1.2M ${dateStr} ${targetPath[targetPath.length - 1]}`;
+            }
             return targetPath[targetPath.length - 1];
         }
     }
@@ -553,6 +617,7 @@ PID USER      PRI  NI  VIRT   RES   SHR S CPU% MEM%   TIME+  Command
     playBootSequence() {
         this.input.disabled = true;
         const lines = [
+            `<pre class="ascii-logo">${ASCII_LOGO}</pre>`,
             "[ 0.000000] portfolio version 2.017-ravenwit-kernel (infinite iteration)",
             "[ 0.002481] Quantum entanglement checked: OK",
             "[ 0.004123] Quantum decoherence checked: OK",
