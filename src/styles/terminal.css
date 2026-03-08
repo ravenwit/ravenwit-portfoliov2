@@ -18,8 +18,10 @@
     color: #ffb000;
     /* Amber phosphor */
 
-    /* Simulate the phosphor gaussian scatter */
+    /* Simulate the phosphor gaussian scatter & chromatic aberration */
     text-shadow:
+        -1.5px 0px 1px rgba(255, 0, 0, 0.4),
+        1.5px 0px 1px rgba(0, 0, 255, 0.4),
         0 0 2px rgba(255, 176, 0, 0.8),
         0 0 8px rgba(255, 176, 0, 0.4),
         0 0 15px rgba(255, 176, 0, 0.2);
@@ -132,8 +134,12 @@
     z-index: 11;
     pointer-events: none;
     /* Subtle dimming flicker overlay */
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.05);
     animation: crt-flicker 0.15s infinite;
+    /* Physics illusion: Heavy edge blur where the glass curves away from the beam focus */
+    backdrop-filter: blur(2px);
+    -webkit-mask-image: radial-gradient(circle at center, transparent 60%, black 100%);
+    mask-image: radial-gradient(circle at center, transparent 60%, black 100%);
 }
 
 /* A slow moving bright/dark refresh bar */
