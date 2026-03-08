@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wavelet CNN: Controllable Torus DWT/IDWT</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #05050a; font-family: 'Courier New', Courier, monospace; color: white;}
+        #ui-container {
+            position: absolute; top: 20px; left: 20px; z-index: 100;
+            background: rgba(10, 10, 20, 0.8); padding: 20px; border: 1px solid #333; border-radius: 8px;
+            backdrop-filter: blur(5px);
+        }
+        h1 { margin: 0 0 10px 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; color: #88bbff;}
+        p { margin: 0 0 15px 0; font-size: 13px; color: #aaaaaa; max-width: 400px; line-height: 1.4; }
+        .controls { display: flex; gap: 10px; }
+        button {
+            background-color: #1a1a2e; color: #88bbff; border: 1px solid #88bbff;
+            padding: 10px 15px; cursor: pointer; font-family: inherit; font-weight: bold;
+            transition: all 0.2s; text-transform: uppercase; font-size: 12px;
+        }
+        button:hover:not(:disabled) { background-color: #88bbff; color: #05050a; }
+        button:disabled { border-color: #444; color: #444; cursor: not-allowed; }
+        #status { margin-top: 15px; font-size: 12px; color: #ffaa00; font-weight: bold; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="ui-container">
+        <h1>WCNN Torus Manifold</h1>
+        <p>Interactive Multi-Resolution Analysis. Left-click to rotate, scroll to zoom.</p>
+        <div class="controls">
+            <button id="btn-dwt">Run DWT (Decompose)</button>
+            <button id="btn-idwt" disabled>Run IDWT (Integrate)</button>
+        </div>
+        <div id="status">State: Unified Manifold</div>
+    </div>
+
+    <script>
+        // 1. Scene & Camera Setup
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05050a, 0.012);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 70);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Add Camera Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // 2. Structural Setup
+        // A single rotating group prevents the math glitches from global vs local coordinates
+        const torusGroup = new THREE.Group();
+        scene.add(torusGroup);
+
+        const geometry = new THREE.TorusGeometry(12, 4, 80, 200);
+        const basePositions = geometry.attributes.position.array;
+        const particleCount = basePositions.length / 3;
+
+        // Band Definitions and Target Offsets
+        const bands = {
+            LL: { color: 0x4488ff, size: 0.15, offset: new THREE.Vector3(-18, 18, 0), sparseFactor: 1, opacity: 0.6 },
+            HL: { color: 0xff4444, size: 0.25, offset: new THREE.Vector3(18, 18, 0),  sparseFactor: 4, opacity: 0.9 }, 
+            LH: { color: 0x44ff44, size: 0.25, offset: new THREE.Vector3(-18, -18, 0), sparseFactor: 4, opacity: 0.9 }, 
+            HH: { color: 0xffff44, size: 0.30, offset: new THREE.Vector3(18, -18, 0),  sparseFactor: 8, opacity: 1.0 }  
+        };
+
+        const pointSystems = {};
+
+        // Generate independent point clouds for each band
+        Object.keys(bands).forEach(key => {
+            const bandInfo = bands[key];
+            const bandGeo = new THREE.BufferGeometry();
+            const posArray = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                if (i % bandInfo.sparseFactor === 0) {
+                    posArray.push(basePositions[i * 3], basePositions[i * 3 + 1], basePositions[i * 3 + 2]);
+                }
+            }
+
+            bandGeo.setAttribute('position', new THREE.Float32BufferAttribute(posArray, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: bandInfo.color,
+                size: bandInfo.size,
+                transparent: true,
+                opacity: bandInfo.opacity,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            const points = new THREE.Points(bandGeo, material);
+            torusGroup.add(points); // Add to master rotating group
+            pointSystems[key] = points;
+        });
+
+        // 3. The Convolutional Kernel (Sweeper)
+        const kernelGeo = new THREE.BoxGeometry(45, 45, 1);
+        const kernelMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.15, wireframe: true });
+        const kernel = new THREE.Mesh(kernelGeo, kernelMat);
+        const fillMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.05 });
+        kernel.add(new THREE.Mesh(kernelGeo, fillMat));
+        
+        kernel.visible = false;
+        torusGroup.add(kernel); // Sweeps along the local Z of the rotating group
+
+        // 4. Animation State Machine
+        let state = 'IDLE'; // IDLE, SWEEPING_DWT, SPLITTING, SWEEPING_IDWT, MERGING
+        let transitionProgress = 0;
+        const animSpeed = 0.015;
+
+        // UI Elements
+        const btnDWT = document.getElementById('btn-dwt');
+        const btnIDWT = document.getElementById('btn-idwt');
+        const statusText = document.getElementById('status');
+
+        // Logic Controls
+        btnDWT.addEventListener('click', () => {
+            if (state !== 'IDLE') return;
+            state = 'SWEEPING_DWT';
+            kernel.position.z = -20;
+            kernel.visible = true;
+            btnDWT.disabled = true;
+            statusText.innerText = 'State: Computing 2D DWT...';
+        });
+
+        btnIDWT.addEventListener('click', () => {
+            if (state !== 'DECOMPOSED') return;
+            state = 'MERGING';
+            btnIDWT.disabled = true;
+            statusText.innerText = 'State: Computing IDWT (Perfect Reconstruction)...';
+        });
+
+        // 5. Render Loop
+        const origin = new THREE.Vector3(0, 0, 0);
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Smooth continuous rotation of the parent group
+            torusGroup.rotation.x += 0.001;
+            torusGroup.rotation.y += 0.002;
+            controls.update(); // Update camera
+
+            // State Machine Logic
+            if (state === 'SWEEPING_DWT') {
+                kernel.position.z += 0.8; // Sweep forward
+                if (kernel.position.z > 20) {
+                    kernel.visible = false;
+                    state = 'SPLITTING';
+                }
+            } 
+            else if (state === 'SPLITTING') {
+                transitionProgress += animSpeed;
+                const ease = transitionProgress < 0.5 ? 2 * transitionProgress * transitionProgress : -1 + (4 - 2 * transitionProgress) * transitionProgress;
+
+                Object.keys(pointSystems).forEach(key => {
+                    pointSystems[key].position.lerpVectors(origin, bands[key].offset, ease);
+                });
+
+                if (transitionProgress >= 1) {
+                    transitionProgress = 1;
+                    state = 'DECOMPOSED';
+                    btnIDWT.disabled = false;
+                    statusText.innerText = 'State: Sub-bands Isolated (LL, HL, LH, HH)';
+                }
+            }
+            else if (state === 'MERGING') {
+                transitionProgress -= animSpeed;
+                const ease = transitionProgress < 0.5 ? 2 * transitionProgress * transitionProgress : -1 + (4 - 2 * transitionProgress) * transitionProgress;
+
+                Object.keys(pointSystems).forEach(key => {
+                    pointSystems[key].position.lerpVectors(origin, bands[key].offset, Math.max(0, ease));
+                });
+
+                if (transitionProgress <= 0) {
+                    transitionProgress = 0;
+                    state = 'SWEEPING_IDWT';
+                    kernel.position.z = 20;
+                    kernel.visible = true;
+                }
+            }
+            else if (state === 'SWEEPING_IDWT') {
+                kernel.position.z -= 0.8; // Sweep backward for integration
+                if (kernel.position.z < -20) {
+                    kernel.visible = false;
+                    state = 'IDLE';
+                    btnDWT.disabled = false;
+                    statusText.innerText = 'State: Unified Manifold (Reconstructed)';
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Window Resize Handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

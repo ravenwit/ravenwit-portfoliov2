@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Conformal Surface Deformation</title>
+    
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', monospace; }
+        
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; display: block; }
+        
+        #ui {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85); padding: 20px; border-radius: 8px;
+            border: 1px solid #334155; border-left: 4px solid #38bdf8;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            width: 480px; backdrop-filter: blur(4px); z-index: 10;
+        }
+        
+        .label-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+        .math-text { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; text-align: center; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #38bdf8; margin-bottom: 15px; }
+        
+        .btn {
+            display: block; width: 100%; padding: 10px; background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px;
+            font-family: inherit; font-weight: bold; cursor: pointer; transition: all 0.2s;
+        }
+        .btn:hover { background: #38bdf8; color: #0f172a; }
+
+        .legend { position: absolute; top: 30px; left: 30px; background: rgba(15, 23, 42, 0.8); padding: 15px; border-radius: 8px; border: 1px solid #334155; z-index: 10;}
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+
+        /* Math Modal Styles */
+        #math-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center;
+            visibility: hidden; opacity: 0; transition: opacity 0.4s ease, visibility 0.4s; z-index: 100;
+        }
+        #math-modal.active { visibility: visible; opacity: 1; }
+        
+        .modal-card {
+            background: #1e293b; border: 1px solid #475569; border-top: 4px solid #38bdf8;
+            border-radius: 12px; width: 800px; max-width: 90%; max-height: 85vh;
+            overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transform: scale(0.95) translateY(20px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 30px; position: relative;
+        }
+        #math-modal.active .modal-card { transform: scale(1) translateY(0); }
+
+        .close-btn {
+            position: absolute; top: 20px; right: 25px; background: none; border: none;
+            color: #94a3b8; font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
+        }
+        .close-btn:hover { color: #ef4444; }
+
+        .modal-card h2 { margin-top: 0; color: #e2e8f0; font-weight: 300; letter-spacing: 1px; }
+        .modal-card h3 { color: #38bdf8; margin-top: 25px; margin-bottom: 10px; font-size: 1.1rem; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        .modal-card p { color: #cbd5e1; line-height: 1.6; font-family: sans-serif; font-size: 0.95rem; }
+        .equation-box { background: #0f172a; padding: 15px; border-radius: 6px; overflow-x: auto; margin: 15px 0; border: 1px solid #334155; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div class="legend">
+        <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: #38bdf8;">Manifold Z(u) = 1/(1+u)</h3>
+        <div class="legend-item"><div class="dot" style="background: linear-gradient(90deg, #ff0000, #00ff00, #0000ff);"></div> Surface Color: Complex Phase</div>
+        <div class="legend-item"><div class="dot" style="background: #fbbf24;"></div> Origin (u = 0, Z = 1)</div>
+        <div class="legend-item"><div class="dot" style="background: #ef4444;"></div> Singularity (u = -1, Z = ∞)</div>
+        <div class="legend-item"><div class="dot" style="background: #10b981;"></div> Target Eval (u = 4, Z = 0.2)</div>
+    </div>
+
+    <div id="ui">
+        <div class="label-row">
+            <span>Divergent Domain (τ = 0)</span>
+            <span>Convergent Domain (τ = 1)</span>
+        </div>
+        <input type="range" id="tau-slider" min="0" max="1" step="0.001" value="0">
+        <button class="btn" onclick="openModal()">🧮 View Surface Deformation Mathematics</button>
+        <div class="math-text">
+            Conformal Deformation τ: <span id="tau-val" style="color:#38bdf8; font-weight: bold;">0.000</span>
+        </div>
+    </div>
+
+    <div id="math-modal">
+        <div class="modal-card">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h2>Rigorous Deformation Geometry</h2>
+
+            <h3>I. The Complex Surface Manifold</h3>
+            <p>Instead of mapping flat coordinates, we are projecting the absolute physical values of the analytic function \( Z(u) \) into the third dimension. For any complex coordinate \( u = x + iy \), the height (Z-axis) of the manifold is its magnitude:</p>
+            <div class="equation-box">
+                $$ |Z(u)| = \left| \frac{1}{1 + x + iy} \right| = \frac{1}{\sqrt{(1+x)^2 + y^2}} $$
+            </div>
+            <p>The color of the surface strictly maps to the complex phase (argument), representing the topological winding of the branch structure:</p>
+            <div class="equation-box">
+                $$ \arg(Z(u)) = \arctan\left(\frac{-y}{1+x}\right) \in [-\pi, \pi] $$
+            </div>
+
+            <h3>II. Coordinate Morphing under Homotopy</h3>
+            <p>When the deformation parameter \( \tau \) shifts from \( 0 \) to \( 1 \), the coordinates of the base plane undergo the conformal mapping \( w(u) = \frac{u}{u+2} \). The geometry updates via the linear homotopy:</p>
+            <div class="equation-box">
+                $$ X(\tau) = (1-\tau)x + \tau \left( \frac{x^2 + 2x + y^2}{(x+2)^2 + y^2} \right) $$
+                $$ Y(\tau) = (1-\tau)y + \tau \left( \frac{2y}{(x+2)^2 + y^2} \right) $$
+            </div>
+
+            <h3>III. The Conservation of the Observable</h3>
+            <p>Notice what happens to the Z-axis during this deformation: <strong>Nothing.</strong></p>
+            <div class="equation-box">
+                $$ Z_{height}(\tau) = |Z(u_{initial})| = \text{Constant} $$
+            </div>
+            <p>The height of each vertex is permanently attached to its original coordinate. As the space stretches, the divergent spire at \( u = -1 \) is physically pushed to the boundary at \( X = -1 \). Simultaneously, the flat, convergent region containing \( u = 4 \) (the target value of \( 0.2 \)) is warped into the center at \( X = 2/3 \). The manifold itself bends to resolve the divergence!</p>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- MODAL LOGIC ---
+        function openModal() { document.getElementById('math-modal').classList.add('active'); }
+        function closeModal() { document.getElementById('math-modal').classList.remove('active'); }
+        document.getElementById('math-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // --- 3D SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(4, 5, 8);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+
+        // Lighting to highlight the surface topology
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 5);
+        scene.add(dirLight);
+
+        // --- MANIFOLD GENERATION ---
+        // Grid properties. x starts at -1.8 to avoid the geometric infinity of the conformal map at u = -2
+        const gridXMin = -1.8, gridXMax = 6.0, gridYMin = -4.0, gridYMax = 4.0;
+        const resX = 150, resY = 150; 
+        const maxZ = 5.0; // Cap the infinite spire
+
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        const colors = [];
+        const indices = [];
+
+        const baseCoords = []; // Store original (x,y, magnitude)
+
+        // Generate Vertices
+        for(let i = 0; i <= resX; i++) {
+            const x = gridXMin + (i / resX) * (gridXMax - gridXMin);
+            for(let j = 0; j <= resY; j++) {
+                const y = gridYMin + (j / resY) * (gridYMax - gridYMin);
+                
+                // Calculate true complex function Z(u) = 1/(1+x+iy)
+                const denom = (1+x)**2 + y**2;
+                let magnitude = 1 / Math.sqrt(denom);
+                if(magnitude > maxZ) magnitude = maxZ; // Cap singularity
+                
+                // Phase for Domain Coloring
+                const phase = Math.atan2(-y, 1+x); // [-PI, PI]
+                const hue = (phase + Math.PI) / (2 * Math.PI); // Normalize [0, 1]
+                
+                const color = new THREE.Color();
+                color.setHSL(hue, 1.0, 0.5);
+
+                baseCoords.push({ x: x, y: y, z: magnitude });
+                vertices.push(x, magnitude, y); // Y is up in Three.js
+                colors.push(color.r, color.g, color.b);
+            }
+        }
+
+        // Generate Faces (Indices)
+        for(let i = 0; i < resX; i++) {
+            for(let j = 0; j < resY; j++) {
+                const a = i * (resY + 1) + j;
+                const b = i * (resY + 1) + (j + 1);
+                const c = (i + 1) * (resY + 1) + j;
+                const d = (i + 1) * (resY + 1) + (j + 1);
+
+                // Two triangles per grid square
+                indices.push(a, b, d);
+                indices.push(a, d, c);
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+
+        // Material supports vertex colors
+        const material = new THREE.MeshStandardMaterial({ 
+            vertexColors: true, 
+            side: THREE.DoubleSide,
+            roughness: 0.3,
+            metalness: 0.2
+        });
+        const surfaceMesh = new THREE.Mesh(geometry, material);
+        scene.add(surfaceMesh);
+
+        // --- PHYSICAL MARKERS ---
+        // Markers float slightly above the surface
+        const createMarker = (color, radius=0.15) => {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 32), new THREE.MeshStandardMaterial({ color: color, roughness: 0.2 }));
+            scene.add(mesh); return mesh;
+        };
+        
+        const originMesh = createMarker(0xfbbf24, 0.2);
+        const poleMesh = createMarker(0xef4444, 0.2);
+        const targetMesh = createMarker(0x10b981, 0.2);
+
+        // --- HOMOTOPY MAPPING LOGIC ---
+        function applyHomotopy(x, y, tau) {
+            const distToPoleSq = (x + 2)**2 + y**2;
+            const X1 = (x**2 + 2*x + y**2) / distToPoleSq;
+            const Y1 = (2*y) / distToPoleSq;
+
+            const X_tau = (1 - tau) * x + tau * X1;
+            const Y_tau = (1 - tau) * y + tau * Y1;
+
+            return { x: X_tau, y: Y_tau };
+        }
+
+        // --- UPDATE LOOP ---
+        const slider = document.getElementById('tau-slider');
+        const tauDisplay = document.getElementById('tau-val');
+
+        function updateGeometry(tau) {
+            const posAttr = geometry.attributes.position;
+            
+            // Warp the surface manifold
+            for (let i = 0; i < baseCoords.length; i++) {
+                const base = baseCoords[i];
+                const mapped = applyHomotopy(base.x, base.y, tau);
+                // Set X, Height(Z remains constant), mapped Y
+                posAttr.setXYZ(i, mapped.x, base.z, mapped.y);
+            }
+            posAttr.needsUpdate = true;
+            geometry.computeVertexNormals(); // Recalculate lighting normals after warp
+
+            // Warp the physical markers
+            const oMap = applyHomotopy(0, 0, tau);
+            originMesh.position.set(oMap.x, 1.0, oMap.y); // Z(0) = 1
+
+            const pMap = applyHomotopy(-1, 0, tau);
+            poleMesh.position.set(pMap.x, maxZ, pMap.y); // Z(-1) = infinity (capped)
+
+            const tMap = applyHomotopy(4, 0, tau);
+            targetMesh.position.set(tMap.x, 0.2, tMap.y); // Z(4) = 0.2
+        }
+
+        slider.addEventListener('input', (e) => {
+            const tau = parseFloat(e.target.value);
+            tauDisplay.innerText = tau.toFixed(3);
+            updateGeometry(tau);
+        });
+        
+        // Initialize
+        updateGeometry(0);
+
+        // --- BASE PLANE GRID (For Spatial Reference) ---
+        const gridHelper = new THREE.GridHelper(20, 40, 0x475569, 0x1e293b);
+        gridHelper.position.y = -0.05; // Slightly below Z=0
+        scene.add(gridHelper);
+
+        // --- RENDER LOOP ---
+        function animate() { 
+            requestAnimationFrame(animate); 
+            controls.update(); 
+            renderer.render(scene, camera); 
+        }
+        animate();
+
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+    </script>
+</body>
+</html>

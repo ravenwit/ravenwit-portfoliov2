@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smoothed Phased Array Field</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #050505; cursor: crosshair; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+<canvas id="field"></canvas>
+
+<script>
+const canvas = document.getElementById('field');
+const ctx = canvas.getContext('2d');
+
+let width, height;
+let strings = [];
+
+const stringCount = 120; 
+const pointsPerString = 170; 
+
+const waveSpeedSq = 0.005; 
+const baseRestoring = 0.00002; 
+const damping = 0.99757; 
+
+const sourceAmplitude = 0.08;
+const sourceFrequency = 0.003; 
+const sourceRadius = 400; 
+const waveNumber = 0.035; 
+
+// 1. First-interaction flag to prevent the Dirac delta impulse
+let hasInteracted = false;
+let mouse = { 
+    x: -1000, y: -1000, 
+    px: -1000, py: -1000, 
+    vx: 0, vy: 0 
+};
+
+class Point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.baseY = y;
+        this.vy = 0;
+    }
+
+    update() {
+        let restoringForce = (this.baseY - this.y) * baseRestoring;
+        this.vy += restoringForce;
+        this.vy *= damping;
+        this.y += this.vy;
+    }
+}
+
+function init() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    strings = [];
+
+    const xStep = width / (pointsPerString - 1);
+    const yStep = height / (stringCount + 1);
+
+    for (let i = 0; i < stringCount; i++) {
+        let points = [];
+        let rowY = (i + 1) * yStep;
+        for (let j = 0; j < pointsPerString; j++) {
+            points.push(new Point(j * xStep, rowY));
+        }
+        strings.push(points);
+    }
+}
+
+function animate(currentTime) {
+    ctx.fillStyle = 'rgba(5, 5, 5, 0.3)'; 
+    ctx.fillRect(0, 0, width, height);
+
+    mouse.vx *= 0.5;
+    mouse.vy *= 0.5;
+
+    const sourceX = width;
+    const sourceY = height;
+
+    for (let i = 0; i < stringCount; i++) {
+        for (let j = 0; j < pointsPerString; j++) {
+            let p = strings[i][j];
+
+            // A. Kinetic Excitation (Mouse)
+            let dx = mouse.x - p.x;
+            let dy = mouse.y - p.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist < 120) {
+                let influence = 1 - (dist / 120); 
+                p.vy += mouse.vy * 0.05 * influence; 
+            }
+
+            // B. Directional Phased Forcing
+            let s_dx = sourceX - p.x; 
+            let s_dy = sourceY - p.baseY; 
+            let s_dist = Math.sqrt(s_dx*s_dx + s_dy*s_dy);
+            
+            if (s_dist < sourceRadius) {
+                let s_influence = Math.pow(1 - (s_dist / sourceRadius), 2); 
+                let projected_d = (s_dx + s_dy) / Math.SQRT2;
+                p.vy += Math.sin(currentTime * sourceFrequency - waveNumber * projected_d) * sourceAmplitude * s_influence;
+            }
+
+            // C. Laplacian Approximation with Neumann Boundary Conditions
+            // If the outer neighbor is missing, we substitute the force of the inner neighbor (ghost node).
+            let forceLeft = (j > 0) ? (strings[i][j-1].y - p.y) : (strings[i][j+1].y - p.y);
+            let forceRight = (j < pointsPerString - 1) ? (strings[i][j+1].y - p.y) : (strings[i][j-1].y - p.y);
+            let forceUp = (i > 0) ? (strings[i-1][j].y - p.y) : (strings[i+1][j].y - p.y);
+            let forceDown = (i < stringCount - 1) ? (strings[i+1][j].y - p.y) : (strings[i-1][j].y - p.y);
+
+            p.vy += (forceLeft + forceRight + forceUp + forceDown) * waveSpeedSq;
+        }
+    }
+
+    ctx.strokeStyle = '#00f2ff';
+    ctx.lineWidth = 1.0; 
+
+    for (let i = 0; i < stringCount; i++) {
+        ctx.beginPath();
+        for (let j = 0; j < pointsPerString; j++) {
+            let p = strings[i][j];
+            p.update();
+
+            if (j === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+        }
+        ctx.globalAlpha = 0.35; 
+        ctx.stroke();
+    }
+
+    requestAnimationFrame(animate);
+}
+
+// 2. Event listener handling the initial state
+window.addEventListener('mousemove', e => {
+    if (!hasInteracted) {
+        // First movement: synchronize current and previous to yield zero velocity
+        mouse.px = e.clientX;
+        mouse.py = e.clientY;
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+        hasInteracted = true;
+        return; 
+    }
+
+    mouse.px = mouse.x;
+    mouse.py = mouse.y;
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    
+    mouse.vx = mouse.x - mouse.px;
+    mouse.vy = mouse.y - mouse.py;
+});
+
+window.addEventListener('resize', init);
+
+init();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topological Kinematics: Original Twisted Ribbon</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; color: #fff; }
+        #ui-container { position: absolute; top: 20px; left: 20px; pointer-events: none; background: rgba(10, 10, 10, 0.7); padding: 20px; border-radius: 8px; border: 1px solid #333; backdrop-filter: blur(4px); }
+        h1 { margin: 0 0 10px 0; font-size: 1.2rem; color: #00ffcc; text-transform: uppercase; letter-spacing: 1px; }
+        .stat { margin: 5px 0; font-size: 0.9rem; color: #aaa; }
+        .value { color: #fff; font-weight: bold; font-family: monospace; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <h1>ORIGINAL TWISTED RIBBON</h1>
+        <div class="stat">Twist (τ): <span class="value">1.00</span></div>
+        <div class="stat">Fiber Model: <span class="value">Original sin(v)</span></div>
+        <hr style="border-color: #333; margin: 10px 0;">
+        <div class="stat">Particle u: <span id="pu-text" class="value">0.00</span></div>
+        <div class="stat">Particle v: <span id="pv-text" class="value">0.00</span></div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(8, 6, 8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+        const dirLight1 = new THREE.DirectionalLight(0x00ffcc, 1.5);
+        dirLight1.position.set(5, 5, 5);
+        scene.add(dirLight1);
+        const dirLight2 = new THREE.DirectionalLight(0xff0066, 1.0);
+        dirLight2.position.set(-5, -2, -5);
+        scene.add(dirLight2);
+
+        const R = 3.0;
+        const segmentsU = 200; 
+        const segmentsV = 80;
+        const geometry = new THREE.BufferGeometry();
+        const vertices = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 3);
+        const indices = [];
+
+        for (let i = 0; i < segmentsU; i++) {
+            for (let j = 0; j < segmentsV; j++) {
+                const a = i * (segmentsV + 1) + j;
+                const b = a + (segmentsV + 1);
+                const c = a + 1;
+                const d = b + 1;
+                indices.push(a, b, d);
+                indices.push(a, d, c);
+            }
+        }
+        geometry.setIndex(indices);
+
+        function evaluateRibbon(u_norm, v_norm) {
+            const u = u_norm * 2.0 * Math.PI;
+            const v = v_norm * Math.PI; 
+
+            const f1 = Math.sin(v);
+            const f2 = Math.sin(v);
+            
+            const x_prime = f1 * Math.cos(u) - f2 * Math.sin(u);
+            const z_prime = f1 * Math.sin(u) + f2 * Math.cos(u);
+
+            const x = (R + x_prime) * Math.cos(u);
+            const y = (R + x_prime) * Math.sin(u);
+            const z = z_prime;
+
+            return new THREE.Vector3(x, z, -y); 
+        }
+
+        let index = 0;
+        for (let i = 0; i <= segmentsU; i++) {
+            const u_norm = i / segmentsU;
+            for (let j = 0; j <= segmentsV; j++) {
+                const v_norm = j / segmentsV;
+                const pos = evaluateRibbon(u_norm, v_norm);
+                vertices[index++] = pos.x;
+                vertices[index++] = pos.y;
+                vertices[index++] = pos.z;
+            }
+        }
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x223388, roughness: 0.4, metalness: 0.6, side: THREE.DoubleSide, transparent: true, opacity: 0.85
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        const particle = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 16, 16), 
+            new THREE.MeshBasicMaterial({ color: 0xffcc00 })
+        );
+        scene.add(particle);
+
+        const normalArrow = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), 1.2, 0x00ffcc, 0.25, 0.15);
+        scene.add(normalArrow);
+
+        const maxTrailPoints = 800;
+        const trailPositions = new Float32Array(maxTrailPoints * 3);
+        const trailGeometry = new THREE.BufferGeometry();
+        trailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+        const trailMaterial = new THREE.LineBasicMaterial({ color: 0xffcc00, linewidth: 2, transparent: true, opacity: 0.6 });
+        const trailLine = new THREE.Line(trailGeometry, trailMaterial);
+        scene.add(trailLine);
+        let trailIndex = 0;
+
+        const clock = new THREE.Clock();
+        const puEl = document.getElementById('pu-text');
+        const pvEl = document.getElementById('pv-text');
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+
+            let particle_u_norm = (elapsed * 0.03) % 1.0; 
+            let particle_v_norm = 0.25 + 0.1 * Math.sin(elapsed * 0.8); 
+
+            const pPos = evaluateRibbon(particle_u_norm, particle_v_norm);
+            particle.position.copy(pPos);
+
+            trailPositions[trailIndex * 3] = pPos.x;
+            trailPositions[trailIndex * 3 + 1] = pPos.y;
+            trailPositions[trailIndex * 3 + 2] = pPos.z;
+            trailIndex = (trailIndex + 1) % maxTrailPoints;
+            trailGeometry.setDrawRange(0, trailIndex);
+            trailGeometry.attributes.position.needsUpdate = true;
+
+            const delta = 0.0001; 
+            let u_plus = particle_u_norm + delta;
+            if (u_plus > 1.0) u_plus -= 1.0; 
+            const p_u = evaluateRibbon(u_plus, particle_v_norm);
+            const T_u = new THREE.Vector3().subVectors(p_u, pPos);
+
+            let v_plus = particle_v_norm + delta; 
+            const p_v = evaluateRibbon(particle_u_norm, v_plus);
+            const T_v = new THREE.Vector3().subVectors(p_v, pPos);
+
+            const normal = new THREE.Vector3().crossVectors(T_u, T_v).normalize();
+            
+            if (normal.lengthSq() > 0.0001) {
+                normalArrow.position.copy(pPos);
+                normalArrow.setDirection(normal);
+            }
+
+            puEl.innerText = (particle_u_norm * 2).toFixed(3) + "π";
+            pvEl.innerText = (particle_v_norm).toFixed(3) + " (norm)";
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

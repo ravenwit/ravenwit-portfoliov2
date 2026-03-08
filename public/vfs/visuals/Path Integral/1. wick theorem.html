@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wick's Theorem | Combinatorial Topology</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; box-sizing: border-box; }
+        
+        .panel { background: rgba(5, 10, 15, 0.85); backdrop-filter: blur(8px); border-left: 2px solid #0ff; padding: 20px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.1); border-radius: 0 4px 4px 0; width: 440px; pointer-events: auto; }
+        
+        h1 { font-size: 16px; margin: 0 0 10px 0; color: #0ff; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 8px rgba(0,255,255,0.5); }
+        p { font-size: 11px; color: #88ccdd; line-height: 1.5; margin-bottom: 10px; }
+        .math { font-style: italic; color: #fff; font-weight: bold; font-size: 13px;}
+        
+        #status-box { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 15px; padding: 10px; border: 1px dashed #555; transition: all 0.3s; }
+        .status-normal { color: #888; border-color: #888; }
+        .status-search { color: #ffeb3b; border-color: #ffeb3b; text-shadow: 0 0 10px rgba(255,235,59,0.5); }
+        .status-contracted { color: #0ff; border-color: #0ff; text-shadow: 0 0 10px rgba(0,255,255,0.5); }
+        
+        #equation-display { font-size: 13px; text-align: center; margin-top: 15px; min-height: 50px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; }
+        
+        .prop { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        
+        /* Slider Styles */
+        .slider-container { margin-top: 20px; border-top: 1px solid rgba(0,255,255,0.3); padding-top: 15px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; color: #fff; margin-bottom: 8px; font-weight: bold; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #0ff; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="panel">
+            <h1>Vacuum State Topology</h1>
+            <p>Evaluating the Vacuum Expectation Value (VEV) of <span class="math">N=<span id="ui-n">6</span></span> distinct fields:</p>
+            <div style="background: #000; padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 10px;" id="ui-t-product"></div>
+            
+            <p>By Wick's theorem, the time-ordered product expands into normal-ordered sums. However, because we evaluate the vacuum state ⟨0|...|0⟩, any normal-ordered term with uncontracted operators annihilates to zero.</p>
+            <p>Only the <strong>fully contracted</strong> permutations survive. By pairing fields recursively, exactly <span class="math">(N-1)!! = <span id="ui-terms">15</span></span> valid Feynman propagators emerge.</p>
+            
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>QUANTUM FIELDS (N)</span>
+                    <span id="n-val">6</span>
+                </div>
+                <input type="range" id="n-slider" min="2" max="10" step="2" value="6">
+            </div>
+        </div>
+
+        <div class="panel" style="border-left-color: #f0f;" id="dynamic-panel">
+            <div id="status-box" class="status-normal">PHASE 1: NORMAL ORDERED</div>
+            <div id="equation-display"></div>
+            <p style="text-align: center; margin-top: 15px; font-size: 10px; color: #888;" id="phase-desc">System integrating topological states...</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // Wait for DOM to load to prevent null reference errors on UI elements
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            // --- 1. THE COMBINATORIAL KERNEL ---
+            function generatePerfectMatchings(arr) {
+                if (arr.length === 0) return [[]];
+                let matchings = [];
+                let first = arr[0];
+                for (let i = 1; i < arr.length; i++) {
+                    let other = arr[i];
+                    let remaining = arr.slice(1, i).concat(arr.slice(i + 1));
+                    let subMatchings = generatePerfectMatchings(remaining);
+                    for (let sm of subMatchings) {
+                        matchings.push([[first, other], ...sm]);
+                    }
+                }
+                return matchings;
+            }
+
+            function doubleFactorial(n) {
+                if (n <= 0) return 1;
+                return n * doubleFactorial(n - 2);
+            }
+
+            // --- 2. RIGID COLOR PALETTE FOR FIELDS ---
+            const PARTICLE_COLORS = [
+                0xff3333, 0x33ff33, 0x3366ff, 0xffff33, 0xff33ff, 
+                0x33ffff, 0xffaa00, 0xaa33ff, 0x33ffaa, 0xff33aa
+            ];
+
+            const toHexStr = (c) => '#' + c.toString(16).padStart(6, '0');
+
+            // --- 3. THREE.JS ENVIRONMENT ---
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000510, 0.02);
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 30);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            // Base glow texture
+            const glowTexture = (() => {
+                const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+                const ctx = c.getContext('2d');
+                const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                g.addColorStop(0, 'rgba(255,255,255,1)'); 
+                g.addColorStop(0.3, 'rgba(255,255,255,0.8)'); 
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+            })();
+
+            let N_FIELDS = 6;
+            let wickTerms = [];
+            let currentTermIndex = 0;
+            let normalEqText = "";
+
+            const nodes = [];
+            const nodeGroup = new THREE.Group();
+            scene.add(nodeGroup);
+
+            // GPU Buffer Allocation
+            const MAX_LINES = 500; 
+            const edgeGeo = new THREE.BufferGeometry();
+            const edgePos = new Float32Array(MAX_LINES * 6); 
+            const edgeCol = new Float32Array(MAX_LINES * 6); 
+            
+            edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgePos, 3));
+            edgeGeo.setAttribute('color', new THREE.BufferAttribute(edgeCol, 3));
+            
+            edgeGeo.attributes.position.setUsage(THREE.DynamicDrawUsage);
+            edgeGeo.attributes.color.setUsage(THREE.DynamicDrawUsage);
+            
+            const edgeMat = new THREE.LineBasicMaterial({ 
+                vertexColors: true, linewidth: 2, transparent: true, opacity: 0.8 
+            });
+            const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+            scene.add(edges);
+
+            // --- 4. SYSTEM INITIALIZATION ---
+            let phaseTimeout;
+            let cycleCount = 0;
+
+            function initSystem(n) {
+                clearTimeout(phaseTimeout);
+                N_FIELDS = n;
+                
+                // Safe UI Updates (Issue #1 & #2 fixed)
+                document.getElementById('n-val').innerText = n;
+                document.getElementById('ui-n').innerText = n;
+                document.getElementById('ui-terms').innerText = doubleFactorial(n - 1);
+
+                let tProd = "<span class='math'>⟨0| T{ </span>";
+                let normProd = "<span class='math'>⟨0| : </span>";
+                
+                for(let i=0; i<n; i++) {
+                    let colorHex = toHexStr(PARTICLE_COLORS[i % PARTICLE_COLORS.length]);
+                    let span = `<span class="math" style="color:${colorHex}; text-shadow: 0 0 5px ${colorHex};">φ${i+1} </span>`;
+                    tProd += span;
+                    normProd += span;
+                }
+                document.getElementById('ui-t-product').innerHTML = tProd + "<span class='math'>} |0⟩</span>";
+                normalEqText = normProd + `<span class='math'>: |0⟩ = 0</span>`;
+
+                while(nodeGroup.children.length > 0) { nodeGroup.remove(nodeGroup.children[0]); }
+                nodes.length = 0;
+
+                for(let i=0; i<N_FIELDS; i++) {
+                    const hexColor = PARTICLE_COLORS[i % PARTICLE_COLORS.length];
+                    const mat = new THREE.SpriteMaterial({ map: glowTexture, blending: THREE.AdditiveBlending, transparent: true });
+                    mat.color.setHex(hexColor);
+                    const sprite = new THREE.Sprite(mat);
+                    sprite.scale.set(4, 4, 1);
+                    
+                    const spread = 10 + (N_FIELDS * 0.5); 
+                    sprite.position.set((Math.random()-0.5)*spread, (Math.random()-0.5)*spread, (Math.random()-0.5)*spread);
+                    
+                    nodeGroup.add(sprite);
+                    const colObj = new THREE.Color(hexColor);
+                    nodes.push({ mesh: sprite, vel: new THREE.Vector3(0,0,0), id: i + 1, colorObj: colObj, hexStr: toHexStr(hexColor) });
+                }
+
+                const fieldIndices = Array.from({length: N_FIELDS}, (_, i) => i);
+                wickTerms = generatePerfectMatchings(fieldIndices);
+                currentTermIndex = 0;
+                cycleCount = 0;
+
+                setPhaseNormal();
+            }
+
+            document.getElementById('n-slider').addEventListener('input', (e) => {
+                initSystem(parseInt(e.target.value));
+            });
+
+            // --- 5. THE PHYSICS ENGINE ---
+            let activePairs = []; 
+            let phase = 0; 
+
+            function updatePhysics(dt) {
+                const K_REPULSION = 40.0;
+                const K_SPRING = 2.0;
+                const SPRING_LENGTH = 5.0;
+                const DAMPING = 0.85; 
+                const BOUNDARY_FORCE = 0.05;
+                const MAX_VELOCITY = 15.0; // Clamping variable added for stability
+
+                for(let i=0; i<N_FIELDS; i++) {
+                    let force = new THREE.Vector3(0,0,0);
+                    let p1 = nodes[i].mesh.position;
+
+                    for(let j=0; j<N_FIELDS; j++) {
+                        if(i === j) continue;
+                        let p2 = nodes[j].mesh.position;
+                        let dir = new THREE.Vector3().subVectors(p1, p2);
+                        let distSq = dir.lengthSq();
+                        if(distSq > 0.1) force.add(dir.normalize().multiplyScalar(K_REPULSION / distSq));
+                    }
+
+                    force.add(p1.clone().multiplyScalar(-BOUNDARY_FORCE));
+
+                    if(phase === 2 && activePairs.length > 0) {
+                        for(let pair of activePairs) {
+                            if(pair[0] === i || pair[1] === i) {
+                                let targetIdx = pair[0] === i ? pair[1] : pair[0];
+                                let p2 = nodes[targetIdx].mesh.position;
+                                let dir = new THREE.Vector3().subVectors(p2, p1);
+                                let springF = (dir.length() - SPRING_LENGTH) * K_SPRING;
+                                force.add(dir.normalize().multiplyScalar(springF));
+                            }
+                        }
+                    }
+                    nodes[i].vel.add(force.multiplyScalar(dt));
+                }
+
+                for(let i=0; i<N_FIELDS; i++) {
+                    nodes[i].vel.multiplyScalar(DAMPING);
+                    
+                    // VELOCITY CLAMPING FIX (Issue #3)
+                    let speed = nodes[i].vel.length();
+                    if(speed > MAX_VELOCITY) {
+                        nodes[i].vel.multiplyScalar(MAX_VELOCITY / speed);
+                    }
+                    
+                    nodes[i].mesh.position.add(nodes[i].vel.clone().multiplyScalar(dt));
+                }
+
+                let lineIdx = 0;
+                function addLine(n1, n2) {
+                    if(lineIdx >= MAX_LINES) return;
+                    let i6 = lineIdx * 6;
+                    let p1 = n1.mesh.position; let p2 = n2.mesh.position;
+                    let c1 = n1.colorObj; let c2 = n2.colorObj;
+                    
+                    edgePos[i6] = p1.x; edgePos[i6+1] = p1.y; edgePos[i6+2] = p1.z;
+                    edgeCol[i6] = c1.r; edgeCol[i6+1] = c1.g; edgeCol[i6+2] = c1.b;
+                    
+                    edgePos[i6+3] = p2.x; edgePos[i6+4] = p2.y; edgePos[i6+5] = p2.z;
+                    edgeCol[i6+3] = c2.r; edgeCol[i6+4] = c2.g; edgeCol[i6+5] = c2.b;
+                    
+                    lineIdx++;
+                }
+
+                if(phase === 1) {
+                    for(let i=0; i<N_FIELDS; i++) {
+                        let n1 = Math.floor(Math.random() * N_FIELDS);
+                        let n2 = Math.floor(Math.random() * N_FIELDS);
+                        if(n1 !== n2) addLine(nodes[n1], nodes[n2]);
+                    }
+                    edgeMat.opacity = 0.2;
+                } else if (phase === 2 && activePairs.length > 0) {
+                    for(let pair of activePairs) {
+                        addLine(nodes[pair[0]], nodes[pair[1]]);
+                    }
+                    edgeMat.opacity = 0.8 + 0.2 * Math.sin(clock.getElapsedTime() * 10);
+                }
+                
+                edgeGeo.setDrawRange(0, lineIdx * 2);
+                edgeGeo.attributes.position.needsUpdate = true;
+                edgeGeo.attributes.color.needsUpdate = true;
+            }
+
+            // --- 6. STATE MACHINE ---
+            const statusBox = document.getElementById('status-box');
+            const eqDisp = document.getElementById('equation-display');
+            const descDisp = document.getElementById('phase-desc');
+            const panel = document.getElementById('dynamic-panel');
+
+            function setPhaseNormal() {
+                phase = 0; activePairs = []; cycleCount = 0;
+                statusBox.className = 'status-normal';
+                panel.style.borderLeftColor = '#888';
+                statusBox.innerText = "PHASE 1: UNCONTRACTED (Normal Ordered)";
+                eqDisp.innerHTML = normalEqText;
+                descDisp.innerText = "Creation operators shifted left. VEV evaluates to exactly zero.";
+                phaseTimeout = setTimeout(setPhaseSearch, 3000);
+            }
+
+            function setPhaseSearch() {
+                phase = 1;
+                statusBox.className = 'status-search';
+                panel.style.borderLeftColor = '#ffeb3b';
+                statusBox.innerText = "PHASE 2: COMBINATORIAL SEARCH";
+                eqDisp.innerHTML = `<span class="math" style="color:#ffeb3b">Deriving Contractions...</span>`;
+                descDisp.innerText = "Isolating non-zero pairings (Feynman Propagators).";
+                phaseTimeout = setTimeout(setPhaseContracted, 2000);
+            }
+
+            function setPhaseContracted() {
+                phase = 2;
+                activePairs = wickTerms[currentTermIndex];
+                
+                let eqHtml = "";
+                for(let pair of activePairs) {
+                    let n1 = nodes[pair[0]]; let n2 = nodes[pair[1]];
+                    eqHtml += `<div class="prop math">⟨0|T{<span style="color:${n1.hexStr}; text-shadow:0 0 5px ${n1.hexStr};">φ${n1.id}</span> <span style="color:${n2.hexStr}; text-shadow:0 0 5px ${n2.hexStr};">φ${n2.id}</span>}|0⟩</div>`;
+                }
+                
+                statusBox.className = 'status-contracted';
+                panel.style.borderLeftColor = '#0ff';
+                statusBox.innerText = `PHASE 3: FULLY CONTRACTED (Term ${currentTermIndex + 1} of ${wickTerms.length})`;
+                eqDisp.innerHTML = eqHtml;
+                descDisp.innerText = "Feynman propagators established. Term evaluates to a non-zero probability amplitude.";
+                
+                currentTermIndex++;
+                cycleCount++;
+                
+                if (currentTermIndex >= wickTerms.length || cycleCount >= 15) {
+                    if (currentTermIndex >= wickTerms.length) currentTermIndex = 0;
+                    phaseTimeout = setTimeout(setPhaseNormal, 4000);
+                } else {
+                    const delay = N_FIELDS > 6 ? 1200 : 2500;
+                    phaseTimeout = setTimeout(setPhaseContracted, delay);
+                }
+            }
+
+            // --- 7. STARTUP ---
+            initSystem(6);
+
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                const dt = Math.min(clock.getDelta(), 0.1); 
+                updatePhysics(dt);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            window.addEventListener('resize', () => {
+                if(camera && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            });
+
+            animate();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thermodynamic Phase Transition Loader</title>
+    <!-- Tailwind CSS for UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #030305; color: white; font-family: 'Inter', sans-serif; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .data-readout {
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            backdrop-filter: blur(2px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        <div class="text-center space-y-4">
+            <h1 class="text-4xl font-light tracking-widest uppercase mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-400">System Initialization</h1>
+            
+            <!-- Progress Bar Container -->
+            <div class="w-64 h-1 bg-gray-900 rounded overflow-hidden relative mx-auto border border-gray-800">
+                <div id="progress-bar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-500 to-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all duration-100" style="width: 0%"></div>
+            </div>
+
+            <!-- Scientific Data Readout -->
+            <div class="data-readout text-xs text-cyan-100 opacity-90 mt-4 space-y-1 text-left inline-block border-l-2 border-cyan-500 pl-3">
+                <div>k_B T (Temperature): <span id="temp-display">50.000</span> [Plasma State]</div>
+                <div>Ω (Order Parameter): <span id="order-display">0.000</span></div>
+                <div>Status: <span id="status-display">ENTROPY_MAXIMIZED</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vertex Shader -->
+    <script type="x-shader/x-vertex" id="vertexshader">
+        // Standard Uniforms
+        uniform float uNoiseTime; // Physics time
+        uniform float uTime;      // Visual time (coloring/twinkle)
+        uniform float uTemperature; 
+        uniform float uPixelRatio;
+
+        // Attributes
+        attribute float aRandom; 
+        attribute vec3 aLatticePos; 
+
+        // Varying
+        varying float vAlpha;
+        varying vec3 vColor;
+
+        // --- Noise Functions ---
+        
+        // Simplex-ish pseudo random
+        vec3 getChaoticNoise(float time, float seed) {
+            float t = time;
+            // More complex wave superposition for fluid-like motion
+            float x = sin(t + seed * 100.0) + cos(t * 0.4 + seed * 43.0) * 1.5;
+            float y = cos(t + seed * 76.0) + sin(t * 0.6 + seed * 21.0) * 1.5;
+            float z = sin(t * 0.8 + seed * 123.0) + cos(t * 0.3 + seed * 99.0);
+            return vec3(x, y, z);
+        }
+
+        // Spectral color generator
+        vec3 palette(float t) {
+            vec3 a = vec3(0.5, 0.5, 0.5);
+            vec3 b = vec3(0.5, 0.5, 0.5);
+            vec3 c = vec3(1.0, 1.0, 1.0);
+            vec3 d = vec3(0.263, 0.416, 0.557);
+            return a + b * cos(6.28318 * (c * t + d));
+        }
+
+        void main() {
+            vec3 latticePos = aLatticePos;
+
+            // --- Physics Calculation ---
+            // High Temp = Large Noise Vector
+            vec3 noise = getChaoticNoise(uNoiseTime, aRandom);
+            
+            // Add a "Swirl" factor based on position to make it look like a galaxy/nebula
+            // We rotate the noise vector slightly based on distance from center
+            float dist = length(latticePos);
+            float swirlAngle = uNoiseTime * 0.2 + dist * 0.05;
+            float c = cos(swirlAngle);
+            float s = sin(swirlAngle);
+            mat2 rot = mat2(c, -s, s, c);
+            
+            // Apply noise magnitude
+            vec3 brownianTerm = noise * uTemperature;
+            
+            // Apply Swirl to X/Y components of the noise for visual flow
+            if (uTemperature > 1.0) {
+                 brownianTerm.xy = rot * brownianTerm.xy;
+            }
+
+            vec3 newPos = latticePos + brownianTerm;
+
+            // --- Standard Position Output ---
+            vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+
+            // --- Size Calculation ---
+            // Reverted base size from 3.0 to 2.0 for a finer, less dense look
+            float tempSizeInfluence = clamp(uTemperature, 0.0, 20.0); 
+            gl_PointSize = (2.0 + tempSizeInfluence * 0.2) * uPixelRatio * (150.0 / -mvPosition.z);
+
+            // --- Visuals (Color & Alpha) ---
+            
+            // 1. Calculate Disorder Ratio (0 = Order, 1 = Chaos)
+            float disorder = clamp(uTemperature / 15.0, 0.0, 1.0);
+
+            // 2. Generate Nebula Color (Chaos)
+            // Use position and time to create a gradient
+            vec3 nebulaColor = palette(length(newPos) * 0.02 - uTime * 0.2 + aRandom);
+            // Boost saturation
+            nebulaColor = mix(nebulaColor, vec3(1.0, 0.2, 0.8), 0.3);
+
+            // 3. Define Crystal Color (Order)
+            vec3 crystalColor = vec3(0.1, 0.9, 1.0); // Cyan/Electric Blue
+
+            // 4. Mix based on temperature
+            vColor = mix(crystalColor, nebulaColor, disorder);
+
+            // 5. Alpha/Twinkle
+            // Slowed down twinkle speed from 5.0 to 1.5 for visual comfort
+            float twinkle = sin(uTime * 1.5 + aRandom * 100.0) * 0.5 + 0.5;
+            float steadyAlpha = 0.8;
+            
+            // Reduced chaos opacity (from 0.4 to 0.25 base) to reduce "too many particles" feel
+            float chaosAlpha = 0.25 + twinkle * 0.3;
+            
+            vAlpha = mix(steadyAlpha, chaosAlpha, disorder);
+        }
+    </script>
+
+    <!-- Fragment Shader -->
+    <script type="x-shader/x-fragment" id="fragmentshader">
+        varying float vAlpha;
+        varying vec3 vColor;
+
+        void main() {
+            // Soft circular particle
+            vec2 center = gl_PointCoord - 0.5;
+            float dist = length(center);
+            if (dist > 0.5) discard;
+
+            // Enhanced Glow
+            // Using a gaussian-like falloff for "sparkle" look
+            float glow = exp(-dist * 8.0); 
+            float core = 1.0 - smoothstep(0.0, 0.5, dist);
+            
+            // Combine core solidity with outer glow
+            float finalAlpha = vAlpha * (core * 0.6 + glow * 1.2);
+
+            gl_FragColor = vec4(vColor, finalAlpha);
+        }
+    </script>
+
+    <!-- Main Logic -->
+    <script>
+        // --- 1. Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Darker fog for deep space feel
+        scene.fog = new THREE.FogExp2(0x030305, 0.0015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 90;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+        container.appendChild(renderer.domElement);
+
+        // --- 1.5 Space-Time Grid (Background Plane) ---
+        // A large wireframe grid to represent the space-time manifold
+        // Positioned below the particles to give a sense of "floor" or "fabric"
+        const gridSize = 3000;
+        const gridDivisions = 100;
+        const colorCenterLine = 0x4c1d95; // Deep Purple
+        const colorGrid = 0x0f172a;       // Dark Blue/Slate
+        
+        const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, colorCenterLine, colorGrid);
+        gridHelper.position.y = -30; // Position below the torus
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.15; // Subtle fade
+        scene.add(gridHelper);
+
+
+        // --- 2. Particle System Generation ---
+        
+        // Reduced from 60,000 to 40,000 to match user preference for less clutter
+        const particleCount = 40000; 
+        const geometry = new THREE.BufferGeometry();
+        
+        const latticePositions = [];
+        const randoms = [];
+
+        const torusRadius = 35;
+        const tubeRadius = 12;
+
+        for (let i = 0; i < particleCount; i++) {
+            const u = Math.random() * Math.PI * 2;
+            const v = Math.random() * Math.PI * 2;
+            
+            // Torus
+            const x = (torusRadius + tubeRadius * Math.cos(v)) * Math.cos(u);
+            const y = (torusRadius + tubeRadius * Math.cos(v)) * Math.sin(u);
+            const z = tubeRadius * Math.sin(v);
+
+            latticePositions.push(x, y, z);
+            randoms.push(Math.random());
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(latticePositions, 3));
+        geometry.setAttribute('aLatticePos', new THREE.Float32BufferAttribute(latticePositions, 3));
+        geometry.setAttribute('aRandom', new THREE.Float32BufferAttribute(randoms, 1));
+
+        // --- 3. Shader Material ---
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uNoiseTime: { value: 0 },
+                uTime: { value: 0 },
+                uTemperature: { value: 50.0 }, 
+                uPixelRatio: { value: renderer.getPixelRatio() }
+            },
+            vertexShader: document.getElementById('vertexshader').textContent,
+            fragmentShader: document.getElementById('fragmentshader').textContent,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending // Crucial for "glowing" overlap
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // --- 4. Simulation Logic ---
+
+        let progress = 0;
+        let isLoaded = false;
+        
+        const params = {
+            temperature: 50.0, 
+            coolingRate: 0.985, // Smooth, slow cooling
+            minTemp: 0.005,     
+            rotationSpeed: 0.0005
+        };
+
+        const progressBar = document.getElementById('progress-bar');
+        const tempDisplay = document.getElementById('temp-display');
+        const orderDisplay = document.getElementById('order-display');
+        const statusDisplay = document.getElementById('status-display');
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+            const elapsedTime = clock.getElapsedTime(); 
+
+            // Update Time Uniforms
+            // Visual time (steady flow)
+            material.uniforms.uTime.value = elapsedTime;
+            
+            // Physics time (variable flow based on Temp)
+            // DRASTICALLY REDUCED SPEED: Changed factor from 0.2 to 0.03 to stop "jiggling"
+            const velocityFactor = 0.1 + (params.temperature * 0.03);
+            material.uniforms.uNoiseTime.value += dt * velocityFactor;
+
+            // --- Logic Stages ---
+
+            if (!isLoaded) {
+                // Loading Phase
+                progress += 0.4; 
+                
+                if (progress >= 100) {
+                    progress = 100;
+                    isLoaded = true;
+                    statusDisplay.innerText = "NUCLEATION_INITIATED";
+                    statusDisplay.style.color = "#a855f7"; // Purple text
+                }
+
+                progressBar.style.width = `${progress}%`;
+                
+                // Fluctuating High Temp - Reduced fluctuation amplitude for stability
+                params.temperature = 50.0 + Math.sin(elapsedTime * 2.0) * 2.0;
+            } 
+            else {
+                // Cooling Phase
+                if (params.temperature > params.minTemp) {
+                    params.temperature *= params.coolingRate;
+                } else {
+                    params.temperature = params.minTemp;
+                    statusDisplay.innerText = "CRYSTAL_LATTICE_STABLE";
+                    statusDisplay.style.color = "#22d3ee"; // Cyan text
+                }
+                
+                // Rotation
+                particles.rotation.y += params.rotationSpeed;
+                particles.rotation.x += params.rotationSpeed * 0.5;
+            }
+
+            // Update Temp Uniform
+            material.uniforms.uTemperature.value = params.temperature;
+
+            // UI Updates
+            tempDisplay.innerText = params.temperature.toFixed(3);
+            const orderParam = 1.0 - (params.temperature / 50.0);
+            orderDisplay.innerText = Math.max(0, Math.min(1, orderParam)).toFixed(3);
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            material.uniforms.uPixelRatio.value = renderer.getPixelRatio();
+        });
+
+        animate();
+
+    </script>
+</body>
+</html>

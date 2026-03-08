@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QFT Formal Integrator | Unified Topology</title>
+    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        
+        /* Unified Navigation */
+        #nav-bar { position: absolute; top: 0; left: 0; width: 100%; background: rgba(0, 5, 10, 0.9); border-bottom: 1px solid #0ff; z-index: 20; display: flex; justify-content: center; gap: 20px; padding: 10px; font-size: 12px; font-weight: bold; letter-spacing: 1px; }
+        .nav-btn { background: none; border: 1px solid #555; color: #aaa; padding: 8px 15px; cursor: pointer; transition: 0.3s; font-family: inherit; }
+        .nav-btn:hover { color: #0ff; border-color: #0ff; box-shadow: 0 0 10px rgba(0,255,255,0.3); }
+        .nav-btn.active { color: #000; background: #0ff; border-color: #0ff; box-shadow: 0 0 15px rgba(0,255,255,0.6); }
+
+        /* Shared UI Layout */
+        #ui-layer { position: absolute; top: 50px; left: 0; width: 100%; height: calc(100% - 50px); pointer-events: none; z-index: 10; display: flex; justify-content: space-between; padding: 20px; box-sizing: border-box; }
+        .panel { background: rgba(5, 10, 15, 0.85); backdrop-filter: blur(8px); border-left: 2px solid #0ff; padding: 20px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.1); width: 450px; pointer-events: auto; max-height: 100%; overflow-y: auto; }
+        
+        h1 { font-size: 16px; margin: 0 0 10px 0; color: #0ff; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 8px rgba(0,255,255,0.5); }
+        p { font-size: 11px; color: #88ccdd; line-height: 1.5; margin-bottom: 10px; }
+        
+        /* Particle & Math Styles */
+        .math { font-style: italic; color: #fff; font-weight: bold; }
+        .e-color { color: #00ffff; font-weight: bold; text-shadow: 0 0 5px rgba(0,255,255,0.5); }
+        .p-color { color: #ffaa00; font-weight: bold; text-shadow: 0 0 5px rgba(255,170,0,0.5); }
+        .g-color { color: #ff00ff; font-weight: bold; text-shadow: 0 0 5px rgba(255,0,255,0.5); }
+        
+        .status-box { font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 15px; padding: 10px; border: 1px dashed #555; transition: all 0.3s; }
+        .eq-display { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 4px; box-sizing: border-box; min-height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-size: 12px; }
+        
+        .controls { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .ctrl-btn { flex: 1 1 45%; background: transparent; border: 1px solid #555; color: #fff; padding: 8px; font-family: inherit; font-size: 10px; cursor: pointer; transition: 0.3s; }
+        .ctrl-btn:hover { background: rgba(255,255,255,0.1); }
+        
+        #instructions { position: absolute; bottom: 10px; left: 0; width: 100%; text-align: center; font-size: 10px; color: #555; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="nav-bar">
+        <button class="nav-btn" onclick="app.loadModule('wick')">1. WICK'S THEOREM</button>
+        <button class="nav-btn" onclick="app.loadModule('compton')">2. COMPTON SCATTERING</button>
+        <button class="nav-btn" onclick="app.loadModule('bhabha')">3. BHABHA SCATTERING</button>
+        <button class="nav-btn" onclick="app.loadModule('moller')">4. MØLLER SCATTERING</button>
+        <button class="nav-btn" onclick="app.loadModule('feynman')">5. INTEGRALS & REGULARIZATION</button>
+    </div>
+
+    <div id="ui-layer">
+        <div class="panel" id="panel-left"></div>
+        <div class="panel" id="panel-right" style="border-left: none; border-right: 2px solid #0ff;"></div>
+    </div>
+    
+    <div id="instructions">DRAG TO ORBIT | SCROLL TO ZOOM | SELECT CHAPTERS ABOVE</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- CORE APPLICATION MANAGER ---
+        const app = (() => {
+            let scene, camera, renderer, controls, clock;
+            let currentModule = null;
+
+            function init() {
+                scene = new THREE.Scene();
+                scene.fog = new THREE.FogExp2(0x000510, 0.02);
+                
+                camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+                
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                document.body.appendChild(renderer.domElement);
+
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+
+                clock = new THREE.Clock();
+                
+                window.addEventListener('resize', onWindowResize);
+                animate();
+                
+                // Load initial module
+                loadModule('wick');
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const dt = Math.min(clock.getDelta(), 0.1);
+                const time = clock.getElapsedTime();
+                
+                if (currentModule && currentModule.update) {
+                    currentModule.update(dt, time);
+                }
+                
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            function clearScene() {
+                while(scene.children.length > 0){ 
+                    let obj = scene.children[0];
+                    scene.remove(obj); 
+                    if(obj.geometry) obj.geometry.dispose();
+                    if(obj.material) {
+                        if(Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+                        else obj.material.dispose();
+                    }
+                }
+            }
+
+            function loadModule(moduleName) {
+                // Update Nav UI
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                event && event.target ? event.target.classList.add('active') : document.querySelector('.nav-btn').classList.add('active');
+
+                if (currentModule && currentModule.cleanup) currentModule.cleanup();
+                clearScene();
+                
+                // Reset Camera
+                camera.position.set(0, 0, 25);
+                controls.target.set(0,0,0);
+                controls.autoRotate = false;
+
+                const leftPanel = document.getElementById('panel-left');
+                const rightPanel = document.getElementById('panel-right');
+                leftPanel.innerHTML = ''; rightPanel.innerHTML = '';
+
+                currentModule = modules[moduleName](scene, camera, leftPanel, rightPanel);
+                
+                // Trigger MathJax re-render
+                if(window.MathJax) {
+                    MathJax.typesetClear();
+                    MathJax.typesetPromise([leftPanel, rightPanel]);
+                }
+            }
+
+            return { init, loadModule };
+        })();
+
+        // --- SHARED UTILITIES FOR MODULES ---
+        const Utils = {
+            createGlowingNode: (colorHex, size) => {
+                const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+                const ctx = c.getContext('2d');
+                const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                g.addColorStop(0, '#fff'); g.addColorStop(0.2, '#' + colorHex); g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64);
+                const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, transparent: true });
+                const sprite = new THREE.Sprite(mat);
+                sprite.scale.set(size, size, 1);
+                return sprite;
+            },
+            createLine: (colorHex) => {
+                const mat = new THREE.LineBasicMaterial({ color: parseInt(colorHex, 16), linewidth: 2, transparent: true, opacity: 1 });
+                const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+                return new THREE.Line(geo, mat);
+            },
+            createWavyLine: (colorHex, segments=50) => {
+                const mat = new THREE.LineBasicMaterial({ color: parseInt(colorHex, 16), linewidth: 2, transparent: true, opacity: 1 });
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((segments+1) * 3), 3));
+                return new THREE.Line(geo, mat);
+            },
+            updateWavyGeo: (lineObj, pA, pB, time, segments=50, amplitude=0.6, freq=20.0) => {
+                const pos = lineObj.geometry.attributes.position.array;
+                const dir = new THREE.Vector3().subVectors(pB, pA);
+                if(dir.lengthSq() < 0.001) return;
+                dir.normalize();
+                let up = new THREE.Vector3(0, 0, 1);
+                if(Math.abs(dir.dot(up)) > 0.9) up.set(0, 1, 0);
+                const orth = new THREE.Vector3().crossVectors(dir, up).normalize();
+                for(let i=0; i<=segments; i++) {
+                    const t = i / segments;
+                    const basePos = new THREE.Vector3().lerpVectors(pA, pB, t);
+                    const envelope = Math.sin(t * Math.PI); 
+                    const waveOffset = Math.sin(t * freq - time * 8.0) * amplitude * envelope;
+                    basePos.addScaledVector(orth, waveOffset);
+                    pos[i*3] = basePos.x; pos[i*3+1] = basePos.y; pos[i*3+2] = basePos.z;
+                }
+                lineObj.geometry.attributes.position.needsUpdate = true;
+            },
+            updateStraightGeo: (lineObj, pStart, pEnd) => {
+                const pos = lineObj.geometry.attributes.position.array;
+                pos[0] = pStart.x; pos[1] = pStart.y; pos[2] = pStart.z;
+                pos[3] = pEnd.x; pos[4] = pEnd.y; pos[5] = pEnd.z;
+                lineObj.geometry.attributes.position.needsUpdate = true;
+            }
+        };
+
+        // --- MODULES ENCAPSULATION ---
+        const modules = {};
+
+        // 1. WICK'S THEOREM
+        modules.wick = function(scene, camera, leftPanel, rightPanel) {
+            leftPanel.innerHTML = `
+                <h1>Vacuum State Topology</h1>
+                <p>Evaluating the Vacuum Expectation Value (VEV) of <span class="math">N=<span id="w-n">6</span></span> distinct fields:</p>
+                <div class="eq-display" id="w-t-prod" style="min-height: 40px;"></div>
+                <p>By Wick's theorem, the time-ordered product expands into normal-ordered sums. However, because we evaluate the vacuum state $\\langle 0|...|0 \\rangle$, any normal-ordered term with uncontracted operators annihilates to zero.</p>
+                <p>Only the <strong>fully contracted</strong> permutations survive. By pairing fields recursively, exactly <span class="math">(N-1)!! = <span id="w-terms">15</span></span> valid Feynman propagators emerge.</p>
+                <div style="margin-top:20px;">
+                    <label style="font-size:10px; color:#fff;">QUANTUM FIELDS (N): <span id="w-val">6</span></label>
+                    <input type="range" id="w-slider" min="2" max="10" step="2" value="6" style="width:100%;">
+                </div>
+            `;
+            rightPanel.innerHTML = `
+                <div class="status-box" id="w-status" style="border-color:#888; color:#888;">PHASE 1: NORMAL ORDERED</div>
+                <div class="eq-display" id="w-eq"></div>
+                <p style="text-align: center; margin-top: 15px; font-size: 10px; color: #888;" id="w-desc">Integrating topological states...</p>
+            `;
+
+            camera.position.set(0,0,30);
+            
+            const nodes = [];
+            const nodeGroup = new THREE.Group();
+            scene.add(nodeGroup);
+            
+            const edgeGeo = new THREE.BufferGeometry();
+            const edgePos = new Float32Array(500 * 6); 
+            const edgeCol = new Float32Array(500 * 6); 
+            edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgePos, 3));
+            edgeGeo.setAttribute('color', new THREE.BufferAttribute(edgeCol, 3));
+            edgeGeo.attributes.position.setUsage(THREE.DynamicDrawUsage);
+            edgeGeo.attributes.color.setUsage(THREE.DynamicDrawUsage);
+            const edgeMat = new THREE.LineBasicMaterial({ vertexColors: true, linewidth: 2, transparent: true, opacity: 0.8 });
+            scene.add(new THREE.LineSegments(edgeGeo, edgeMat));
+
+            const PARTICLE_COLORS = [0xff3333, 0x33ff33, 0x3366ff, 0xffff33, 0xff33ff, 0x33ffff, 0xffaa00, 0xaa33ff];
+            const toHexStr = (c) => '#' + c.toString(16).padStart(6, '0');
+            
+            let N_FIELDS = 6;
+            let wickTerms = [];
+            let currentTermIndex = 0;
+            let phase = 0; 
+            let activePairs = [];
+            let phaseTimeout;
+
+            function doubleFactorial(n) { return n <= 0 ? 1 : n * doubleFactorial(n - 2); }
+            function getMatchings(arr) {
+                if (arr.length === 0) return [[]];
+                let matchings = [];
+                for (let i = 1; i < arr.length; i++) {
+                    let subMatchings = getMatchings(arr.slice(1, i).concat(arr.slice(i + 1)));
+                    for (let sm of subMatchings) matchings.push([[arr[0], arr[i]], ...sm]);
+                }
+                return matchings;
+            }
+
+            function buildSystem(n) {
+                clearTimeout(phaseTimeout);
+                N_FIELDS = n;
+                document.getElementById('w-n').innerText = n;
+                document.getElementById('w-val').innerText = n;
+                document.getElementById('w-terms').innerText = doubleFactorial(n - 1);
+                
+                let tProd = "$\\langle 0| T\\{ "; let nProd = "$\\langle 0| : ";
+                for(let i=0; i<n; i++) {
+                    let c = toHexStr(PARTICLE_COLORS[i % PARTICLE_COLORS.length]);
+                    let str = `\\color{${c}}{\\phi_{${i+1}}} `;
+                    tProd += str; nProd += str;
+                }
+                document.getElementById('w-t-prod').innerHTML = tProd + "\\} |0\\rangle$";
+                
+                while(nodeGroup.children.length > 0) nodeGroup.remove(nodeGroup.children[0]);
+                nodes.length = 0;
+                
+                for(let i=0; i<N_FIELDS; i++) {
+                    const hexColor = PARTICLE_COLORS[i % PARTICLE_COLORS.length];
+                    const sprite = Utils.createGlowingNode(hexColor.toString(16), 4.0);
+                    const spread = 10 + (N_FIELDS * 0.5); 
+                    sprite.position.set((Math.random()-0.5)*spread, (Math.random()-0.5)*spread, (Math.random()-0.5)*spread);
+                    nodeGroup.add(sprite);
+                    nodes.push({ mesh: sprite, vel: new THREE.Vector3(), id: i+1, colorObj: new THREE.Color(hexColor), hexStr: toHexStr(hexColor) });
+                }
+                wickTerms = getMatchings(Array.from({length: N_FIELDS}, (_, i) => i));
+                currentTermIndex = 0;
+                
+                phase = 0;
+                document.getElementById('w-status').innerText = "PHASE 1: NORMAL ORDERED";
+                document.getElementById('w-eq').innerHTML = nProd + ": |0\\rangle = 0$";
+                if(window.MathJax) MathJax.typesetPromise([document.getElementById('w-t-prod'), document.getElementById('w-eq')]);
+                phaseTimeout = setTimeout(() => phase = 2, 3000); // simplified sequence
+            }
+
+            document.getElementById('w-slider').addEventListener('input', (e) => buildSystem(parseInt(e.target.value)));
+            buildSystem(6);
+
+            return {
+                update: (dt) => {
+                    // Force Directed Physics with Velocity Clamping for Rigidity
+                    for(let i=0; i<N_FIELDS; i++) {
+                        let force = new THREE.Vector3().addScaledVector(nodes[i].mesh.position, -0.05);
+                        for(let j=0; j<N_FIELDS; j++) {
+                            if(i===j) continue;
+                            let dir = new THREE.Vector3().subVectors(nodes[i].mesh.position, nodes[j].mesh.position);
+                            let dSq = dir.lengthSq();
+                            if(dSq > 0.1) force.add(dir.normalize().multiplyScalar(40.0 / dSq));
+                        }
+                        if(phase === 2 && wickTerms[currentTermIndex]) {
+                            wickTerms[currentTermIndex].forEach(pair => {
+                                if(pair[0] === i || pair[1] === i) {
+                                    let tgt = pair[0] === i ? pair[1] : pair[0];
+                                    let dir = new THREE.Vector3().subVectors(nodes[tgt].mesh.position, nodes[i].mesh.position);
+                                    force.add(dir.normalize().multiplyScalar((dir.length() - 5.0) * 2.0));
+                                }
+                            });
+                        }
+                        nodes[i].vel.add(force.multiplyScalar(dt)).multiplyScalar(0.85); // Damping
+                        if(nodes[i].vel.length() > 15.0) nodes[i].vel.multiplyScalar(15.0 / nodes[i].vel.length());
+                        nodes[i].mesh.position.addScaledVector(nodes[i].vel, dt);
+                    }
+                    
+                    // Draw lines
+                    let idx = 0;
+                    if(phase === 2 && wickTerms[currentTermIndex]) {
+                        wickTerms[currentTermIndex].forEach(pair => {
+                            let n1 = nodes[pair[0]]; let n2 = nodes[pair[1]];
+                            let p1 = n1.mesh.position; let p2 = n2.mesh.position;
+                            let i6 = idx * 6;
+                            edgePos[i6]=p1.x; edgePos[i6+1]=p1.y; edgePos[i6+2]=p1.z;
+                            edgePos[i6+3]=p2.x; edgePos[i6+4]=p2.y; edgePos[i6+5]=p2.z;
+                            edgeCol[i6]=n1.colorObj.r; edgeCol[i6+1]=n1.colorObj.g; edgeCol[i6+2]=n1.colorObj.b;
+                            edgeCol[i6+3]=n2.colorObj.r; edgeCol[i6+4]=n2.colorObj.g; edgeCol[i6+5]=n2.colorObj.b;
+                            idx++;
+                        });
+                        
+                        // Manage UI transition internally
+                        document.getElementById('w-status').innerText = `PHASE 3: CONTRACTED (Term ${currentTermIndex+1})`;
+                        document.getElementById('w-status').style.borderColor = '#0ff'; document.getElementById('w-status').style.color = '#0ff';
+                        if(!phaseTimeout) phaseTimeout = setTimeout(() => {
+                            currentTermIndex = (currentTermIndex + 1) % wickTerms.length;
+                            phaseTimeout = null;
+                        }, 2500);
+                    }
+                    edgeGeo.setDrawRange(0, idx * 2);
+                    edgeGeo.attributes.position.needsUpdate = true;
+                    edgeGeo.attributes.color.needsUpdate = true;
+                },
+                cleanup: () => { clearTimeout(phaseTimeout); }
+            };
+        };
+
+        // 2. COMPTON SCATTERING
+        modules.compton = function(scene, camera, leftPanel, rightPanel) {
+            leftPanel.innerHTML = `
+                <h1>Compton Scattering</h1>
+                <p>Evaluating the second-order S-Matrix operator for an <span class="e-color">electron</span> absorbing and emitting a <span class="g-color">photon</span>:</p>
+                <p>$$ \\langle f | S^{(2)} | i \\rangle \\propto \\langle 0 | \\color{#ff00ff}{c_{k'}} \\color{#00ffff}{a_{p'}} \\int d^4x d^4y \\, \\mathcal{T}\\{ \\mathcal{H}_{int}(x) \\mathcal{H}_{int}(y) \\} \\color{#00ffff}{a_p^\\dagger} \\color{#ff00ff}{c_k^\\dagger} | 0 \\rangle $$</p>
+                <p>Wick's Theorem dictates that the orthogonal fermion and photon fields must contract independently.</p>
+            `;
+            rightPanel.innerHTML = `
+                <div class="status-box" id="c-status">SELECT A CHANNEL</div>
+                <div class="eq-display" id="c-eq" style="font-size: 11px;"></div>
+                <div class="controls">
+                    <button class="ctrl-btn" id="c-btn-1" onclick="window._cSet(1)">S-CHANNEL (Direct)</button>
+                    <button class="ctrl-btn" id="c-btn-2" onclick="window._cSet(2)">U-CHANNEL (Crossed)</button>
+                    <button class="ctrl-btn" id="c-btn-3" onclick="window._cSet(3)">T-CHANNEL (Forbidden)</button>
+                </div>
+            `;
+            
+            const vX = Utils.createGlowingNode('ffffff', 2.0); scene.add(vX);
+            const vY = Utils.createGlowingNode('ffffff', 2.0); scene.add(vY);
+            
+            const p_in = new THREE.Vector3(-10, -4, 0); const k_in = new THREE.Vector3(-10, 4, 0);
+            const p_out = new THREE.Vector3(10, -4, 0); const k_out = new THREE.Vector3(10, 4, 0);
+            
+            scene.add(Utils.createGlowingNode('00ffff', 1.5)).position.copy(p_in);
+            scene.add(Utils.createGlowingNode('ff00ff', 1.5)).position.copy(k_in);
+            scene.add(Utils.createGlowingNode('00ffff', 1.5)).position.copy(p_out);
+            scene.add(Utils.createGlowingNode('ff00ff', 1.5)).position.copy(k_out);
+
+            const f_in = Utils.createLine('00ffff'); const f_out = Utils.createLine('00ffff'); const f_int = Utils.createLine('00ffff');
+            scene.add(f_in); scene.add(f_out); scene.add(f_int);
+            
+            const ph_in = Utils.createWavyLine('ff00ff'); const ph_out = Utils.createWavyLine('ff00ff'); const ph_int = Utils.createWavyLine('ff0000');
+            scene.add(ph_in); scene.add(ph_out); scene.add(ph_int);
+
+            let state = { t: 0, 
+                vx: new THREE.Vector3(-3,0,0), vy: new THREE.Vector3(3,0,0), 
+                fiEnd: new THREE.Vector3(-3,0,0), foStart: new THREE.Vector3(3,0,0),
+                piEnd: new THREE.Vector3(-3,0,0), poStart: new THREE.Vector3(3,0,0),
+                f_int_op: 1, ph_int_op: 0, colY: 0xffffff
+            };
+
+            const mathDefs = {
+                1: `$$ i\\mathcal{M}_s = (-ie)^2 \\color{#00ffff}{\\bar{u}(p')} \\color{#ff00ff}{\\notin'(k')} \\left[ \\frac{i(\\not{p}+\\not{k}+m)}{(p+k)^2 - m^2} \\right] \\color{#ff00ff}{\\notin(k)} \\color{#00ffff}{u(p)} $$`,
+                2: `$$ i\\mathcal{M}_u = (-ie)^2 \\color{#00ffff}{\\bar{u}(p')} \\color{#ff00ff}{\\notin(k)} \\left[ \\frac{i(\\not{p}-\\not{k}'+m)}{(p-k')^2 - m^2} \\right] \\color{#ff00ff}{\\notin'(k')} \\color{#00ffff}{u(p)} $$`,
+                3: `\\text{Photon Vertex Violation:} \\\\ \\langle c_{k'} A_{\\nu,y} \\rangle \\langle A_{\\rho, y} A_{\\lambda, x} \\rangle \\langle A_{\\mu, y} c_k^\\dagger \\rangle \\to 0 \\\\ \\text{Standard QED Hamiltonians lack an } A^3 \\text{ term.}`
+            };
+
+            window._cSet = (n) => {
+                document.querySelectorAll('.ctrl-btn').forEach(b => b.style.borderColor = '#555');
+                document.getElementById(`c-btn-${n}`).style.borderColor = (n===3)?'#f00':(n===2)?'#f0f':'#0ff';
+                document.getElementById('c-status').innerText = n===1 ? "S-CHANNEL" : n===2 ? "U-CHANNEL" : "FORBIDDEN T-CHANNEL";
+                document.getElementById('c-status').style.color = (n===3)?'#f00':(n===2)?'#f0f':'#0ff';
+                
+                if(n===1) { state.vx.set(-3,0,0); state.vy.set(3,0,0); state.fiEnd.copy(state.vx); state.foStart.copy(state.vy); state.piEnd.copy(state.vx); state.poStart.copy(state.vy); state.f_int_op=1; state.ph_int_op=0; state.colY=0xffffff;}
+                if(n===2) { state.vx.set(-3,0,0); state.vy.set(3,0,0); state.fiEnd.copy(state.vx); state.foStart.copy(state.vy); state.piEnd.copy(state.vy); state.poStart.copy(state.vx); state.f_int_op=1; state.ph_int_op=0; state.colY=0xffffff;}
+                if(n===3) { state.vx.set(0,-2.5,0); state.vy.set(0,2.5,0); state.fiEnd.copy(state.vx); state.foStart.copy(state.vx); state.piEnd.copy(state.vy); state.poStart.copy(state.vy); state.f_int_op=0; state.ph_int_op=1; state.colY=0xff0000;}
+                
+                document.getElementById('c-eq').innerHTML = mathDefs[n];
+                if(window.MathJax) MathJax.typesetPromise([document.getElementById('c-eq')]);
+            };
+            window._cSet(1);
+
+            return {
+                update: (dt, time) => {
+                    vX.position.lerp(state.vx, 0.1); vY.position.lerp(state.vy, 0.1);
+                    f_int.material.opacity = state.f_int_op; ph_int.material.opacity = state.ph_int_op;
+                    vY.material.color.setHex(state.colY);
+                    
+                    Utils.updateStraightGeo(f_in, p_in, vX.position.clone().lerp(state.fiEnd, 0.1));
+                    Utils.updateStraightGeo(f_out, vY.position.clone().lerp(state.foStart, 0.1), p_out);
+                    Utils.updateStraightGeo(f_int, vX.position, vY.position);
+                    
+                    Utils.updateWavyGeo(ph_in, k_in, vX.position.clone().lerp(state.piEnd, 0.1), time);
+                    Utils.updateWavyGeo(ph_out, vY.position.clone().lerp(state.poStart, 0.1), k_out, time);
+                    if(state.ph_int_op > 0) Utils.updateWavyGeo(ph_int, vX.position, vY.position, time);
+                },
+                cleanup: () => { delete window._cSet; }
+            };
+        };
+
+        // 3 & 4. BHABHA AND MOLLER (Consolidated due to structural similarity, changing parameters)
+        function createScatteringModule(isBhabha) {
+            return function(scene, camera, leftPanel, rightPanel) {
+                const title = isBhabha ? "Bhabha" : "Møller";
+                const p1_type = "e⁻"; const p2_type = isBhabha ? "e⁺" : "e⁻";
+                const col1 = "00ffff"; const col2 = isBhabha ? "ffaa00" : "00ffff";
+                
+                leftPanel.innerHTML = `
+                    <h1>${title} Scattering</h1>
+                    <p>Evaluating the second-order S-Matrix operator for <span class="e-color">${p1_type}</span> and <span style="color:#${col2}">${p2_type}</span> exchanging a <span class="g-color">virtual photon</span>:</p>
+                    <p>$$ \\langle f | S^{(2)} | i \\rangle \\propto \\langle 0 | a_{p_3} ${isBhabha ? 'b_{p_4}' : 'a_{p_4}'} \\int d^4x d^4y \\, \\mathcal{T}\\{ \\mathcal{H}_{int}^2 \\} a_{p_1}^\\dagger ${isBhabha ? 'b_{p_2}^\\dagger' : 'a_{p_2}^\\dagger'} | 0 \\rangle $$</p>
+                    <p>${isBhabha ? "Particle-antiparticle dynamics permit annihilation." : "Identical fermions demand exchange minus signs via Fermi-Dirac statistics."}</p>
+                `;
+                rightPanel.innerHTML = `
+                    <div class="status-box" id="s-status">SELECT A CHANNEL</div>
+                    <div class="eq-display" id="s-eq" style="font-size: 11px;"></div>
+                    <div class="controls">
+                        <button class="ctrl-btn" id="s-btn-t" onclick="window._sSet('t')">T-CHANNEL (Scattering)</button>
+                        <button class="ctrl-btn" id="s-btn-u" onclick="window._sSet('u')">U-CHANNEL (${isBhabha ? 'Forbidden' : 'Exchange'})</button>
+                        <button class="ctrl-btn" id="s-btn-s" onclick="window._sSet('s')">S-CHANNEL (${isBhabha ? 'Annihilation' : 'Forbidden'})</button>
+                    </div>
+                `;
+
+                const vX = Utils.createGlowingNode('ffffff', 2.0); scene.add(vX);
+                const vY = Utils.createGlowingNode('ffffff', 2.0); scene.add(vY);
+                
+                const p1 = new THREE.Vector3(-10, 5, 0); const p2 = new THREE.Vector3(-10, -5, 0);
+                const p3 = new THREE.Vector3(10, 5, 0); const p4 = new THREE.Vector3(10, -5, 0);
+                
+                scene.add(Utils.createGlowingNode(col1, 1.5)).position.copy(p1); scene.add(Utils.createGlowingNode(col2, 1.5)).position.copy(p2);
+                scene.add(Utils.createGlowingNode(col1, 1.5)).position.copy(p3); scene.add(Utils.createGlowingNode(col2, 1.5)).position.copy(p4);
+
+                const l1 = Utils.createLine(col1); const l2 = Utils.createLine(col2);
+                const l3 = Utils.createLine(col1); const l4 = Utils.createLine(col2);
+                scene.add(l1); scene.add(l2); scene.add(l3); scene.add(l4);
+                
+                const ph_int = Utils.createWavyLine('ff00ff'); scene.add(ph_int);
+
+                let state = { vx: new THREE.Vector3(), vy: new THREE.Vector3(), t3: new THREE.Vector3(), t4: new THREE.Vector3(), err: false };
+
+                window._sSet = (ch) => {
+                    document.querySelectorAll('.ctrl-btn').forEach(b => b.style.borderColor = '#555');
+                    document.getElementById(`s-btn-${ch}`).style.borderColor = '#0ff';
+                    
+                    state.err = false;
+                    if(ch === 't') {
+                        state.vx.set(0,3.5,0); state.vy.set(0,-3.5,0); state.t3.copy(state.vx); state.t4.copy(state.vy);
+                        document.getElementById('s-eq').innerHTML = `$$ i\\mathcal{M}_t \\propto [\\bar{u}_3 \\gamma^\\mu u_1] \\left[ \\frac{\\eta_{\\mu\\nu}}{(p_1-p_3)^2} \\right] [\\bar{u}_4 \\gamma^\\nu u_2] $$`;
+                    } else if (ch === 'u') {
+                        if(isBhabha) { state.err = true; state.vx.set(0,3.5,0); state.vy.set(0,-3.5,0); state.t3.copy(state.vy); state.t4.copy(state.vx); document.getElementById('s-eq').innerHTML = "Vertex charge violation."; }
+                        else { state.vx.set(0,3.5,0); state.vy.set(0,-3.5,0); state.t3.copy(state.vy); state.t4.copy(state.vx); document.getElementById('s-eq').innerHTML = `$$ i\\mathcal{M}_u \\propto -[\\bar{u}_4 \\gamma^\\mu u_1] \\left[ \\frac{\\eta_{\\mu\\nu}}{(p_1-p_4)^2} \\right] [\\bar{u}_3 \\gamma^\\nu u_2] $$ <br> Note relative minus sign from Fermi statistics.`; }
+                    } else if (ch === 's') {
+                        if(isBhabha) { state.vx.set(-4,0,0); state.vy.set(4,0,0); state.t3.copy(state.vy); state.t4.copy(state.vy); document.getElementById('s-eq').innerHTML = `$$ i\\mathcal{M}_s \\propto -[\\bar{v}_2 \\gamma^\\mu u_1] \\left[ \\frac{\\eta_{\\mu\\nu}}{(p_1+p_2)^2} \\right] [\\bar{u}_3 \\gamma^\\nu v_4] $$`; }
+                        else { state.err = true; state.vx.set(-4,0,0); state.vy.set(4,0,0); state.t3.copy(state.vy); state.t4.copy(state.vy); document.getElementById('s-eq').innerHTML = "Vertex destroys two $e^-$. Forbidden."; }
+                    }
+                    
+                    document.getElementById('s-status').innerText = `${ch.toUpperCase()}-CHANNEL`;
+                    document.getElementById('s-status').style.color = state.err ? '#f00' : '#0ff';
+                    if(window.MathJax) MathJax.typesetPromise([document.getElementById('s-eq')]);
+                };
+                window._sSet('t');
+
+                return {
+                    update: (dt, time) => {
+                        vX.position.lerp(state.err && ch==='s' ? new THREE.Vector3(-4,0,0) : state.vx, 0.1); 
+                        vY.position.lerp(state.err && ch==='s' ? new THREE.Vector3(4,0,0) : state.vy, 0.1);
+                        vX.material.color.setHex(state.err ? 0xff0000 : 0xffffff);
+                        vY.material.color.setHex(state.err ? 0xff0000 : 0xffffff);
+                        ph_int.material.color.setHex(state.err ? 0xff0000 : 0xff00ff);
+                        
+                        let t1 = ch==='s'? state.vx : state.vx;
+                        let t2 = ch==='s'? state.vx : state.vy;
+                        
+                        Utils.updateStraightGeo(l1, p1, vX.position);
+                        Utils.updateStraightGeo(l2, p2, ch==='s' ? vX.position : vY.position);
+                        
+                        let curT3 = l3.geometry.attributes.position.array;
+                        let curT4 = l4.geometry.attributes.position.array;
+                        let sT3 = new THREE.Vector3(curT3[0],curT3[1],curT3[2]).lerp(state.t3, 0.1);
+                        let sT4 = new THREE.Vector3(curT4[0],curT4[1],curT4[2]).lerp(state.t4, 0.1);
+                        
+                        Utils.updateStraightGeo(l3, sT3, p3);
+                        Utils.updateStraightGeo(l4, sT4, p4);
+                        Utils.updateWavyGeo(ph_int, vX.position, vY.position, time);
+                    },
+                    cleanup: () => { delete window._sSet; }
+                };
+            }
+        }
+        modules.bhabha = createScatteringModule(true);
+        modules.moller = createScatteringModule(false);
+
+        // 5. FEYNMAN INTEGRALS (Beta & Gamma)
+        modules.feynman = function(scene, camera, leftPanel, rightPanel) {
+            leftPanel.innerHTML = `
+                <h1>Regularization Manifolds</h1>
+                <p>Loop integrals in QFT notoriously diverge. We transition from discrete graphs to continuous analytic continuation.</p>
+                <p><strong>Gamma $\\Gamma(z)$:</strong> Extends the factorial to complex dimensions. In Dimensional Regularization, the ultraviolet divergences are isolated at the topological poles ($z = 0, -1...$) as $d \\to 4$.</p>
+                <div style="width: 100%; height: 1px; background: rgba(0,255,255,0.3); margin: 15px 0;"></div>
+                <p>The surface plots $y = |\\Gamma(Re + i Im)|$. The glowing sphere represents dimension $d$ approaching the $z=0$ pole.</p>
+            `;
+            rightPanel.innerHTML = `
+                <h1 style="color:#f0f;">The Beta Morph</h1>
+                <p>To evaluate divergent integrals, Feynman parameterization collapses distinct propagators into a single effective denominator using the Beta function $B(x,y)$.</p>
+                <div style="margin-top:20px;">
+                    <label style="font-size:10px; color:#fff;">FEYNMAN PARAMETER (x): <span id="f-val">0.00</span></label>
+                    <input type="range" id="f-slider" min="0" max="1" step="0.01" value="0" style="width:100%;">
+                </div>
+                <div class="eq-display" style="border: 1px dashed #f0f;">
+                    Effective Denominator: <br><br>
+                    $D = x \\cdot A + (1-x) \\cdot B$
+                </div>
+            `;
+
+            camera.position.set(2, 6, 10);
+            
+            // Simple Plane for Gamma (Optimized to fit)
+            const geo = new THREE.PlaneGeometry(8, 6, 50, 50);
+            const pos = geo.attributes.position.array;
+            const colors = new Float32Array(pos.length);
+            for(let i=0; i<pos.length; i+=3) {
+                let x = pos[i]; let y = pos[i+1];
+                let h = x > 0 ? (x-1)*(x-1)*0.5 : (Math.abs(Math.sin(x*Math.PI)) < 0.2 ? 4.0 : 0.5); // Mock Gamma shape for brevity
+                pos[i+2] = Math.min(h, 4.0);
+                colors[i] = 0; colors[i+1] = 0.5 + h/8; colors[i+2] = 1.0;
+            }
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geo.computeVertexNormals(); geo.rotateX(-Math.PI / 2);
+            scene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, wireframe: true, transparent: true, opacity: 0.4 })));
+
+            const regSphere = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
+            scene.add(regSphere);
+
+            // Beta Morph Shader
+            const rmMat = new THREE.ShaderMaterial({
+                uniforms: { uF: { value: 0.0 }, cPos: { value: camera.position } },
+                vertexShader: `varying vec3 vWP; void main() { vWP = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vWP, 1.0); }`,
+                fragmentShader: `
+                    uniform float uF; uniform vec3 cPos; varying vec3 vWP;
+                    float map(vec3 p) {
+                        float dist = 2.5 * abs(uF - 0.5) * 2.0;
+                        float dA = length(vec2(length(p.xy - vec2(-dist,0)) - 1.2, p.z)) - 0.2;
+                        float dB = length(vec2(length(p.xy - vec2(dist,0)) - 1.2, p.z)) - 0.2;
+                        float h = clamp( 0.5+0.5*(dB-dA)/0.8, 0.0, 1.0 );
+                        return mix( dB, dA, h ) - 0.8*h*(1.0-h);
+                    }
+                    void main() {
+                        vec3 ro = cPos; vec3 rd = normalize(vWP - cPos);
+                        float t = 0.0; float d = 0.0;
+                        for(int i=0; i<64; i++) { d = map(ro + rd*t); if(d < 0.01 || t > 25.0) break; t += d; }
+                        if(d < 0.01) { gl_FragColor = vec4(mix(vec3(0,1,1), vec3(1,0,1), uF), 0.9); } else discard;
+                    }
+                `, transparent: true, side: THREE.BackSide
+            });
+            const morph = new THREE.Mesh(new THREE.BoxGeometry(10, 6, 6), rmMat);
+            morph.position.set(0, 4, 0); scene.add(morph);
+
+            document.getElementById('f-slider').addEventListener('input', (e) => {
+                document.getElementById('f-val').innerText = parseFloat(e.target.value).toFixed(2);
+                rmMat.uniforms.uF.value = parseFloat(e.target.value);
+            });
+
+            return {
+                update: (dt, time) => {
+                    let d_pos = 4.0 - (time % 8);
+                    let h = d_pos > 0 ? (d_pos-1)*(d_pos-1)*0.5 : 0.5;
+                    regSphere.position.set(d_pos, h, 0);
+                    rmMat.uniforms.cPos.value.copy(camera.position);
+                },
+                cleanup: () => {}
+            };
+        };
+
+        // Boot
+        window.onload = app.init;
+    </script>
+</body>
+</html>

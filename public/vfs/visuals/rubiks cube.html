@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2012 Artifact: The Algorithmic Cube</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Courier New', monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #ui-layer {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(0,0,0,0.8);
+            border-left: 3px solid #00ffff;
+            padding: 15px;
+            pointer-events: none;
+        }
+        h1 { margin: 0 0 5px 0; font-size: 14px; color: #00ffff; text-transform: uppercase; }
+        p { margin: 0; font-size: 11px; color: #aaa; }
+        
+        .status { margin-top: 10px; font-weight: bold; font-size: 10px; }
+        .scramble { color: #ff3333; }
+        .solve { color: #33ff33; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1>Timeline Coordinate: 2012</h1>
+        <p>The "Speedcuber" Era</p>
+        <p>Algorithmic Permutations & Group Theory</p>
+        <div id="status-text" class="status scramble">[SYSTEM STATE: INCREASING ENTROPY...]</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- 1. RUBIK'S CUBE CLASS (The Artifact) ---
+        class RubiksArtifact {
+            constructor(scene) {
+                this.scene = scene;
+                this.cubies = [];
+                this.group = new THREE.Group();
+                this.pivot = new THREE.Object3D(); // Helper for rotation
+                
+                // State Machine
+                this.isAnimating = false;
+                this.moveQueue = [];
+                this.historyStack = [];
+                this.mode = 'SCRAMBLE'; // 'SCRAMBLE' or 'SOLVE'
+                this.moveSpeed = 0.15; // Radians per frame
+                this.currentMove = null;
+                this.currentAngle = 0;
+
+                this.initGeometry();
+                this.group.add(this.pivot);
+                scene.add(this.group);
+                
+                // Start the logic loop
+                this.triggerNextPhase();
+            }
+
+            initGeometry() {
+                // Colors: Right(x+), Left(x-), Top(y+), Bottom(y-), Front(z+), Back(z-)
+                const colors = [0xff0000, 0xff8800, 0xffffff, 0xffff00, 0x00ff00, 0x0000ff];
+                const geo = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+
+                for (let x = -1; x <= 1; x++) {
+                    for (let y = -1; y <= 1; y++) {
+                        for (let z = -1; z <= 1; z++) {
+                            // Map materials based on position (black internal, colored external)
+                            const materials = colors.map((col, i) => {
+                                const isExternal = 
+                                    (i===0 && x===1) || (i===1 && x===-1) || 
+                                    (i===2 && y===1) || (i===3 && y===-1) || 
+                                    (i===4 && z===1) || (i===5 && z===-1);
+                                return new THREE.MeshBasicMaterial({ color: isExternal ? col : 0x111111 });
+                            });
+
+                            const mesh = new THREE.Mesh(geo, materials);
+                            mesh.position.set(x, y, z);
+                            mesh.userData = { initialPos: new THREE.Vector3(x, y, z) }; // Store logical ID
+                            this.cubies.push(mesh);
+                            this.group.add(mesh);
+                        }
+                    }
+                }
+            }
+
+            // --- THE LOGIC CORE ---
+            triggerNextPhase() {
+                const statusEl = document.getElementById('status-text');
+                
+                if (this.mode === 'SCRAMBLE') {
+                    // Generate 15 random moves
+                    for(let i=0; i<15; i++) {
+                        const axes = ['x', 'y', 'z'];
+                        const axis = axes[Math.floor(Math.random() * 3)];
+                        const slice = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+                        const dir = Math.random() > 0.5 ? 1 : -1;
+                        this.moveQueue.push({ axis, slice, dir });
+                    }
+                    statusEl.innerText = "[SYSTEM STATE: INCREASING ENTROPY...]";
+                    statusEl.className = "status scramble";
+                } else {
+                    // Reverse the history stack to SOLVE
+                    while(this.historyStack.length > 0) {
+                        const move = this.historyStack.pop();
+                        // Invert direction to solve
+                        this.moveQueue.push({ axis: move.axis, slice: move.slice, dir: -move.dir });
+                    }
+                    statusEl.innerText = "[SYSTEM STATE: RESTORING SYMMETRY...]";
+                    statusEl.className = "status solve";
+                }
+            }
+
+            update() {
+                // Animation Logic
+                if (this.isAnimating && this.currentMove) {
+                    const step = this.moveSpeed; // Speed of rotation
+                    this.currentAngle += step;
+
+                    if (this.currentAngle >= Math.PI / 2) {
+                        // Snap to exactly 90 degrees
+                        this.pivot.rotation[this.currentMove.axis] = this.currentMove.dir * Math.PI / 2;
+                        this.finishMove();
+                    } else {
+                        // Increment rotation
+                        this.pivot.rotation[this.currentMove.axis] = this.currentMove.dir * this.currentAngle;
+                    }
+                } 
+                else if (this.moveQueue.length > 0) {
+                    this.startMove(this.moveQueue.shift());
+                } 
+                else {
+                    // Queue empty: Switch modes
+                    this.mode = (this.mode === 'SCRAMBLE') ? 'SOLVE' : 'SCRAMBLE';
+                    setTimeout(() => this.triggerNextPhase(), 1000); // Pause before switching
+                }
+
+                // Orbital Physics (Hovering)
+                const time = Date.now() * 0.001;
+                this.group.rotation.y = time * 0.2;
+                this.group.rotation.x = Math.sin(time * 0.5) * 0.1;
+                this.group.position.y = Math.sin(time) * 0.5; // Bobbing
+            }
+
+            startMove(move) {
+                this.isAnimating = true;
+                this.currentMove = move;
+                this.currentAngle = 0;
+                
+                // 1. Reset Pivot
+                this.pivot.rotation.set(0, 0, 0);
+                this.pivot.position.set(0, 0, 0);
+                
+                // 2. Select Cubies in the Slice
+                // We must check world position because the cubes have moved!
+                const activeCubies = [];
+                const threshold = 0.1;
+
+                this.cubies.forEach(c => {
+                    // Get world position relative to group (local to the artifact)
+                    const localPos = c.position.clone(); 
+                    
+                    // Check if this cubie belongs to the slice
+                    let inSlice = false;
+                    if (move.axis === 'x' && Math.abs(localPos.x - move.slice) < threshold) inSlice = true;
+                    if (move.axis === 'y' && Math.abs(localPos.y - move.slice) < threshold) inSlice = true;
+                    if (move.axis === 'z' && Math.abs(localPos.z - move.slice) < threshold) inSlice = true;
+
+                    if (inSlice) {
+                        this.pivot.attach(c); // THREE.js magic: attaches object to parent without moving visually
+                        activeCubies.push(c);
+                    }
+                });
+                
+                // If in scramble mode, save this move to history so we can reverse it later
+                if (this.mode === 'SCRAMBLE') {
+                    this.historyStack.push(move);
+                }
+            }
+
+            finishMove() {
+                this.isAnimating = false;
+                
+                // Detach cubies from pivot back to the main group
+                // This "bakes" the transform into the cubie's new position/rotation
+                for (let i = this.pivot.children.length - 1; i >= 0; i--) {
+                    const c = this.pivot.children[i];
+                    this.group.attach(c); 
+                    
+                    // Round positions to integers to prevent floating point drift causing misalignment
+                    c.position.x = Math.round(c.position.x);
+                    c.position.y = Math.round(c.position.y);
+                    c.position.z = Math.round(c.position.z);
+                }
+                
+                this.pivot.rotation.set(0,0,0);
+            }
+        }
+
+        // --- 2. STANDARD THREE.JS BOILERPLATE ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.03);
+        
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(5, 5, 8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // --- 3. INSTANTIATE ARTIFACT ---
+        const rubiks = new RubiksArtifact(scene);
+
+        // Add a grid for context (representing the Timeline Manifold)
+        const grid = new THREE.GridHelper(20, 20, 0x00ffff, 0x111111);
+        grid.position.y = -3;
+        scene.add(grid);
+
+        // --- 4. RENDER LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            rubiks.update(); // Update the artifact physics
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

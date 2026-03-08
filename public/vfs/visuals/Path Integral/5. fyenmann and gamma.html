@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QFT Integrator | Beta & Gamma Functions v2</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        
+        .panel { 
+            position: absolute; background: rgba(5, 10, 15, 0.85); backdrop-filter: blur(8px); 
+            border-left: 2px solid #0ff; padding: 20px; pointer-events: auto;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1); border-radius: 0 4px 4px 0;
+        }
+        
+        #theory-panel { top: 30px; left: 30px; width: 340px; }
+        #control-panel { bottom: 30px; right: 30px; width: 350px; border-left: none; border-right: 2px solid #f0f; border-radius: 4px 0 0 4px; }
+        
+        h1 { font-size: 16px; margin: 0 0 10px 0; color: #0ff; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 8px rgba(0,255,255,0.5); }
+        h1.magenta { color: #f0f; text-shadow: 0 0 8px rgba(255,0,255,0.5); }
+        p { font-size: 11px; color: #88ccdd; line-height: 1.5; margin-bottom: 10px; }
+        
+        .math { font-style: italic; color: #fff; font-weight: bold; }
+        
+        .slider-container { margin-top: 20px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; color: #fff; margin-bottom: 8px; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #f0f; }
+        
+        .equation-box { margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.5); border: 1px dashed #f0f; font-size: 11px; text-align: center; }
+        .highlight { color: #f0f; font-weight: bold; }
+        
+        #instructions { position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: #555; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div id="theory-panel" class="panel">
+            <h1>1. The Gamma Manifold</h1>
+            <p>The surface below plots the complex magnitude <span class="math">y = |Γ(Re + i Im)|</span>.</p>
+            <p><strong>Positive Axis (Right):</strong> Exhibits the smooth "factorial valley" where <span class="math">Γ(n) = (n-1)!</span>, reaching a minimum at <span class="math">x ≈ 1.46</span> before growing exponentially.</p>
+            <p><strong>Negative Axis (Left):</strong> Contains the infinite topological poles (<span class="math">z = 0, -1, -2...</span>). In Dimensional Regularization, the ultraviolet divergences of loop integrals are isolated here.</p>
+            <div style="width: 100%; height: 1px; background: rgba(0,255,255,0.3); margin: 15px 0;"></div>
+            <h1>2. Dimensional Reg.</h1>
+            <p>The glowing cyan sphere represents the dimension parameter <span class="math">d</span> riding the surface along the real axis toward the <span class="math">z = 0</span> pole (<span class="math">d → 4</span>).</p>
+        </div>
+
+        <div id="control-panel" class="panel">
+            <h1 class="magenta">3. The Beta Morph</h1>
+            <p>To evaluate divergent integrals, Feynman parameterization collapses two distinct propagators (rings) into a single effective denominator (unified torus).</p>
+            
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>FEYNMAN PARAMETER (x)</span>
+                    <span id="x-val">0.00</span>
+                </div>
+                <input type="range" id="x-slider" min="0" max="1" step="0.01" value="0">
+            </div>
+
+            <div class="equation-box">
+                Effective Denominator:<br><br>
+                <span class="math">D = <span class="highlight" id="eq-x1">0.00</span>·A + <span class="highlight" id="eq-x2">1.00</span>·B</span>
+            </div>
+        </div>
+        
+        <div id="instructions">CLICK & DRAG TO ORBIT | SCROLL TO ZOOM</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- COMPLEX MATH KERNEL (LANCZOS APPROXIMATION) ---
+        function cAdd(a, b) { return {r: a.r+b.r, i: a.i+b.i}; }
+        function cSub(a, b) { return {r: a.r-b.r, i: a.i-b.i}; }
+        function cMul(a, b) { return {r: a.r*b.r - a.i*b.i, i: a.r*b.i + a.i*b.r}; }
+        function cDiv(a, b) { let d = b.r*b.r + b.i*b.i; return {r: (a.r*b.r + a.i*b.i)/d, i: (a.i*b.r - a.r*b.i)/d}; }
+        function cExp(a) { let e = Math.exp(a.r); return {r: e*Math.cos(a.i), i: e*Math.sin(a.i)}; }
+        function cLog(a) { return {r: Math.log(Math.sqrt(a.r*a.r + a.i*a.i)), i: Math.atan2(a.i, a.r)}; }
+        function cPow(a, b) { return cExp(cMul(b, cLog(a))); } 
+        function cSin(a) { return {r: Math.sin(a.r)*Math.cosh(a.i), i: Math.cos(a.r)*Math.sinh(a.i)}; }
+
+        function complexGamma(z) {
+            // Euler's Reflection Formula for negative real parts to accurately render poles
+            if (z.r < 0.5) {
+                let piZ = {r: Math.PI * z.r, i: Math.PI * z.i};
+                let bottom = cMul(cSin(piZ), complexGamma(cSub({r:1, i:0}, z)));
+                return cDiv({r: Math.PI, i: 0}, bottom);
+            }
+            
+            let z_sub = cSub(z, {r: 1, i: 0});
+            let p = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, 
+                     -176.61502916214059, 12.507343278224758, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+            let x = {r: p[0], i: 0};
+            for (let i = 1; i < 9; i++) {
+                x = cAdd(x, cDiv({r: p[i], i: 0}, cAdd(z_sub, {r: i, i: 0})));
+            }
+            let t = cAdd(z_sub, {r: 7.5, i: 0});
+            let term1 = cMul( cPow(t, cAdd(z_sub, {r: 0.5, i: 0})) , cExp(cMul({r:-1, i:0}, t)) );
+            return cMul( cMul({r: Math.sqrt(2*Math.PI), i:0}, term1), x);
+        }
+
+        function getGammaMagnitude(r, i) {
+            let g = complexGamma({r: r, i: i});
+            let mag = Math.sqrt(g.r*g.r + g.i*g.i);
+            if (isNaN(mag) || !isFinite(mag)) return 8.0; 
+            return mag;
+        }
+
+        // --- THREE.JS SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.015);
+        
+        // Adjusted camera to see the positive real axis clearly
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(2, 6, 10);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- 1. THE GAMMA MANIFOLD (CPU GENERATED) ---
+        // Expanded to 1:1 mapping with the complex plane from x=-4 to x=4
+        const planeSizeX = 8;
+        const planeSizeZ = 6;
+        const resolutionX = 200;
+        const resolutionZ = 150;
+        
+        const geo = new THREE.PlaneGeometry(planeSizeX, planeSizeZ, resolutionX, resolutionZ);
+        const pos = geo.attributes.position.array;
+        const colors = new Float32Array(pos.length);
+        const colObj = new THREE.Color();
+        const MAX_HEIGHT = 6.0; // Clamped to keep the exponential growth visually manageable
+
+        for (let i = 0; i < pos.length; i += 3) {
+            // 1:1 Mapping to the complex plane
+            let x = pos[i];        // Real axis (-4 to 4)
+            let y = pos[i+1];      // Imaginary axis (-3 to 3)
+            
+            let mag = getGammaMagnitude(x, y);
+            let height = Math.min(mag, MAX_HEIGHT);
+            pos[i+2] = height; 
+
+            // Map phase to color hue, magnitude to brightness
+            let g = complexGamma({r: x, i: y});
+            let phase = Math.atan2(g.i, g.r);
+            colObj.setHSL((phase + Math.PI)/(2*Math.PI), 1.0, 0.1 + 0.4*(height/MAX_HEIGHT));
+            colors[i] = colObj.r; colors[i+1] = colObj.g; colors[i+2] = colObj.b;
+        }
+        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geo.computeVertexNormals();
+        geo.rotateX(-Math.PI / 2); 
+
+        const mat = new THREE.MeshBasicMaterial({ vertexColors: true, wireframe: true, transparent: true, opacity: 0.4 });
+        const landscape = new THREE.Mesh(geo, mat);
+        landscape.position.y = -2;
+        scene.add(landscape);
+
+        // --- 2. DIMENSIONAL REGULARIZATION TRAJECTORY ---
+        const regGeo = new THREE.SphereGeometry(0.15, 16, 16);
+        const regMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+        const regSphere = new THREE.Mesh(regGeo, regMat);
+        scene.add(regSphere);
+
+        // Glowing trail strictly along the real axis, riding the physical surface
+        const trailMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.7, linewidth: 2 });
+        const trailPoints = [];
+        for(let x=4; x>=-4; x-=0.05) {
+            let h = Math.min(getGammaMagnitude(x, 0), MAX_HEIGHT);
+            trailPoints.push(new THREE.Vector3(x, -2 + h, 0));
+        }
+        const trailGeo = new THREE.BufferGeometry().setFromPoints(trailPoints);
+        scene.add(new THREE.Line(trailGeo, trailMat));
+
+        // --- 3. THE BETA MORPH (GPU RAYMARCHING) ---
+        const rmGeo = new THREE.BoxGeometry(10, 6, 6);
+        const rmMat = new THREE.ShaderMaterial({
+            uniforms: {
+                uFeynman: { value: 0.0 }, 
+                cameraPos: { value: camera.position }
+            },
+            vertexShader: `
+                varying vec3 vWorldPos;
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vWorldPos = worldPosition.xyz;
+                    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+                }
+            `,
+            fragmentShader: `
+                uniform float uFeynman;
+                uniform vec3 cameraPos;
+                varying vec3 vWorldPos;
+
+                float sdTorus( vec3 p, vec2 t ) {
+                    vec2 q = vec2(length(p.xy)-t.x, p.z);
+                    return length(q)-t.y;
+                }
+                
+                float smin( float a, float b, float k ) {
+                    float h = clamp( 0.5+0.5*(b-a)/k, 0.0, 1.0 );
+                    return mix( b, a, h ) - k*h*(1.0-h);
+                }
+
+                float map(vec3 p) {
+                    float dist = 2.5 * abs(uFeynman - 0.5) * 2.0; 
+                    vec3 pA = p - vec3(-dist, 0.0, 0.0);
+                    vec3 pB = p - vec3(dist, 0.0, 0.0);
+                    
+                    float thickness = 0.1 + 0.15*(1.0 - abs(uFeynman-0.5)*2.0);
+                    
+                    float dA = sdTorus(pA, vec2(1.2, thickness));
+                    float dB = sdTorus(pB, vec2(1.2, thickness));
+                    
+                    return smin(dA, dB, 0.8);
+                }
+
+                vec3 getNormal(vec3 p) {
+                    vec2 e = vec2(0.01, 0);
+                    return normalize(vec3(
+                        map(p + e.xyy) - map(p - e.xyy),
+                        map(p + e.yxy) - map(p - e.yxy),
+                        map(p + e.yyx) - map(p - e.yyx)
+                    ));
+                }
+
+                void main() {
+                    vec3 ro = cameraPos;
+                    vec3 rd = normalize(vWorldPos - cameraPos);
+                    
+                    float t = 0.0;
+                    float d = 0.0;
+                    for(int i=0; i<64; i++) {
+                        vec3 p = ro + rd * t;
+                        d = map(p);
+                        if(d < 0.005 || t > 25.0) break;
+                        t += d;
+                    }
+
+                    if(d < 0.01) {
+                        vec3 p = ro + rd * t;
+                        vec3 n = getNormal(p);
+                        
+                        vec3 colorA = vec3(0.0, 1.0, 1.0); 
+                        vec3 colorB = vec3(1.0, 0.0, 1.0); 
+                        vec3 baseColor = mix(colorA, colorB, uFeynman);
+                        
+                        float diff = max(dot(n, normalize(vec3(1.0, 2.0, 1.0))), 0.0);
+                        vec3 col = baseColor * diff + vec3(0.1);
+                        
+                        float rim = 1.0 - max(dot(normalize(cameraPos - p), n), 0.0);
+                        col += mix(colorA, colorB, uFeynman) * pow(rim, 3.0);
+
+                        gl_FragColor = vec4(col, 0.95);
+                    } else {
+                        discard;
+                    }
+                }
+            `,
+            transparent: true,
+            side: THREE.BackSide 
+        });
+        
+        const betaMorphBox = new THREE.Mesh(rmGeo, rmMat);
+        betaMorphBox.position.set(0, 4, 0); 
+        scene.add(betaMorphBox);
+
+        // --- UI INTERACTION ---
+        const slider = document.getElementById('x-slider');
+        const xVal = document.getElementById('x-val');
+        const eq1 = document.getElementById('eq-x1');
+        const eq2 = document.getElementById('eq-x2');
+
+        slider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            xVal.innerText = val.toFixed(2);
+            eq1.innerText = val.toFixed(2);
+            eq2.innerText = (1 - val).toFixed(2);
+            rmMat.uniforms.uFeynman.value = val;
+        });
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Dimensional Regularization sphere oscillating across the real axis
+            let d_pos = 4.0 - (time % 8); // Sweeps from +4 down to -4
+            
+            // Calculate the exact surface height for the sphere to physically ride the manifold
+            let h = Math.min(getGammaMagnitude(d_pos, 0), MAX_HEIGHT);
+            regSphere.position.set(d_pos, -2 + h, 0);
+            
+            // Pulse the sphere scale when it hits the poles
+            if(d_pos < 0.5 && Math.abs(d_pos - Math.round(d_pos)) < 0.2) {
+                regSphere.scale.setScalar(1.0 + Math.sin(time*20)*0.5);
+            } else {
+                regSphere.scale.setScalar(1.0);
+            }
+
+            rmMat.uniforms.cameraPos.value.copy(camera.position);
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
