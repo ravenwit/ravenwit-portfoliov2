@@ -49,6 +49,9 @@
     /* Hidden purely by opacity instead of sliding to prepare for animation */
     opacity: 0;
     visibility: hidden;
+
+    /* True SVG Barrel Distortion computed by JS */
+    filter: url(#crt-barrel-distortion);
 }
 
 #terminal-overlay.terminal-open {
@@ -68,34 +71,34 @@
 @keyframes crt-turn-on {
     0% {
         transform: scale(1, 0.005) translate3d(0, 0, 0);
-        filter: brightness(4);
+        filter: url(#crt-barrel-distortion) brightness(4);
     }
 
     40% {
         transform: scale(1, 0.005) translate3d(0, 0, 0);
-        filter: brightness(2);
+        filter: url(#crt-barrel-distortion) brightness(2);
     }
 
     100% {
         transform: scale(1, 1) translate3d(0, 0, 0);
-        filter: brightness(1);
+        filter: url(#crt-barrel-distortion) brightness(1);
     }
 }
 
 @keyframes crt-turn-off {
     0% {
         transform: scale(1, 1) translate3d(0, 0, 0);
-        filter: brightness(1);
+        filter: url(#crt-barrel-distortion) brightness(1);
     }
 
     60% {
         transform: scale(1, 0.005) translate3d(0, 0, 0);
-        filter: brightness(4);
+        filter: url(#crt-barrel-distortion) brightness(4);
     }
 
     100% {
         transform: scale(0, 0.005) translate3d(0, 0, 0);
-        filter: brightness(10);
+        filter: url(#crt-barrel-distortion) brightness(10);
     }
 }
 

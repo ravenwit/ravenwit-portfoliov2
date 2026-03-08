@@ -2,13 +2,16 @@ import * as THREE from 'three';
 import { playKeystroke, playEnterKey, playCRTBoot } from './terminalUtils/audio.js';
 import { cmdPing, cmdNmap } from './terminalUtils/network.js';
 import { cmdChat } from './terminalUtils/ai.js';
-import { cmdHexdump } from './terminalUtils/visualizers.js';
+import { cmdHexdump, injectSVGBarrelDistortion } from './terminalUtils/visualizers.js';
 
 // Terminal overlay component
 // Implements the hidden diegetic command line interface
 
 export class TerminalController {
     constructor() {
+        // Inject the mathematical SVG map into the DOM once
+        injectSVGBarrelDistortion();
+
         this.overlay = document.getElementById('terminal-overlay');
         this.input = document.getElementById('terminal-input');
         this.historyContainer = document.getElementById('terminal-history');

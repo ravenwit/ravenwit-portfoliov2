@@ -1,5 +1,66 @@
 // src/components/terminalUtils/visualizers.js
-// Handles complex data output and hex streams.
+// Handles complex data output and hex streams, and hardware visual filters.
+
+export function injectSVGBarrelDistortion() {
+    if (document.getElementById('crt-barrel-distortion')) return;
+
+    // Generate a 512x512 spherical normal map using a hidden canvas
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.createImageData(size, size);
+
+    // k is the distortion coefficient. Positive values create a barrel (fisheye) distortion.
+    const k = 0.25;
+
+    // Max displacement distance at corners (where r^2 = 2 on normalized [-1, 1] grid)
+    const max_d = k * 2;
+
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            // Normalize current coordinate to [-1, 1]
+            const nx = (x / size) * 2 - 1;
+            const ny = (y / size) * 2 - 1;
+
+            const r2 = nx * nx + ny * ny;
+
+            // Calculate pixel pull inward
+            let dx = nx * k * r2;
+            let dy = ny * k * r2;
+
+            // Map offset delta (-max_d .. max_d) to RGB 8-bit space (0..255)
+            // 128 is center (no displacement)
+            const rVal = Math.floor(((dx / max_d) * 0.5 + 0.5) * 255);
+            const gVal = Math.floor(((dy / max_d) * 0.5 + 0.5) * 255);
+
+            const index = (y * size + x) * 4;
+            imgData.data[index + 0] = rVal; // Red channel dictates X displacement
+            imgData.data[index + 1] = gVal; // Green channel dictates Y displacement
+            imgData.data[index + 2] = 0;
+            imgData.data[index + 3] = 255;
+        }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    const dataUrl = canvas.toDataURL('image/png');
+
+    const svgStr = `
+        <svg xmlns="http://www.w3.org/2000/svg" style="position: absolute; width: 0; height: 0;">
+            <defs>
+                <filter id="crt-barrel-distortion" x="-20%" y="-20%" width="140%" height="140%">
+                    <feImage href="${dataUrl}" result="map" preserveAspectRatio="none" x="0" y="0" width="100%" height="100%" />
+                    <feDisplacementMap in="SourceGraphic" in2="map" scale="70" xChannelSelector="R" yChannelSelector="G" />
+                </filter>
+            </defs>
+        </svg>
+    `;
+
+    const div = document.createElement('div');
+    div.innerHTML = svgStr;
+    document.body.appendChild(div);
+}
 
 export function cmdHexdump(args, terminal) {
     const filename = args.length > 0 ? args[0] : 'sys.mem';
