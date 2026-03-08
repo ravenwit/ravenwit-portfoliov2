@@ -392,7 +392,10 @@ pre.ascii-logo {
 /* Responsive adjustments */
 @media (max-width: 768px) {
     #terminal-overlay {
-        height: 85vh;
+        top: calc(50vh - 45vmin);
+        left: calc(50vw - 45vmin);
+        width: 90vmin;
+        height: 90vmin;
         font-size: 1.2rem;
     }
 

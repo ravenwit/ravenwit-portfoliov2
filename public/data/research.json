@@ -2,7 +2,7 @@
     {
         "id": "2016",
         "title": "Radioactive Waste Disposal",
-        "desc": "We evaluate the feasibility of nuclear waste disposal via solar impact versus asteroid belt storage. The required $\\Delta v$ to reach the asteroid belt $(6.274 \text{ km/s})$ is lower than the requirements for direct solar impact $(29.8 \text{ km/s})$ or a Jupiter swing-by $(7.174 \text{ km/s})$. Furthermore, the calculated collision frequency in the asteroid belt is negligible $(3.49 \times 10^{17} \text{ years} / \text{km}^2)$. Due to these lower orbital energy requirements and minimal collision risk, we conclude that asteroid belt storage presents a safer and more viable disposal method.",
+        "desc": "We evaluate the feasibility of nuclear waste disposal via solar impact versus asteroid belt storage. The required $\\Delta v$ to reach the asteroid belt $(6.274 \\text{ km/s})$ is lower than the requirements for direct solar impact $(29.8 \\text{ km/s})$ or a Jupiter swing-by $(7.174 \\text{ km/s})$. Furthermore, the calculated collision frequency in the asteroid belt is negligible $(3.49 \\times 10^{17} \\text{ years} / \\text{km}^2)$. Due to these lower orbital energy requirements and minimal collision risk, we conclude that asteroid belt storage presents a safer and more viable disposal method.",
         "tags": [
             "Hohman Transfer",
             "Orbital Mechanics",

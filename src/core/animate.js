@@ -47,7 +47,8 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                         if (tt < 1) requestAnimationFrame(hLoop);
                     };
                     hLoop();
-                    document.getElementById('status-display').innerText = "SYSTEM_READY";
+                    const statusEl = document.getElementById('status-display');
+                    if (statusEl) statusEl.innerText = "SYSTEM_READY";
                 }
             }
             torusMesh.rotation.z += 0.002;

@@ -1,11 +1,11 @@
-export function initSatelliteLabel(containerId, buttonId, orbitRadius = 350, orbitSpeed = 0.001, initialAngle = 0) {
+export function initSatelliteLabel(containerId, buttonId, baseRadius = 350, orbitSpeed = 0.001, initialAngle = 0) {
     const container = document.getElementById(containerId);
     const button = document.getElementById(buttonId);
     if (!container || !button) return;
 
     let time = initialAngle;
     let isHovered = false;
-    let currentRadius = orbitRadius;
+    let currentRadius = baseRadius;
 
     // Center coordinates relative to the screen, we'll anchor it purely via transform
     // so we don't strictly need to track top/left offset in JS for the base orbit.
@@ -35,6 +35,14 @@ export function initSatelliteLabel(containerId, buttonId, orbitRadius = 350, orb
         isHovered = false;
     });
 
+    function getDynamicRadius() {
+        // Scale proportionally to viewport based on a 1080p standard (min dimension ~900 to 1080)
+        const minDim = Math.min(window.innerWidth, window.innerHeight);
+        const scale = minDim / 900;
+        // Clamp scale to not be too small on very small screens, though mobile has its own redirect
+        return baseRadius * Math.max(0.5, Math.min(scale, 1.2));
+    }
+
     function animate() {
         requestAnimationFrame(animate);
 
@@ -42,13 +50,15 @@ export function initSatelliteLabel(containerId, buttonId, orbitRadius = 350, orb
         mouseX += (targetX - mouseX) * 0.1;
         mouseY += (targetY - mouseY) * 0.1;
 
+        const dynamicTargetRadius = getDynamicRadius();
+
         // If hovered, pause time accumulator and slightly bump radius
         if (isHovered) {
-            currentRadius += (orbitRadius * 1.05 - currentRadius) * 0.1;
+            currentRadius += (dynamicTargetRadius * 1.05 - currentRadius) * 0.1;
         } else {
             time += orbitSpeed;
             // Smoothly return radius
-            currentRadius += (orbitRadius - currentRadius) * 0.1;
+            currentRadius += (dynamicTargetRadius - currentRadius) * 0.1;
         }
 
         // Calculate orbit positions

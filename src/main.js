@@ -151,8 +151,8 @@ async function init() {
     });
 
     import('./components/satellite.js').then(module => {
-        module.initSatelliteLabel('cv-satellite-container', 'cv-satellite', 270, 0.0015);
-        module.initSatelliteLabel('resume-satellite-container', 'resume-satellite', 270, 0.0015, Math.PI);
+        module.initSatelliteLabel('cv-satellite-container', 'cv-satellite', 340, 0.0015);
+        module.initSatelliteLabel('resume-satellite-container', 'resume-satellite', 340, 0.0017, Math.PI);
     });
 
     import('./components/social.js').then(module => {

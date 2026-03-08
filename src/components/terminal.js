@@ -46,7 +46,8 @@ export class TerminalController {
                     "nmap": (args) => cmdNmap(args, this),
                     "chat": (args) => cmdChat(args, this),
                     "hexdump": (args) => cmdHexdump(args, this),
-                    "whoami": this.cmdWhoami.bind(this)
+                    "whoami": this.cmdWhoami.bind(this),
+                    "tauism": this.cmdTauism.bind(this)
                 }
             }
         };
@@ -370,6 +371,7 @@ export class TerminalController {
   chat        Initialize local LLM chat interface
   hexdump     Read memory ranges
   whoami      Display system insignia
+  tauism      3D manifold explorer based on Frenet–Serret frames
   clear       Clear terminal output
   sudo        Elevate privileges
   help        Show this message`;
@@ -378,6 +380,11 @@ export class TerminalController {
     cmdWhoami() {
         // Enclose in <pre> to preserve all whitespace and line breaks perfectly in HTML
         return `<pre class="ascii-logo">${ASCII_LOGO}</pre>`;
+    }
+
+    cmdTauism() {
+        window.open('https://tauism-941215853460.us-west1.run.app/', '_blank');
+        return 'Opening Tauism - 3D Manifold Explorer...';
     }
 
     cmdLs(args) {

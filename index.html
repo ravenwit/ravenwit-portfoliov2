@@ -8,6 +8,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shakir Ahmed (Ravenwit)</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Portfolio of Shakir Ahmed (Ravenwit).">
+    <meta name="keywords" content="Shakir Ahmed, Ravenwit">
+    <meta name="author" content="Shakir Ahmed">
+
+    <!-- Open Graph / LinkedIn / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ravenwit.github.io/">
+    <meta property="og:title" content="Shakir Ahmed (Ravenwit) | Portfolio">
+    <meta property="og:description" content="Interactive Spacetime Portfolio.">
+    <meta property="og:image" content="https://ravenwit.github.io/og-image.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://ravenwit.github.io/">
+    <meta name="twitter:title" content="Shakir Ahmed (Ravenwit) | Portfolio">
+    <meta name="twitter:description" content="Interactive Spacetime Portfolio.">
+    <meta name="twitter:image" content="https://ravenwit.github.io/og-image.png">
+
+    <!-- Favicons (Placeholders, add actual files to /public) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="canonical" href="https://ravenwit.github.io/" />
+
+    <!-- Resource Hints: Preload critical CSS -->
+    <link rel="preload" href="/src/styles/main.css" as="style">
     <script>
         // Mobile fallback mechanism: redirect to previous portfolio on small screens dynamically
         function checkMobileFallback() {
@@ -94,12 +122,13 @@
         <div id="liquid-name-container"
             style="position: absolute; width: 500px; height: 120px; top: calc(50% - 170px); left: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: auto; cursor: crosshair;">
             <canvas id="liquidNameCanvas" width="500" height="120"
-                style="width:100%; height:100%; pointer-events: auto;"></canvas>
+                style="width:100%; height:100%; pointer-events: auto;" aria-label="Interactive liquid name animation"
+                role="img"></canvas>
         </div>
         <div id="fourier-container"
             style="position: absolute; width: 600px; height: 600px; top: calc(50% + 30px);; left: 50%; transform: translate(-50%, -50%); z-index: 5;">
-            <canvas id="fourierCanvas" width="600" height="600"
-                style="width:100%; height:100%; border-radius: 50%;"></canvas>
+            <canvas id="fourierCanvas" width="600" height="600" style="width:100%; height:100%; border-radius: 50%;"
+                aria-label="Fourier series orbital animation" role="img"></canvas>
         </div>
 
         <!-- Orbital CV Button -->
@@ -195,7 +224,7 @@
     <!-- RESEARCH PHASE UI -->
     <div id="ui-research" class="ui-layer" style="display: none; opacity: 0;">
         <div id="noise-overlay"></div>
-        <canvas id="research-bg-canvas"></canvas>
+        <canvas id="research-bg-canvas" aria-label="Research phase background animation" role="img"></canvas>
         <div id="left-hemi"></div>
         <div id="right-hemi">
             <div id="research-cards-container"></div>
@@ -219,7 +248,7 @@
             <div class="terminal-input-row">
                 <span id="terminal-prompt" class="terminal-prompt">[user@raven ~]$</span>
                 <input type="text" id="terminal-input" class="terminal-input" autocomplete="off" spellcheck="false"
-                    autofocus />
+                    aria-labelledby="terminal-prompt" />
                 <span class="terminal-cursor"></span>
             </div>
         </div>
