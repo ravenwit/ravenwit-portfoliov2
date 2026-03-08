@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riemann Hydrodynamics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; outline: none; }
+        .label-3d {
+            position: absolute;
+            color: #ff0055;
+            font-size: 14px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0 0 5px #ff0055, 0 0 10px black;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s ease;
+        }
+        /* Custom scrollbar for info panel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+    
+    <!-- Import Maps for Three.js and Addons -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- UI Overlay -->
+    <div class="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-6 md:p-8">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start pointer-events-auto gap-4">
+            <div class="flex flex-col backdrop-blur-sm rounded-lg p-2">
+                <h1 class="text-3xl md:text-5xl font-black text-white tracking-tighter mix-blend-difference" style="text-shadow: 0 0 20px rgba(6,182,212,0.3);">
+                    RIEMANN <span class="text-cyan-400">FLOW</span>
+                </h1>
+                <span class="text-xs font-mono text-cyan-600 uppercase tracking-widest mt-1">
+                    Topological Hydrodynamics (Rizzo, 2024)
+                </span>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex gap-2 bg-slate-900/50 backdrop-blur-md p-1 rounded-lg border border-slate-800">
+                <button id="btn-symphony" class="px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all bg-transparent text-slate-400 hover:text-white cursor-pointer hover:bg-slate-800">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    Fourier Symphony
+                </button>
+                <button id="btn-hydro" class="px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all bg-pink-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.6)] cursor-pointer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>
+                    Vortex Flow (3D)
+                </button>
+                 <button id="btn-tunnel" class="px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all bg-transparent text-slate-400 hover:text-white cursor-pointer hover:bg-slate-800">
+                    <!-- Spiral Icon -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M15.5 17.5 12 14"/></svg>
+                    Zeta Tunnel
+                </button>
+            </div>
+        </div>
+
+        <!-- Dynamic Info Panel -->
+        <div class="flex flex-col gap-4 pointer-events-auto mt-auto md:mt-0">
+            
+            <!-- Hydro Panel -->
+            <div id="panel-hydro" class="fade-in bg-slate-950/80 backdrop-blur-xl border-l-4 border-pink-500 p-6 rounded-r-xl max-w-md shadow-2xl">
+                <h2 class="text-2xl font-bold text-white mb-2 font-mono flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
+                    The Prime Vortices
+                </h2>
+                <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                    Visualizing the <strong>3D Zeta Flow</strong> $\zeta(L)$. The red singularities represent the non-trivial zeros on the critical line ($Re(s)=1/2$).
+                </p>
+                <div class="text-xs text-slate-400 font-mono border-t border-slate-800 pt-3 space-y-2">
+                    <div class="flex justify-between items-center text-pink-400">
+                        <span>Vorticity Equation:</span>
+                        <span class="opacity-75">Eq (7)</span>
+                    </div>
+                    <p class="bg-slate-900/50 p-2 rounded text-slate-300">
+                        $\nabla \times \zeta(L) = \sum \delta(L - L_i)\omega_i$
+                    </p>
+                    <p class="text-slate-500 italic">Particles accelerate and curl around the singularities, mimicking Kolmogorov turbulence.</p>
+                </div>
+            </div>
+
+            <!-- Symphony Panel -->
+            <div id="panel-symphony" class="hidden fade-in bg-slate-950/80 backdrop-blur-xl border-l-4 border-cyan-500 p-6 rounded-r-xl max-w-md shadow-2xl">
+                <h2 class="text-2xl font-bold text-white mb-2 font-mono flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                    Euler's Symphony
+                </h2>
+                <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                    Decomposing $\zeta(s)$ into frequencies. Each vector represents a term $n^{-s}$ rotating in the complex plane.
+                </p>
+                <div class="mt-4 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <label id="label-t" class="text-xs font-mono text-cyan-400 font-bold">Im(s) = t: 14.13</label>
+                        <button id="btn-play-symphony" class="text-xs flex items-center gap-1 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 px-2 py-1 rounded transition-colors">
+                            <svg id="icon-play" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            <svg id="icon-pause" class="hidden" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            <span id="text-play">AUTO</span>
+                        </button>
+                    </div>
+                    <input id="slider-t" type="range" min="0" max="60" step="0.001" value="14.13" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                    <div class="flex justify-between text-[10px] text-slate-600 mt-1 font-mono">
+                        <span>0</span>
+                        <span>First Zero (14.13)</span>
+                        <span>60</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tunnel Panel -->
+            <div id="panel-tunnel" class="hidden fade-in bg-slate-950/80 backdrop-blur-xl border-l-4 border-purple-500 p-6 rounded-r-xl max-w-md shadow-2xl">
+                <h2 class="text-2xl font-bold text-white mb-2 font-mono flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+                    3D Fourier Construction
+                </h2>
+                <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                    This is the 3D extrusion of the Fourier Symphony. 
+                    The camera follows the vector chain as it spirals through time ($t$), tracing the complex modes.
+                </p>
+                <div class="mt-4 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <label id="label-tunnel-t" class="text-xs font-mono text-purple-400 font-bold">Im(s) = t: 0.00</label>
+                        <button id="btn-play-tunnel" class="text-xs flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 px-2 py-1 rounded transition-colors">
+                            <svg id="icon-play-tunnel" class="hidden" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            <svg id="icon-pause-tunnel" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            <span id="text-play-tunnel">PAUSE</span>
+                        </button>
+                    </div>
+                    <input id="slider-tunnel" type="range" min="0" max="1" step="0.001" value="0" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                </div>
+                <div class="text-xs text-slate-400 font-mono border-t border-slate-800 pt-3 mt-3">
+                    <p class="text-purple-300 mb-2"><strong>Visuals:</strong></p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li><span class="text-white">Arrows:</span> The instantaneous Fourier summation at current $t$.</li>
+                        <li><span class="text-cyan-400">Lines:</span> Trails of individual partial sums (N=1, 2, 3...) showing the internal helix structure.</li>
+                        <li><span class="text-purple-400">Thick Tube:</span> The final path of $\zeta(1/2 + it)$.</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="text-xs text-slate-600 font-mono text-right pointer-events-none opacity-50">
+            Visualization generated for Analysis of Rizzo (2024) | WebGL 2.0
+        </div>
+    </div>
+
+    <!-- 3D Container -->
+    <div id="labels-container"></div>
+    <canvas id="gl"></canvas>
+
+    <!-- Main Logic -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+        // --- MATH CONSTANTS ---
+        const ZEROS = [14.13, 21.02, 25.01, 30.42, 32.93, 37.58, 40.91, 43.32, 48.00, 49.77, 52.97, 56.44];
+        
+        // --- STATE ---
+        let currentMode = 'hydro';
+        let tParam = 14.13;
+        let isPlaying = false;
+        let isDraggingSlider = false;
+
+        // Tunnel State
+        let isTunnelPlaying = true;
+        let isTunnelDragging = false;
+        
+        // --- THREE JS SETUP ---
+        const canvas = document.querySelector('#gl');
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas, 
+            antialias: false,
+            powerPreference: "high-performance",
+            alpha: false
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0; 
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020617, 0.015);
+        scene.background = new THREE.Color(0x020617);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(12, 15, 12);
+
+        const controls = new OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 20, 0);
+
+        // --- POST PROCESSING ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.15; 
+        bloomPass.strength = 0.6; 
+        bloomPass.radius = 0.2; 
+
+        const outputPass = new OutputPass();
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+        composer.addPass(outputPass);
+
+        // --- GROUPS ---
+        const hydroGroup = new THREE.Group();
+        const symphonyGroup = new THREE.Group();
+        const tunnelGroup = new THREE.Group(); // New Group
+        symphonyGroup.visible = false; 
+        tunnelGroup.visible = false;
+        
+        scene.add(hydroGroup);
+        scene.add(symphonyGroup);
+        scene.add(tunnelGroup);
+
+        // --- STARS BACKGROUND ---
+        const starCount = 3000;
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = new Float32Array(starCount * 3);
+        const starSizes = new Float32Array(starCount);
+        
+        for(let i=0; i<starCount; i++) {
+            const r = 100 + Math.random() * 200; 
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            starPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+            starPos[i*3+2] = r * Math.cos(phi);
+            starSizes[i] = Math.random() * 1.5;
+        }
+        
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+        
+        const starMat = new THREE.PointsMaterial({
+            color: 0x88ccff,
+            size: 0.5,
+            transparent: true,
+            opacity: 0.6,
+            sizeAttenuation: true
+        });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+
+        // ==========================================
+        // 1. HYDRODYNAMIC FLOW
+        // ==========================================
+        const particleCount = 4000;
+        const pGeo = new THREE.SphereGeometry(0.06, 8, 8);
+        const pMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+        const pMesh = new THREE.InstancedMesh(pGeo, pMat, particleCount);
+        pMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        pMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(particleCount * 3), 3);
+        hydroGroup.add(pMesh);
+
+        const pData = new Float32Array(particleCount * 4); 
+        const pVel = new Float32Array(particleCount * 3); 
+        const dummy = new THREE.Object3D();
+        const colorDummy = new THREE.Color();
+
+        for (let i = 0; i < particleCount; i++) {
+            resetParticle(i);
+            pData[i*4 + 1] = Math.random() * 60; 
+        }
+
+        function resetParticle(i) {
+            pData[i*4] = (Math.random() - 0.5) * 6 + 0.5; 
+            pData[i*4 + 1] = 0; 
+            pData[i*4 + 2] = (Math.random() - 0.5) * 6; 
+            pData[i*4 + 3] = 0; 
+
+            pVel[i*3] = 0;
+            pVel[i*3+1] = 0.02 + Math.random() * 0.05; 
+            pVel[i*3+2] = 0;
+        }
+
+        const zeroLabelElements = [];
+        const labelsContainer = document.getElementById('labels-container');
+
+        ZEROS.forEach((z, i) => {
+            const ringGeo = new THREE.TorusGeometry(0.4, 0.02, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.8 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            const coreGeo = new THREE.SphereGeometry(0.1, 16, 16);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            
+            ring.add(core);
+            ring.position.set(0.5, z, 0);
+            ring.rotation.x = Math.PI / 2;
+            ring.userData = { speed: (Math.random() * 0.05) + 0.02, offset: Math.random() * Math.PI };
+            
+            hydroGroup.add(ring);
+
+            const div = document.createElement('div');
+            div.className = 'label-3d';
+            div.innerHTML = `&rho;<sub>${i+1}</sub>`;
+            labelsContainer.appendChild(div);
+            zeroLabelElements.push({ element: div, position: ring.position, obj: ring });
+        });
+
+        const linePts = [new THREE.Vector3(0.5, -5, 0), new THREE.Vector3(0.5, 65, 0)];
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(linePts);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+        const critLine = new THREE.Line(lineGeo, lineMat);
+        hydroGroup.add(critLine);
+
+
+        function updateHydro(time) {
+            const dt = 0.016;
+            for (let i = 0; i < particleCount; i++) {
+                const ix = i*4;
+                const iv = i*3;
+                let px = pData[ix], py = pData[ix+1], pz = pData[ix+2];
+                let fx = 0, fy = 0, fz = 0;
+
+                const distToCrit = 0.5 - px;
+                fx += distToCrit * 0.05; 
+                fx += Math.sin(py * 0.5 + time) * 0.002;
+                fz += Math.cos(py * 0.3 + time) * 0.002;
+
+                let maxVorticity = 0;
+                for(let zIdx = 0; zIdx < ZEROS.length; zIdx++) {
+                    const zt = ZEROS[zIdx];
+                    const dy = py - zt;
+                    if (Math.abs(dy) < 4) {
+                        const dx = px - 0.5;
+                        const dz = pz;
+                        const distSq = dx*dx + dz*dz + dy*dy;
+                        if (distSq < 10) {
+                            const strength = 0.5 / (distSq + 0.1);
+                            fx += -dz * strength * 2.0;
+                            fz += dx * strength * 2.0;
+                            fy -= dy * 0.1 * strength;
+                            maxVorticity = Math.max(maxVorticity, strength);
+                        }
+                    }
+                }
+
+                pVel[iv] += fx * dt; pVel[iv+1] += fy * dt; pVel[iv+2] += fz * dt;
+                pVel[iv] *= 0.96; pVel[iv+1] *= 0.98; pVel[iv+2] *= 0.96;
+                if (pVel[iv+1] < 0.05) pVel[iv+1] += 0.002;
+
+                pData[ix] += pVel[iv]; pData[ix+1] += pVel[iv+1]; pData[ix+2] += pVel[iv+2];
+
+                if (pData[ix+1] > 65 || Math.abs(pData[ix]-0.5) > 10 || Math.abs(pData[ix+2]) > 10) {
+                    resetParticle(i);
+                }
+
+                dummy.position.set(pData[ix], pData[ix+1], pData[ix+2]);
+                const speed = Math.sqrt(pVel[iv]*pVel[iv] + pVel[iv+1]*pVel[iv+1] + pVel[iv+2]*pVel[iv+2]);
+                dummy.scale.setScalar(0.5 + speed * 2);
+                dummy.updateMatrix();
+                pMesh.setMatrixAt(i, dummy.matrix);
+
+                const hue = 0.55 - (maxVorticity * 0.2); 
+                const lightness = 0.5 + (maxVorticity * 0.5);
+                colorDummy.setHSL(hue < 0 ? 0.9 : hue, 1.0, Math.min(1, lightness));
+                pMesh.setColorAt(i, colorDummy);
+            }
+            pMesh.instanceMatrix.needsUpdate = true;
+            pMesh.instanceColor.needsUpdate = true;
+            hydroGroup.children.forEach(child => {
+                if (child.userData.speed) {
+                    child.rotation.z = time * child.userData.speed + child.userData.offset;
+                    child.rotation.x = (Math.PI/2) + Math.sin(time + child.userData.offset) * 0.2;
+                }
+            });
+            updateLabels();
+        }
+
+        function updateLabels() {
+            zeroLabelElements.forEach(item => {
+                const vec = item.position.clone();
+                vec.project(camera);
+                if (vec.z > 1) { item.element.style.opacity = 0; return; }
+                const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-(vec.y * 0.5) + 0.5) * window.innerHeight;
+                if (x < 0 || x > window.innerWidth || y < 0 || y > window.innerHeight) {
+                     item.element.style.opacity = 0;
+                } else {
+                     item.element.style.opacity = 1;
+                     item.element.style.left = `${x}px`;
+                     item.element.style.top = `${y}px`;
+                }
+            });
+        }
+
+
+        // ==========================================
+        // 2. SYMPHONY IMPLEMENTATION
+        // ==========================================
+        const terms = 30;
+        const vectorMeshes = [];
+        const maxTrail = 2000;
+        
+        const trailGeo = new THREE.BufferGeometry();
+        const trailPos = new Float32Array(maxTrail * 3);
+        trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+        const trailMat = new THREE.LineBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.8, linewidth: 2 });
+        const trailLine = new THREE.Line(trailGeo, trailMat);
+        symphonyGroup.add(trailLine);
+
+        const resGlow = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        symphonyGroup.add(resGlow);
+
+        for(let i=0; i<terms; i++) {
+            const group = new THREE.Group();
+            const geo = new THREE.CylinderGeometry(0.02, 0.02, 1, 8);
+            geo.translate(0, 0.5, 0); geo.rotateZ(-Math.PI/2); 
+            const hue = i / terms;
+            const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(hue, 1, 0.5) });
+            const mesh = new THREE.Mesh(geo, mat);
+            group.add(mesh);
+            symphonyGroup.add(group);
+            vectorMeshes.push({ group, mesh, len: 1 });
+        }
+        const symGrid = new THREE.GridHelper(20, 20, 0x222222, 0x111111);
+        symGrid.rotation.x = Math.PI/2;
+        symphonyGroup.add(symGrid);
+
+        function updateSymphony() {
+            let currentX = 0, currentY = 0;
+            const s_real = 0.5;
+            for (let n = 1; n <= terms; n++) {
+                const idx = n - 1;
+                const mag = Math.pow(n, -s_real);
+                const phase = -tParam * Math.log(n);
+                const dx = mag * Math.cos(phase);
+                const dy = mag * Math.sin(phase);
+                const vecObj = vectorMeshes[idx];
+                vecObj.group.position.set(currentX, currentY, 0);
+                vecObj.group.scale.set(mag, mag, mag);
+                vecObj.group.rotation.z = phase;
+                currentX += dx; currentY += dy;
+            }
+            resGlow.position.set(currentX, currentY, 0);
+            for(let i = maxTrail - 1; i > 0; i--) {
+                trailPos[i*3] = trailPos[(i-1)*3];
+                trailPos[i*3+1] = trailPos[(i-1)*3+1];
+                trailPos[i*3+2] = trailPos[(i-1)*3+2];
+            }
+            trailPos[0] = currentX; trailPos[1] = currentY; trailPos[2] = 0;
+            trailLine.geometry.attributes.position.needsUpdate = true;
+        }
+
+
+        // ==========================================
+        // 3. ZETA TUNNEL IMPLEMENTATION (Redesigned)
+        // ==========================================
+        
+        // --- 3.1 Data Structures for Tunnel ---
+        const tunnelParams = {
+            tMax: 60,
+            samples: 1200,
+            zScale: 0.8 // How much Z distance per unit of t
+        };
+
+        // We will visualize specific partial sums to show the inner structure
+        // showing N=1 (straight), N=2 (first helix), N=5, N=10, N=30 (final)
+        const partialSumIndices = [1, 2, 3, 5, 8, 13, 21, 30]; 
+        const tunnelLines = []; // Stores the Line meshes
+        
+        // We also need a "Symphony 3D" vector chain that moves at the head
+        const sym3DGroup = new THREE.Group();
+        const sym3DVectors = [];
+        tunnelGroup.add(sym3DGroup);
+
+        // --- 3.2 Initialize Tunnel Geometries ---
+        
+        // A. Pre-calculate paths for all chosen partial sums
+        const partialPaths = {}; // Key: N, Value: Array of Vector3
+        
+        // Fill data
+        for (let i = 0; i <= tunnelParams.samples; i++) {
+            const t = (i / tunnelParams.samples) * tunnelParams.tMax;
+            const z = t * tunnelParams.zScale; // Map t to Z-axis
+            
+            let re = 0, im = 0;
+            let currentN = 1;
+            
+            // Loop up to max terms
+            for(let n=1; n<=30; n++) {
+                const mag = Math.pow(n, -0.5);
+                const phase = -t * Math.log(n);
+                re += mag * Math.cos(phase);
+                im += mag * Math.sin(phase);
+                
+                // If this 'n' corresponds to one of our target partial sums, store the point
+                if (partialSumIndices.includes(n)) {
+                    if (!partialPaths[n]) partialPaths[n] = [];
+                    // Note: We swap Y and Z compared to Symphony 2D. 
+                    // 2D Symphony: X=Re, Y=Im. 
+                    // 3D Tunnel: X=Re, Y=Im, Z=time.
+                    partialPaths[n].push(new THREE.Vector3(re, im, z));
+                }
+            }
+        }
+
+        // B. Create Line Objects for each partial sum trail
+        partialSumIndices.forEach((n, idx) => {
+            const pts = partialPaths[n];
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            
+            // Determine Color: Gradient from Cyan (simple) to Purple (complex)
+            // or just distinct colors.
+            const hue = 0.5 + (idx / partialSumIndices.length) * 0.4; // Cyan -> Purple -> Pink
+            const mat = new THREE.LineBasicMaterial({ 
+                color: new THREE.Color().setHSL(hue, 1, 0.6),
+                transparent: true, 
+                opacity: n === 30 ? 1.0 : 0.3, // Fade inner lines
+                linewidth: n === 30 ? 3 : 1
+            });
+            
+            const line = new THREE.Line(geo, mat);
+            // Hide initially, reveal via drawRange
+            geo.setDrawRange(0, 0);
+            
+            tunnelLines.push({ mesh: line, geometry: geo, count: pts.length });
+            tunnelGroup.add(line);
+        });
+        
+        // C. Create the "Head" Vector Chain (3D Symphony)
+        for(let i=0; i<30; i++) {
+            const geo = new THREE.CylinderGeometry(0.03, 0.03, 1, 8);
+            geo.translate(0, 0.5, 0); 
+            geo.rotateZ(-Math.PI/2); // Point along X
+            const hue = i / 30;
+            const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(hue, 1, 0.5) });
+            const mesh = new THREE.Mesh(geo, mat);
+            const group = new THREE.Group(); // Pivot group
+            group.add(mesh);
+            
+            sym3DVectors.push({ group, mesh });
+            sym3DGroup.add(group);
+        }
+
+        // --- 3.3 Animation Logic ---
+        let tunnelProgress = 0; // 0 to 1
+
+        function updateTunnel(time) {
+            // 1. Advance Progress if Playing
+            if (isTunnelPlaying && !isTunnelDragging) {
+                tunnelProgress += 0.001; // Speed of extrusion
+                if (tunnelProgress > 1.0) {
+                    tunnelProgress = 0;
+                }
+                
+                // Update UI Slider and Label to reflect auto-play
+                sliderTunnel.value = tunnelProgress;
+                labelTunnelT.textContent = `Im(s) = t: ${(tunnelProgress * tunnelParams.tMax).toFixed(2)}`;
+            }
+
+            // Current t value based on progress
+            const currentT = tunnelProgress * tunnelParams.tMax;
+            const currentZ = currentT * tunnelParams.zScale;
+
+            // 2. Update Trails (Reveal lines up to current Z)
+            tunnelLines.forEach(item => {
+                const drawCount = Math.floor(item.count * tunnelProgress);
+                item.geometry.setDrawRange(0, drawCount);
+            });
+
+            // 3. Update Vector Chain at the Head
+            // Position the entire chain group at the current Z
+            sym3DGroup.position.set(0, 0, currentZ);
+            
+            let cx = 0, cy = 0;
+            const s_real = 0.5;
+
+            for (let i = 0; i < 30; i++) {
+                const n = i + 1;
+                const mag = Math.pow(n, -s_real);
+                const phase = -currentT * Math.log(n);
+                
+                const dx = mag * Math.cos(phase);
+                const dy = mag * Math.sin(phase);
+                
+                const vec = sym3DVectors[i];
+                vec.group.position.set(cx, cy, 0);
+                vec.group.scale.set(mag, mag, mag);
+                vec.group.rotation.z = phase;
+                
+                cx += dx;
+                cy += dy;
+            }
+
+            // 4. Update Camera to follow
+            // Look slightly ahead or at the head
+            const camOffsetZ = -10; // Behind the head
+            const targetCamPos = new THREE.Vector3(5, 5, currentZ + camOffsetZ);
+            
+            // Lerp camera for smoothness (simple approx)
+            camera.position.lerp(targetCamPos, 0.1);
+            controls.target.set(0, 0, currentZ + 5); // Look forward
+        }
+
+
+        // ==========================================
+        // MAIN LOOP
+        // ==========================================
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+            controls.update();
+
+            if (currentMode === 'symphony' && isPlaying && !isDraggingSlider) {
+                tParam += 0.005; 
+                if(tParam > 60) tParam = 0;
+                sliderT.value = tParam;
+                labelT.textContent = `Im(s) = t: ${tParam.toFixed(3)}`;
+            }
+
+            if (currentMode === 'hydro') updateHydro(time);
+            else if (currentMode === 'symphony') updateSymphony();
+            else if (currentMode === 'tunnel') updateTunnel(time);
+
+            composer.render();
+        }
+        animate();
+
+
+        // ==========================================
+        // UI INTERACTION
+        // ==========================================
+        const btnHydro = document.getElementById('btn-hydro');
+        const btnSymphony = document.getElementById('btn-symphony');
+        const btnTunnel = document.getElementById('btn-tunnel');
+        
+        const panelHydro = document.getElementById('panel-hydro');
+        const panelSymphony = document.getElementById('panel-symphony');
+        const panelTunnel = document.getElementById('panel-tunnel');
+        
+        const sliderT = document.getElementById('slider-t');
+        const labelT = document.getElementById('label-t');
+        const btnPlaySym = document.getElementById('btn-play-symphony');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        const textPlay = document.getElementById('text-play');
+        
+        // Tunnel Controls
+        const btnPlayTunnel = document.getElementById('btn-play-tunnel');
+        const iconPlayTunnel = document.getElementById('icon-play-tunnel');
+        const iconPauseTunnel = document.getElementById('icon-pause-tunnel');
+        const textPlayTunnel = document.getElementById('text-play-tunnel');
+        const sliderTunnel = document.getElementById('slider-tunnel');
+        const labelTunnelT = document.getElementById('label-tunnel-t');
+
+        const labelsContainerEl = document.getElementById('labels-container');
+
+        function setMode(mode) {
+            currentMode = mode;
+            
+            hydroGroup.visible = (mode === 'hydro');
+            symphonyGroup.visible = (mode === 'symphony');
+            tunnelGroup.visible = (mode === 'tunnel');
+            
+            // Hide all panels first
+            panelHydro.classList.add('hidden');
+            panelSymphony.classList.add('hidden');
+            panelTunnel.classList.add('hidden');
+
+            // Reset Buttons
+            const inactiveClass = "px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all bg-transparent text-slate-400 hover:text-white cursor-pointer hover:bg-slate-800";
+            btnHydro.className = inactiveClass;
+            btnSymphony.className = inactiveClass;
+            btnTunnel.className = inactiveClass;
+
+            if (mode === 'hydro') {
+                panelHydro.classList.remove('hidden');
+                labelsContainerEl.style.display = 'block';
+                btnHydro.className = "px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all bg-pink-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.6)] cursor-pointer";
+                moveCamera(new THREE.Vector3(12, 15, 12), new THREE.Vector3(0, 20, 0));
+            } else if (mode === 'symphony') {
+                panelSymphony.classList.remove('hidden');
+                labelsContainerEl.style.display = 'none';
+                btnSymphony.className = "px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.6)] cursor-pointer";
+                moveCamera(new THREE.Vector3(0, 0, 5), new THREE.Vector3(0, 0, 0));
+                trailPos.fill(0);
+            } else if (mode === 'tunnel') {
+                panelTunnel.classList.remove('hidden');
+                labelsContainerEl.style.display = 'none';
+                btnTunnel.className = "px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.6)] cursor-pointer";
+                
+                // Reset animation and UI
+                tunnelProgress = 0;
+                sliderTunnel.value = 0;
+                labelTunnelT.textContent = `Im(s) = t: 0.00`;
+                
+                // Reset Play Button State to Play (since it autostarts)
+                isTunnelPlaying = true;
+                iconPlayTunnel.classList.add('hidden');
+                iconPauseTunnel.classList.remove('hidden');
+                textPlayTunnel.textContent = "PAUSE";
+                btnPlayTunnel.classList.add('bg-purple-500/40');
+            }
+        }
+
+        function moveCamera(targetPos, targetLook) {
+            controls.target.copy(targetLook);
+            const startPos = camera.position.clone();
+            let progress = 0;
+            function step() {
+                progress += 0.02;
+                if(progress >= 1) progress = 1; else requestAnimationFrame(step);
+                camera.position.lerpVectors(startPos, targetPos, progress);
+            }
+            step();
+        }
+
+        btnHydro.addEventListener('click', () => setMode('hydro'));
+        btnSymphony.addEventListener('click', () => setMode('symphony'));
+        btnTunnel.addEventListener('click', () => setMode('tunnel'));
+
+        // Symphony Logic
+        btnPlaySym.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                iconPlay.classList.add('hidden'); iconPause.classList.remove('hidden');
+                textPlay.textContent = "PAUSE"; btnPlaySym.classList.add('bg-cyan-500/40');
+            } else {
+                iconPlay.classList.remove('hidden'); iconPause.classList.add('hidden');
+                textPlay.textContent = "AUTO"; btnPlaySym.classList.remove('bg-cyan-500/40');
+            }
+        });
+        
+        sliderT.addEventListener('mousedown', () => isDraggingSlider = true);
+        sliderT.addEventListener('mouseup', () => isDraggingSlider = false);
+        sliderT.addEventListener('input', (e) => {
+            tParam = parseFloat(e.target.value);
+            labelT.textContent = `Im(s) = t: ${tParam.toFixed(3)}`;
+            trailPos.fill(0);
+        });
+
+        // Tunnel Logic
+        btnPlayTunnel.addEventListener('click', () => {
+            isTunnelPlaying = !isTunnelPlaying;
+            if (isTunnelPlaying) {
+                iconPlayTunnel.classList.add('hidden');
+                iconPauseTunnel.classList.remove('hidden');
+                textPlayTunnel.textContent = "PAUSE";
+                btnPlayTunnel.classList.add('bg-purple-500/40');
+            } else {
+                iconPlayTunnel.classList.remove('hidden');
+                iconPauseTunnel.classList.add('hidden');
+                textPlayTunnel.textContent = "PLAY";
+                btnPlayTunnel.classList.remove('bg-purple-500/40');
+            }
+        });
+
+        sliderTunnel.addEventListener('mousedown', () => isTunnelDragging = true);
+        sliderTunnel.addEventListener('mouseup', () => isTunnelDragging = false);
+        sliderTunnel.addEventListener('input', (e) => {
+            tunnelProgress = parseFloat(e.target.value);
+            labelTunnelT.textContent = `Im(s) = t: ${(tunnelProgress * tunnelParams.tMax).toFixed(2)}`;
+            // If dragging, we can optionally pause auto-play or just override value
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

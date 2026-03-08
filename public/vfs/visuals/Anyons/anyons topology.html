@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Anyon Phase Visualization</title>
+    
+    <!-- MathJax for LaTeX Support -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg: #050508;
+            --panel: rgba(18, 18, 24, 0.95);
+            --accent: #00f3ff;
+            --secondary: #ff0055;
+            --gold: #ffd700;
+            --text-muted: #aaa;
+        }
+
+        body { margin: 0; overflow: hidden; background-color: var(--bg); font-family: 'Inter', system-ui, sans-serif; display: flex; }
+        
+        #canvas-container { width: 60%; height: 100vh; position: relative; }
+        
+        #sidebar {
+            width: 40%; height: 100vh;
+            background: var(--panel);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding: 30px; box-sizing: border-box;
+            display: flex; flex-direction: column;
+            color: #eee;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            overflow-y: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 { font-size: 1.1rem; margin: 0 0 5px 0; color: #fff; letter-spacing: 0.5px; }
+        h2 { font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 25px; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 10px;}
+
+        /* Tab Navigation */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 8px; }
+        .tab { 
+            flex: 1; text-align: center; padding: 10px; font-size: 0.8rem; font-weight: bold; 
+            cursor: pointer; border-radius: 6px; transition: all 0.3s; color: #888;
+        }
+        .tab.active { background: var(--accent); color: #000; box-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
+        .tab:hover:not(.active) { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .control-group { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .label { font-size: 0.7rem; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 10px; text-transform: uppercase; }
+
+        /* Modern Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 10px 0;
+        }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #333;
+            border-radius: 3px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px; /* center thumb */
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        /* Math Display */
+        .math-display { 
+            text-align: center; 
+            color: var(--gold); 
+            font-size: 1.1rem; 
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+        }
+        .annotation { font-size: 0.85rem; line-height: 1.6; color: #ccc; }
+
+        /* Hilbert Canvas */
+        #hilbert-canvas { width: 100%; height: 220px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-top: 5px; border: 1px dashed #333; }
+        
+        .legend { display: flex; gap: 15px; font-size: 0.75rem; color: #888; margin-top: 10px; justify-content: center; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+        /* Button */
+        .btn-learn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            margin-top: auto;
+            text-align: center;
+        }
+        .btn-learn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+        /* Modal / Blog View */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .modal-content {
+            background: #111;
+            width: 80%;
+            max-width: 800px;
+            max-height: 85vh;
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            overflow-y: auto;
+            padding: 40px;
+            color: #e0e0e0;
+            font-family: 'Georgia', serif; /* Blog feel */
+            line-height: 1.8;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute; top: 20px; right: 20px;
+            background: none; border: none; color: #666; font-size: 24px; cursor: pointer;
+        }
+        .modal-close:hover { color: #fff; }
+
+        .blog-title { font-family: 'Inter', sans-serif; font-size: 2rem; margin-bottom: 10px; color: #fff; }
+        .blog-subtitle { font-family: 'Inter', sans-serif; color: var(--accent); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 30px; letter-spacing: 1px; }
+        
+        .blog-section { margin-bottom: 30px; }
+        .blog-section h3 { font-family: 'Inter', sans-serif; color: #fff; font-size: 1.2rem; border-left: 3px solid var(--gold); padding-left: 15px; margin-bottom: 15px; }
+        .blog-section p { margin-bottom: 15px; font-size: 1.05rem; color: #ccc; }
+        
+        .math-block { 
+            background: #0a0a0c; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            border: 1px solid #222;
+            text-align: center;
+            overflow-x: auto;
+        }
+
+    </style>
+    <!-- Import Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="sidebar">
+        <h1>Anyon Dynamics</h1>
+        <h2>Topological Phase Accumulation</h2>
+
+        <div class="tabs">
+            <div class="tab active" id="tab-torus" onclick="switchMode('torus')">Torus ($g=1$)</div>
+            <div class="tab" id="tab-sphere" onclick="switchMode('sphere')">Sphere ($g=0$)</div>
+        </div>
+
+        <div class="control-group">
+            <span class="label">Algebraic Constraint</span>
+            <div id="math-content">
+                <!-- Content injected via JS -->
+            </div>
+        </div>
+
+        <div class="control-group">
+            <span class="label">Hilbert Space (Ground State Manifold)</span>
+            <canvas id="hilbert-canvas"></canvas>
+            <div class="legend" id="legend-content">
+                <!-- Legend injected via JS -->
+            </div>
+        </div>
+        
+        <div class="control-group">
+             <span class="label">Statistics Parameter ($k$)</span>
+             <input type="range" id="k-slider" min="2" max="12" step="1" value="3">
+             <div style="display:flex; justify-content:space-between; margin-top:5px; align-items: center;">
+                 <span id="theta-display" style="font-size: 1.1rem; color: var(--gold);">$\theta = \frac{2\pi}{3}$</span>
+                 <span id="anyon-type" style="color:var(--accent); font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">Anyons</span>
+             </div>
+        </div>
+
+        <button class="btn-learn" id="btn-learn">Derivation & Logic</button>
+    </div>
+
+    <!-- Math Modal -->
+    <div class="modal-overlay" id="math-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="btn-close">&times;</button>
+            
+            <div class="blog-title">Topology & Ground State Degeneracy</div>
+            <div class="blog-subtitle">Why the Torus forces the vacuum to split</div>
+
+            <div class="blog-section">
+                <h3>1. The Geometry of Cycles</h3>
+                <p>
+                    On a torus $T^2$, the fundamental group is $\pi_1(T^2) \cong \mathbb{Z} \times \mathbb{Z}$. This means we have two non-contractible loops, the Meridian ($\gamma_x$) and the Longitude ($\gamma_y$). Crucially, these loops must intersect exactly once.
+                </p>
+                <div class="math-block">
+                    $$ \text{Intersection}(\gamma_x, \gamma_y) = 1 $$
+                </div>
+            </div>
+
+            <div class="blog-section">
+                <h3>2. The Heisenberg-Weyl Algebra</h3>
+                <p>
+                    We define Magnetic Translation Operators $\hat{W}_x$ and $\hat{W}_y$ that move quasiparticles around these loops. Because the loops intersect, the order of operations matters. If we swap the order, the particle worldlines braid around each other, picking up a statistical phase $\theta$.
+                </p>
+                <div class="math-block">
+                    $$ \hat{W}_y \hat{W}_x \hat{W}_y^{-1} \hat{W}_x^{-1} = e^{i\theta} $$
+                    $$ \implies \hat{W}_y \hat{W}_x = e^{i\theta} \hat{W}_x \hat{W}_y $$
+                </div>
+            </div>
+
+            <div class="blog-section">
+                <h3>3. Minimal Representation Dimension</h3>
+                <p>
+                    If the phase is rational, $\theta = \frac{2\pi p}{k}$, we can prove there is no 1-dimensional representation of this algebra.
+                    Thus, the Hilbert space must have at least dimension $k$.
+                </p>
+                <div class="math-block">
+                    $$ \text{GSD} = k^g $$
+                </div>
+                <p>
+                    Where $g$ is the genus (number of holes). For a Sphere ($g=0$), $\text{GSD} = 1$. For a Torus ($g=1$), $\text{GSD} = k$.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
+        // --- GLOBAL STATE ---
+        window.currentMode = 'torus'; // 'torus' or 'sphere'
+        let k = 3;
+        let currentPhaseAngle = 0;
+        let targetPhaseAngle = 0;
+        let hopTriggered = false;
+
+        // --- Modal Logic ---
+        const modal = document.getElementById('math-modal');
+        const btnLearn = document.getElementById('btn-learn');
+        const btnClose = document.getElementById('btn-close');
+
+        btnLearn.addEventListener('click', () => modal.classList.add('active'));
+        btnClose.addEventListener('click', () => modal.classList.remove('active'));
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+
+        // --- Scene Init ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050508);
+        
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+        camera.position.set(5, 6, 7);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        // --- LIGHTS (Added for visibility) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        const pointLight = new THREE.PointLight(0x00f3ff, 0.5);
+        pointLight.position.set(0, 0, 0);
+        scene.add(pointLight);
+
+
+        // --- OBJECT GROUPS ---
+        const torusGroup = new THREE.Group();
+        const sphereGroup = new THREE.Group();
+        scene.add(torusGroup);
+        scene.add(sphereGroup);
+        sphereGroup.visible = false;
+
+
+        // =======================
+        // 1. TORUS OBJECTS
+        // =======================
+        const R = 2.0, r = 0.8; 
+        // Improved Glass Material for Visibility
+        const glassMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x555555, 
+            metalness: 0.1, 
+            roughness: 0.2, 
+            transmission: 0.6, 
+            transparent: true, 
+            opacity: 0.9,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1,
+            side: THREE.DoubleSide
+        });
+        
+        const torusMesh = new THREE.Mesh(new THREE.TorusGeometry(R, r, 48, 96), glassMat);
+        torusMesh.rotation.x = -Math.PI/2;
+        torusGroup.add(torusMesh);
+        
+        const torusWire = new THREE.LineSegments(
+            new THREE.EdgesGeometry(torusMesh.geometry), 
+            new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.3 })
+        );
+        torusMesh.add(torusWire);
+
+        // Paths
+        const r_path = r + 0.05;
+        const ptsM = []; // Meridian
+        for(let i=0; i<=100; i++) {
+            const v = (i/100)*Math.PI*2;
+            ptsM.push(new THREE.Vector3(R + r_path*Math.cos(v), r_path*Math.sin(v), 0));
+        }
+        const meridianCurve = new THREE.CatmullRomCurve3(ptsM, true);
+        torusGroup.add(new THREE.Mesh(new THREE.TubeGeometry(meridianCurve, 64, 0.03, 8, true), new THREE.MeshBasicMaterial({ color: 0xaa0033 })));
+
+        const ptsL = []; // Longitude
+        for(let i=0; i<=100; i++) {
+            const u = (i/100)*Math.PI*2;
+            ptsL.push(new THREE.Vector3(R*Math.cos(u), r_path, R*Math.sin(u)));
+        }
+        const longitudeCurve = new THREE.CatmullRomCurve3(ptsL, true);
+        torusGroup.add(new THREE.Mesh(new THREE.TubeGeometry(longitudeCurve, 64, 0.03, 8, true), new THREE.MeshBasicMaterial({ color: 0x0088aa })));
+
+        // Particles
+        const particleM = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), new THREE.MeshBasicMaterial({ color: 0xff0055 }));
+        const particleL = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), new THREE.MeshBasicMaterial({ color: 0x00f3ff }));
+        torusGroup.add(particleM);
+        torusGroup.add(particleL);
+
+        // Intersection Marker
+        const marker = new THREE.Mesh(new THREE.SphereGeometry(0.15), new THREE.MeshBasicMaterial({ color: 0xffd700 }));
+        marker.position.set(R, r_path, 0);
+        torusGroup.add(marker);
+
+
+        // =======================
+        // 2. SPHERE OBJECTS
+        // =======================
+        const sphereGeo = new THREE.SphereGeometry(2.5, 64, 64);
+        const sphereMesh = new THREE.Mesh(sphereGeo, glassMat);
+        sphereGroup.add(sphereMesh);
+        const sphereWire = new THREE.LineSegments(
+            new THREE.EdgesGeometry(sphereGeo), 
+            new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.3 })
+        );
+        sphereMesh.add(sphereWire);
+
+        // Contractible Loop (A ring that grows and shrinks)
+        const shrinkLoopGeo = new THREE.TorusGeometry(1, 0.04, 16, 100);
+        const shrinkLoop = new THREE.Mesh(shrinkLoopGeo, new THREE.MeshBasicMaterial({ color: 0xff0055 }));
+        shrinkLoop.rotation.x = Math.PI/2; // Lay flat
+        sphereGroup.add(shrinkLoop);
+
+
+        // --- UI & LOGIC ---
+        const cvs = document.getElementById('hilbert-canvas');
+        const ctx = cvs.getContext('2d');
+        const slider = document.getElementById('k-slider');
+        const thetaDisplay = document.getElementById('theta-display');
+        const anyonType = document.getElementById('anyon-type');
+        const mathContent = document.getElementById('math-content');
+        const legendContent = document.getElementById('legend-content');
+
+        // Mode Switching
+        window.switchMode = (mode) => {
+            window.currentMode = mode;
+            
+            // UI Classes
+            document.getElementById('tab-torus').className = mode === 'torus' ? 'tab active' : 'tab';
+            document.getElementById('tab-sphere').className = mode === 'sphere' ? 'tab active' : 'tab';
+            
+            // 3D Visibility
+            torusGroup.visible = (mode === 'torus');
+            sphereGroup.visible = (mode === 'sphere');
+            
+            // Text Content
+            updateMathContent();
+            
+            // Redraw
+            drawHilbert();
+        };
+
+        function updateMathContent() {
+            if (window.currentMode === 'torus') {
+                mathContent.innerHTML = `
+                    <div class="math-display">$$ \\hat{W}_y \\hat{W}_x = e^{i\\theta} \\hat{W}_x \\hat{W}_y $$</div>
+                    <p class="annotation">
+                        Intersection = 1. The fundamental cycles intersect, creating a commutation error that forces degeneracy.
+                    </p>
+                `;
+                legendContent.innerHTML = `
+                    <span><div class="dot" style="background:#444"></div> Vacuum $|n\\rangle$</span>
+                    <span><div class="dot" style="background:var(--gold)"></div> State $|\\psi\\rangle$</span>
+                    <span><div class="dot" style="background:#fff"></div> Hop</span>
+                `;
+            } else {
+                mathContent.innerHTML = `
+                    <div class="math-display">$$ [\\hat{W}_l, \\hat{W}_{l'}] = 0 $$</div>
+                    <p class="annotation">
+                        All loops are contractible. Topology allows Bosons ($\ e^{0}$) or Fermions ($e^{i\\pi}$), but <strong>no fractional Anyons</strong>. Unique Ground State.
+                    </p>
+                `;
+                legendContent.innerHTML = `
+                    <span><div class="dot" style="background:var(--gold)"></div> Unique Vacuum $|0\\rangle$</span>
+                `;
+            }
+            if (window.MathJax) window.MathJax.typesetPromise();
+        }
+
+        slider.addEventListener('input', (e) => {
+            k = parseInt(e.target.value);
+            thetaDisplay.innerText = `$\\theta = \\frac{2\\pi}{${k}}$`;
+            if (window.MathJax) window.MathJax.typesetPromise([thetaDisplay]);
+            anyonType.innerText = k===2 ? "Fermions/Semions" : "Anyons";
+            targetPhaseAngle = Math.round(targetPhaseAngle / (Math.PI*2/k)) * (Math.PI*2/k);
+            drawHilbert();
+        });
+
+
+        // --- HILBERT SPACE DRAWING ---
+        function drawHilbert() {
+            const w = cvs.width = cvs.clientWidth;
+            const h = cvs.height = cvs.clientHeight;
+            const cx = w/2, cy = h/2;
+            const radius = 60;
+            ctx.clearRect(0,0,w,h);
+
+            if (window.currentMode === 'sphere') {
+                // SPHERE MODE: Unique Ground State
+                ctx.beginPath();
+                ctx.arc(cx, cy, 10, 0, Math.PI*2);
+                ctx.fillStyle = "#ffd700";
+                ctx.shadowColor = "#ffd700";
+                ctx.shadowBlur = 20;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                ctx.fillStyle = "#fff";
+                ctx.font = "14px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("Unique Vacuum |0⟩", cx, cy + 30);
+                return;
+            }
+
+            // TORUS MODE: Degenerate States
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI*2);
+            ctx.strokeStyle = "rgba(255,255,255,0.1)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            for(let i=0; i<k; i++) {
+                const angle = (i/k)*Math.PI*2 - Math.PI/2;
+                const px = cx + Math.cos(angle)*radius;
+                const py = cy + Math.sin(angle)*radius;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI*2);
+                ctx.fillStyle = "#444";
+                ctx.fill();
+            }
+
+            // State Vector
+            currentPhaseAngle += (targetPhaseAngle - currentPhaseAngle) * 0.1;
+            const vx = cx + Math.cos(currentPhaseAngle - Math.PI/2)*radius;
+            const vy = cy + Math.sin(currentPhaseAngle - Math.PI/2)*radius;
+
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(vx, vy);
+            ctx.strokeStyle = hopTriggered ? "#fff" : "#ffd700"; ctx.lineWidth = hopTriggered ? 3 : 2; ctx.stroke();
+
+            ctx.beginPath(); ctx.arc(vx, vy, hopTriggered ? 12 : 8, 0, Math.PI*2);
+            ctx.fillStyle = hopTriggered ? "#fff" : "#ffd700";
+            ctx.shadowColor = "#ffd700"; ctx.shadowBlur = hopTriggered ? 30 : 15; ctx.fill(); ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = "#fff"; ctx.font = "12px monospace"; ctx.textAlign = "center";
+            ctx.fillText(hopTriggered ? "PHASE HOP!" : "|ψ⟩", vx + (vx-cx)*0.4, vy + (vy-cy)*0.4);
+            if(hopTriggered) hopTriggered = false;
+        }
+
+        // --- ANIMATION ---
+        let t = 0;
+        let lastCrossing = false;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            t += 0.005;
+            controls.update();
+
+            if (window.currentMode === 'torus') {
+                // Torus Logic
+                const loopTime = t % 1;
+                const posM = meridianCurve.getPointAt(loopTime);
+                const posL = longitudeCurve.getPointAt((loopTime + 0.75) % 1);
+
+                particleM.position.copy(posM);
+                particleL.position.copy(posL);
+
+                const distM = posM.distanceTo(marker.position);
+                const distL = posL.distanceTo(marker.position);
+                const isCrossing = (distM < 0.5 && distL < 0.5);
+
+                if (isCrossing && !lastCrossing) {
+                    marker.material.color.setHex(0xffffff);
+                    marker.scale.set(1.5, 1.5, 1.5);
+                    targetPhaseAngle += (Math.PI * 2) / k;
+                    hopTriggered = true; 
+                } else if (!isCrossing) {
+                    marker.material.color.setHex(0xffd700);
+                    marker.scale.lerp(new THREE.Vector3(1,1,1), 0.1);
+                }
+                lastCrossing = isCrossing;
+            } else {
+                // Sphere Logic (Shrinking Loop)
+                // Animating radius from 2.5 (equator) down to 0 (pole)
+                const animT = (Math.sin(t * 2) + 1) / 2; // 0 to 1
+                const loopRadius = 2.4 * animT + 0.1; 
+                // Move loop up/down Z axis of sphere
+                const loopZ = Math.sqrt(2.5*2.5 - loopRadius*loopRadius);
+                // Depending on phase of sin, move up or down
+                const sign = Math.cos(t * 2) > 0 ? 1 : -1;
+                
+                shrinkLoop.scale.set(loopRadius, loopRadius, 1);
+                shrinkLoop.position.y = loopZ * sign;
+            }
+
+            drawHilbert();
+            composer.render();
+        }
+
+        // Init
+        updateMathContent();
+        animate();
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            composer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+    </script>
+</body>
+</html>

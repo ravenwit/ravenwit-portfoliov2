@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Portfolio: Floating Grid</title>
+    <style>
+        :root {
+            --bg: #030303;
+            --text: #e0e0e0;
+            --window-bg: rgba(15, 15, 15, 0.85);
+            --border: rgba(255, 255, 255, 0.1);
+            
+            /* Category Colors */
+            --c-phys: #d946ef;
+            --c-math: #f59e0b;
+            --c-ai: #f97316;
+            --c-sec: #10b981;
+            --c-dev: #06b6d4;
+            --c-tool: #94a3b8;
+            --c-art: #f43f5e;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            /* Optional: Subtle grid background for depth */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: var(--text);
+            font-family: 'Segoe UI', 'Roboto Mono', monospace;
+            overflow-x: hidden;
+            height: 1500vh; /* Scroll depth */
+        }
+
+        /* --- LAYOUT WRAPPER --- */
+        #viewport-wrapper {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; /* Let scroll pass through to body */
+            z-index: 10;
+        }
+
+        /* --- THE FLOATING WINDOW --- */
+        #floating-table {
+            pointer-events: auto;
+            width: 95%;
+            max-width: 900px;
+            background: var(--window-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            transition: height 0.3s;
+        }
+
+        /* --- HEADER SECTION --- */
+        #header-row {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;
+        }
+
+        #year-display {
+            font-size: 2.5rem; font-weight: 200; letter-spacing: -1px;
+            font-variant-numeric: tabular-nums; line-height: 1;
+            color: #fff;
+        }
+        
+        #instruction { 
+            font-size: 0.65rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; 
+            margin-bottom: 4px;
+        }
+
+        /* Timeline Progress Bar */
+        #timeline-track {
+            width: 100%; height: 2px; background: #333; position: relative;
+            margin-top: -2px;
+        }
+        #timeline-thumb {
+            width: 40px; height: 2px; background: #fff; position: absolute; top: 0;
+            box-shadow: 0 0 10px #fff; transition: left 0.1s linear;
+        }
+
+        /* --- GRID CONTENT --- */
+        #grid-container {
+            display: flex;
+            align-items: flex-start;
+            /* Flexing logic to fill space */
+            justify-content: flex-start; 
+            min-height: 200px; /* Ensure visual stability */
+        }
+
+        .col {
+            display: flex; flex-direction: column;
+            flex: 1; /* Grow to fill space */
+            min-width: 110px; /* Minimum readable width */
+            margin-right: 12px;
+            border-left: 1px dashed rgba(255,255,255,0.08);
+            padding-left: 10px;
+            
+            /* Collapse Animation */
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            overflow: hidden;
+            max-width: 200px;
+        }
+        
+        .col:last-child { margin-right: 0; }
+
+        .col.collapsed {
+            flex: 0;
+            min-width: 0;
+            max-width: 0;
+            margin-right: 0;
+            padding-left: 0;
+            border: none;
+            opacity: 0;
+        }
+        
+        .col-header {
+            font-size: 0.5rem; color: #777; text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 10px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+        }
+
+        /* --- ITEM ROW --- */
+        .item-row {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 6px;
+            padding: 4px 6px;
+            font-size: 0.7rem;
+            position: relative;
+            white-space: nowrap;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid transparent;
+        }
+
+        .icon-box {
+            width: 14px; height: 14px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .icon-box svg {
+            width: 100%; height: 100%;
+            fill: none; stroke: currentColor; stroke-width: 1.5;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+
+        .label {
+            opacity: 0.8; font-weight: 400; letter-spacing: 0.2px;
+        }
+
+        /* --- ANIMATIONS --- */
+        .spawn { animation: popIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Permanent Item */
+        .stable { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); }
+        .stable .label { color: #fff; opacity: 1; font-weight: 600; }
+        .stable .icon-box { filter: drop-shadow(0 0 3px currentColor); }
+
+        /* Temporary Item Glitch */
+        .unstable { animation: static-buzz 3s infinite; }
+        @keyframes static-buzz {
+            0% { transform: translate(0, 0); }
+            96% { transform: translate(0.5px, 0.5px); }
+            98% { transform: translate(-0.5px, -0.5px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* Death */
+        .die { animation: glitch-out 0.2s forwards !important; color: #ff4444 !important; background: rgba(255,0,0,0.1); }
+        @keyframes glitch-out {
+            0% { clip-path: inset(0 0 0 0); transform: translate(0); }
+            20% { clip-path: inset(20% 0 20% 0); transform: translate(-2px, 1px); }
+            100% { opacity: 0; transform: scale(0.8); clip-path: inset(50% 0 50% 0); }
+        }
+
+        /* Colors */
+        .cat-physics { color: var(--c-phys); }
+        .cat-math { color: var(--c-math); }
+        .cat-ai_data { color: var(--c-ai); }
+        .cat-security { color: var(--c-sec); }
+        .cat-dev { color: var(--c-dev); }
+        .cat-tools { color: var(--c-tool); }
+        .cat-arts { color: var(--c-art); }
+
+    </style>
+</head>
+<body>
+
+    <div id="viewport-wrapper">
+        <div id="floating-table">
+            
+            <div id="header-row">
+                <div id="year-display">2004</div>
+                <div id="instruction">Scroll Timeline</div>
+            </div>
+            <div id="timeline-track"><div id="timeline-thumb"></div></div>
+
+            <div id="grid-container">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. SVG ICONS (Wireframe Style) ---
+        const SVGS = {
+            "ads": `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.66 3.58 3 8 3s8-1.34 8-3V6"/><path d="M12 21V9"/></svg>`, 
+            "holo": `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3" /><ellipse cx="12" cy="12" rx="4" ry="9" /><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>`,
+            "atom": `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 2C7 2 2.5 5 2.5 12S7 22 12 22s9.5-3 9.5-10S17 2 12 2z" transform="rotate(0 12 12)" opacity="0.5"/><path d="M12 2C7 2 2.5 5 2.5 12S7 22 12 22s9.5-3 9.5-10S17 2 12 2z" transform="rotate(60 12 12)"/><path d="M12 2C7 2 2.5 5 2.5 12S7 22 12 22s9.5-3 9.5-10S17 2 12 2z" transform="rotate(120 12 12)"/></svg>`,
+            "wave": `<svg viewBox="0 0 24 24"><path d="M2 12c3-6 6-6 9 0s6 6 9 0"/><path d="M2 15c3-6 6-6 9 0s6 6 9 0" opacity="0.5"/></svg>`, 
+            "fractal": `<svg viewBox="0 0 24 24"><path d="M12 2 L22 22 H2 Z" /><path d="M12 22 L17 12 H7 Z" /></svg>`,
+            "phase": `<svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M3 21c4 0 6-10 10-10s6-8 8-8"/></svg>`,
+            "category": `<svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="1.5"/><circle cx="18" cy="6" r="1.5"/><circle cx="18" cy="18" r="1.5"/><path d="M7.5 18h9"/><path d="M18 16.5v-9"/><path d="M7 17l10-10"/></svg>`,
+            "curve": `<svg viewBox="0 0 24 24"><path d="M4 12c5-10 8-10 11 0s5 10 5 0"/><line x1="12" y1="3" x2="12" y2="21" opacity="0.5" stroke-dasharray="2 2"/></svg>`,
+            "integral": `<svg viewBox="0 0 24 24"><path d="M9 7c0-3 3-4 5-2"/><path d="M14 7v10"/><path d="M15 17c0 3-3 4-5 2"/></svg>`,
+            "sage": `<svg viewBox="0 0 24 24"><path d="M12 4l-8 4v8l8 4l8-4v-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+            "neural": `<svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><circle cx="18" cy="12" r="2"/><line x1="8" y1="8" x2="16" y2="11"/><line x1="8" y1="16" x2="16" y2="13"/></svg>`,
+            "gan": `<svg viewBox="0 0 24 24"><rect x="3" y="6" width="6" height="12" rx="1"/><rect x="15" y="6" width="6" height="12" rx="1"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>`, 
+            "python": `<svg viewBox="0 0 24 24"><path d="M12 3v9h9"/><path d="M12 21v-9H3"/><circle cx="16" cy="7" r="1" fill="currentColor"/><circle cx="8" cy="17" r="1" fill="currentColor"/></svg>`,
+            "tensor": `<svg viewBox="0 0 24 24"><path d="M12 2l-8 4v8l8 4l8-4v-8z"/><path d="M12 12l8-4"/><path d="M12 12v9"/><path d="M12 12L4 8"/></svg>`, 
+            "keras": `<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 17v-10"/><path d="M16 7l-8 5l8 5"/></svg>`, 
+            "numpy": `<svg viewBox="0 0 24 24"><path d="M4 4h16v16h-16z"/><path d="M8 8v8l8-8v8"/></svg>`, 
+            "pandas": `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>`,
+            "scipy": `<svg viewBox="0 0 24 24"><path d="M3 20c3 0 5-16 9-16s6 16 9 16"/><circle cx="5" cy="19" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="5" r="1" fill="currentColor"/></svg>`, 
+            "crypto": `<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1"/></svg>`, 
+            "shield": `<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 9l3 6 3-6"/></svg>`, 
+            "shark": `<svg viewBox="0 0 24 24"><path d="M22 15c0-4-3-7-8-7-2 0-3-4-3-4s-3 4-8 4v6c0 1 1 2 2 2h15c1 0 2-1 2-2z"/><circle cx="16" cy="13" r="1"/></svg>`,
+            "wifi": `<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`,
+            "bug": `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 7v-3"/><path d="M12 17v3"/><path d="M7 12h-3"/><path d="M17 12h3"/><path d="M8 8l-2-2"/><path d="M16 8l2-2"/><path d="M8 16l-2 2"/><path d="M16 16l2 2"/></svg>`,
+            "linux": `<svg viewBox="0 0 24 24"><path d="M12 4c-3 0-5 3-5 7c0 4 2 8 5 8s5-4 5-8c0-4-2-7-5-7z"/><path d="M7 11l-3 4"/><path d="M17 11l3 4"/><path d="M9 20l-2 2"/><path d="M15 20l2 2"/></svg>`,
+            "visualstudio": `<svg viewBox="0 0 24 24"><path d="M17 7 L2 12 L17 17 L17 7 Z"/><path d="M17 7 C 20 5, 22 7, 22 12 C 22 17, 20 19, 17 17"/></svg>`, 
+            "visualbasic": `<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><rect x="5" y="12" width="6" height="4" rx="0.5"/></svg>`, 
+            "c_lang": `<svg viewBox="0 0 24 24"><path d="M12 2L20 6.5V17.5L12 22L4 17.5V6.5L12 2Z"/><path d="M14 10c-1-1-3-1-4 0c-1 1-1 3 0 4c1 1 3 1 4 0"/></svg>`, 
+            "cpp": `<svg viewBox="0 0 24 24"><path d="M12 2L20 6.5V17.5L12 22L4 17.5V6.5L12 2Z"/><path d="M10 10c-1-1-3-1-4 0c-1 1-1 3 0 4c1 1 3 1 4 0"/><path d="M14 10v4"/><path d="M12 12h4"/><path d="M18 10v4"/><path d="M16 12h4"/></svg>`,
+            "dotnet": `<svg viewBox="0 0 24 24"><path d="M2 12c2 4 6 8 10 0s8-4 10 0"/></svg>`, 
+            "code": `<svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`, 
+            "node": `<svg viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5l-9-5v-10z"/><circle cx="12" cy="12" r="3"/></svg>`,
+            "js": `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 17l-2-2v-5"/><path d="M16 17c2 0 2-2 2-3"/></svg>`,
+            "qt": `<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M14 14l4 4"/><path d="M10 8v4h4"/></svg>`, 
+            "arduino": `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h3"/><path d="M9.5 10.5v3"/><path d="M14 12h3"/></svg>`,
+            "php": `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="5"/><path d="M8 10v4"/><path d="M12 10v4"/><path d="M16 10v4"/></svg>`,
+            "git": `<svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><path d="M6 16v-2a2 2 0 0 1 2-2h2"/><path d="M12 10v-4"/></svg>`,
+            "arch": `<svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2z"/><path d="M8 14h8"/></svg>`, 
+            "latex": `<svg viewBox="0 0 24 24"><path d="M4 4h4v16h-4"/><path d="M8 12h4"/><path d="M16 4h4v16h-4"/><path d="M12 4v16"/></svg>`,
+            "vscode": `<svg viewBox="0 0 24 24"><path d="M4 4l15 8l-15 8v-16z"/><path d="M19 8l-4 4l4 4"/></svg>`,
+            "matlab": `<svg viewBox="0 0 24 24"><path d="M3 12s4-8 9-8 9 8 9 8-4 8-9 8-9-8-9-8z"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`,
+            "origami": `<svg viewBox="0 0 24 24"><path d="M2 12l10-6l10 6l-10 6z"/><path d="M12 18l-5-3"/><path d="M12 18l5-3"/><path d="M12 6v12"/></svg>`,
+            "rubik": `<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9.6 5v14"/><path d="M14.3 5v14"/><path d="M5 9.6h14"/><path d="M5 14.3h14"/></svg>`,
+            "violin": `<svg viewBox="0 0 24 24"><path d="M9 7c-1 2-1 5 0 7"/><path d="M15 7c1 2 1 5 0 7"/><path d="M12 3v18"/><rect x="11" y="14" width="2" height="4"/></svg>`,
+            "music": `<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`, 
+            "kalimba": `<svg viewBox="0 0 24 24"><path d="M5 6l14 0l-2 16h-10z"/><path d="M9 6v10"/><path d="M12 6v13"/><path d="M15 6v10"/></svg>`,
+            "film": `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18"/><path d="M17 3v18"/><path d="M3 8h18"/><path d="M3 16h18"/></svg>`,
+            "pen": `<svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>` 
+        };
+
+        function getIcon(name, cat) {
+            const n = name.toLowerCase();
+            if(n.includes('pandas')) return SVGS['pandas'];
+            if(n.includes('scipy')) return SVGS['scipy'];
+            if(n.includes('ads')) return SVGS['ads'];
+            if(n.includes('holo')) return SVGS['holo'];
+            if(n.includes('renorm') || n.includes('fractal')) return SVGS['fractal'];
+            if(n.includes('quant') || n.includes('phys')) return SVGS['atom'];
+            if(n.includes('wave')) return SVGS['wave'];
+            if(n.includes('phase')) return SVGS['phase'];
+            if(n.includes('category')) return SVGS['category'];
+            if(n.includes('ellip') || n.includes('curve')) return SVGS['curve'];
+            if(n.includes('sympy') || n.includes('calc')) return SVGS['integral'];
+            if(n.includes('sage')) return SVGS['sage'];
+            if(n.includes('neural')) return SVGS['neural'];
+            if(n.includes('gan')) return SVGS['gan'];
+            if(n.includes('python')) return SVGS['python'];
+            if(n.includes('tensor')) return SVGS['tensor'];
+            if(n.includes('keras')) return SVGS['keras'];
+            if(n.includes('numpy')) return SVGS['numpy'];
+            if(n.includes('matplot')) return SVGS['chart'];
+            if(n.includes('crypt') || n.includes('sec')) return SVGS['crypto'];
+            if(n.includes('metasploit')) return SVGS['shield'];
+            if(n.includes('wireshark')) return SVGS['shark'];
+            if(n.includes('air') || n.includes('wifi')) return SVGS['wifi'];
+            if(n.includes('beef') || n.includes('etter') || n.includes('sploit')) return SVGS['bug'];
+            if(n.includes('linux') || n.includes('admin')) return SVGS['linux'];
+            if(n.includes('visual studio')) return SVGS['visualstudio'];
+            if(n.includes('visual basic')) return SVGS['visualbasic'];
+            if(n.includes('c++')) return SVGS['cpp'];
+            if(n.includes('c')) { if(n.length < 3) return SVGS['c_lang']; }
+            if(n.includes('net')) return SVGS['dotnet'];
+            if(n.includes('node')) return SVGS['node'];
+            if(n.includes('js') || n.includes('gatsby') || n.includes('html')) return SVGS['js'];
+            if(n.includes('qt')) return SVGS['qt'];
+            if(n.includes('arduino') || n.includes('robot')) return SVGS['arduino'];
+            if(n.includes('php') || n.includes('laravel')) return SVGS['php'];
+            if(n.includes('code')) return SVGS['code'];
+            if(n.includes('git')) return SVGS['git'];
+            if(n.includes('arch')) return SVGS['arch'];
+            if(n.includes('latex')) return SVGS['latex'];
+            if(n.includes('vs')) return SVGS['vscode'];
+            if(n.includes('matlab')) return SVGS['integral'];
+            if(n.includes('origami') || n.includes('paper')) return SVGS['origami'];
+            if(n.includes('rubik')) return SVGS['rubik'];
+            if(n.includes('music')) return SVGS['music'];
+            if(n.includes('violin')) return SVGS['violin'];
+            if(n.includes('kalimba')) return SVGS['kalimba'];
+            if(n.includes('movie') || n.includes('film')) return SVGS['film'];
+            if(n.includes('adobe') || n.includes('figma') || n.includes('photo')) return SVGS['pen'];
+            return SVGS['code'];
+        }
+
+        // --- 2. DATA ---
+        const DATA = [
+            { cat: "arts", name: "Paper Crafts", start: 2004, end: "Present" },
+            { cat: "arts", name: "Music", start: 2004, end: "Present" },
+            { cat: "arts", name: "Movies", start: 2007, end: "Present" },
+            { cat: "dev", name: "Visual Basic", start: 2010, end: 2012 },
+            { cat: "dev", name: "C", start: 2011, end: 2013 },
+            { cat: "dev", name: "C++", start: 2011, end: 2020 },
+            { cat: "tools", name: "Visual Studio", start: 2011, end: 2016 },
+            { cat: "arts", name: "Origami", start: 2012, end: "Present" },
+            { cat: "arts", name: "Rubik's Cube", start: 2012, end: "Present" },
+            { cat: "arts", name: "Adobe Photoshop", start: 2012, end: 2021 },
+            { cat: "dev", name: "HTML/JS", start: 2012, end: 2016 },
+            { cat: "dev", name: ".NET Framework", start: 2012, end: 2016 },
+            { cat: "security", name: "Linux Admin", start: 2013, end: 2017 },
+            { cat: "dev", name: "PHP", start: 2013, end: 2019 },
+            { cat: "dev", name: "Arduino", start: 2013, end: 2017 },
+            { cat: "arts", name: "Violin", start: 2013, end: 2014 },
+            { cat: "security", name: "Cryptography", start: 2016, end: 2020 },
+            { cat: "security", name: "Metasploit", start: 2016, end: 2018 },
+            { cat: "security", name: "Wireshark", start: 2016, end: 2018 },
+            { cat: "security", name: "Aircrack-ng", start: 2016, end: 2018 },
+            { cat: "security", name: "Ettercap", start: 2016, end: 2018 },
+            { cat: "security", name: "BeEF", start: 2016, end: 2018 },
+            { cat: "tools", name: "Arch Linux", start: 2018, end: 2020 },
+            { cat: "tools", name: "Git", start: 2017, end: "Present" },
+            { cat: "math", name: "Elliptic Curves", start: 2017, end: "Present" },
+            { cat: "math", name: "Sympy", start: 2018, end: 2021 },
+            { cat: "ai_data", name: "Scipy", start: 2019, end: "Present" },
+            { cat: "ai_data", name: "Numpy", start: 2019, end: "Present" },
+            { cat: "ai_data", name: "Pandas", start: 2019, end: "Present" },
+            { cat: "ai_data", name: "Neural Networks", start: 2020, end: "Present" },
+            { cat: "ai_data", name: "TensorFlow", start: 2020, end: "Present" },
+            { cat: "ai_data", name: "Keras", start: 2020, end: "Present" },
+            { cat: "physics", name: "AdS/CFT", start: 2021, end: "Present" },
+            { cat: "physics", name: "Holographic Principle", start: 2021, end: "Present" },
+            { cat: "physics", name: "Gravitational Waves", start: 2021, end: "Present" },
+            { cat: "dev", name: "Node.js", start: 2022, end: 2023 },
+            { cat: "arts", name: "Kalimba", start: 2023, end: "Present" },
+            { cat: "physics", name: "Renormalization", start: 2024, end: "Present" },
+            { cat: "physics", name: "Quantum Error Correction", start: 2025, end: "Present" }
+        ];
+
+        const MIN_YEAR = 2004;
+        const MAX_YEAR = 2027;
+        const CATEGORIES = ["physics", "math", "ai_data", "security", "dev", "tools", "arts"];
+        const GRID = document.getElementById('grid-container');
+        
+        // Init Columns
+        let cols = {};
+        CATEGORIES.forEach(cat => {
+            const c = document.createElement('div');
+            c.className = `col cat-${cat}`;
+            c.innerHTML = `<div class="col-header">${cat.replace('_', ' ')}</div>`;
+            GRID.appendChild(c);
+            cols[cat] = c;
+        });
+
+        function update(progress) {
+            const year = Math.floor(MIN_YEAR + (progress * (MAX_YEAR - MIN_YEAR)));
+            document.getElementById('year-display').innerText = year;
+            document.getElementById('timeline-thumb').style.left = (progress * 100) + '%';
+
+            // Update Items
+            DATA.forEach(item => {
+                const end = item.end === "Present" ? 9999 : parseInt(item.end);
+                const isActive = year >= parseInt(item.start) && year <= end;
+                // Safe ID generation
+                const safeId = 'card-' + btoa(item.name).replace(/=/g, '');
+                
+                let card = document.getElementById(safeId);
+
+                if(isActive && !card) {
+                    card = document.createElement('div');
+                    card.id = safeId;
+                    card.className = 'item-row spawn cat-' + item.cat;
+                    
+                    if(item.end === "Present") card.classList.add('stable');
+                    else card.classList.add('unstable');
+                    
+                    const iconBox = document.createElement('div');
+                    iconBox.className = 'icon-box';
+                    iconBox.style.color = `var(--c-${item.cat === 'ai_data' ? 'ai' : item.cat})`;
+                    iconBox.innerHTML = getIcon(item.name, item.cat);
+
+                    const label = document.createElement('div');
+                    label.className = 'label';
+                    label.innerText = item.name;
+
+                    card.appendChild(iconBox);
+                    card.appendChild(label);
+                    cols[item.cat].appendChild(card);
+                } 
+                else if(!isActive && card) {
+                    if(year < parseInt(item.start)) {
+                        card.remove();
+                    } else if (!card.classList.contains('die')) {
+                        card.classList.add('die');
+                        setTimeout(() => { if(card.parentNode) card.parentNode.removeChild(card); }, 300);
+                    }
+                }
+            });
+
+            // Update Column Visibility
+            CATEGORIES.forEach(cat => {
+                const col = cols[cat];
+                // Check if any items exist (including dying ones to prevent jumping)
+                const hasItems = col.children.length > 1; // 1 because header is child 0
+                if(hasItems) col.classList.remove('collapsed');
+                else col.classList.add('collapsed');
+            });
+        }
+
+        window.addEventListener('scroll', () => {
+            const max = document.body.scrollHeight - window.innerHeight;
+            const p = Math.max(0, Math.min(1, window.scrollY / max));
+            update(p);
+        });
+
+        update(0);
+
+    </script>
+</body>
+</html>

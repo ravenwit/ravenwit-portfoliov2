@@ -1,6 +1,7 @@
 export const starVertexShader = `
     uniform float uTime; uniform float uCameraZ; uniform float uSpeed; 
-    uniform vec3 uMassPositions[4]; uniform float uMassStrengths[4];
+    uniform int uMassCount;
+    uniform vec3 uMassPositions[10]; uniform float uMassStrengths[10];
     uniform vec3 uCameraPos; uniform float uLensing; uniform float uOpacity;
     attribute float size; attribute vec3 basePos; varying float vAlpha;
     void main() {
@@ -11,7 +12,8 @@ export const starVertexShader = `
         pos.z = uCameraZ + wrappedZ;
         vec3 viewDir = normalize(pos - uCameraPos);
         vec3 lensingOffset = vec3(0.0);
-        for(int i = 0; i < 4; i++) {
+        for(int i = 0; i < 10; i++) {
+            if (i >= uMassCount) break;
             vec3 massToCam = uMassPositions[i] - uCameraPos;
             float distToMass = length(massToCam);
             vec3 massDir = normalize(massToCam);

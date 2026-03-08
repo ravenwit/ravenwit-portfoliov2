@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shakir Ahmed | Minkowski Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            margin: 0; 
+            background-color: #050505; 
+            color: white; 
+            font-family: 'Courier New', Courier, monospace; /* Monospace for academic feel */
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        
+        /* The 3D Canvas - Fixed to viewport */
+        canvas { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 1; 
+            outline: none;
+        }
+
+        /* UI Overlay - Above Canvas */
+        #ui-layer { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 10; 
+            pointer-events: none; /* Let clicks pass through to canvas/scroll */
+        }
+
+        /* Labels Container */
+        #labels-container { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 5; 
+            pointer-events: none; 
+        }
+
+        /* Individual Event Labels */
+        .event-label {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        /* Scroll Spacer - Creates the scrollbar */
+        #spacetime-continuum {
+            height: 800vh; /* Very tall to represent long timeline */
+            width: 100%;
+            position: relative;
+            z-index: 0;
+        }
+
+        .math-ctx {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- WebGL Canvas -->
+    <canvas id="gl-canvas"></canvas>
+
+    <!-- Scroll Spacer -->
+    <div id="spacetime-continuum"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer" class="p-6 flex justify-between items-start">
+        <div>
+            <h1 class="text-4xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
+                SHAKIR AHMED
+            </h1>
+            <p class="text-cyan-200 font-mono mt-2 text-sm">
+                <span class="math-ctx">M</span> = (<span class="math-ctx">R</span><sup>3,1</sup>, <span class="math-ctx">η</span><sub>μν</sub>) <br>
+                Physics M.Sc. | Algorithm Developer | MLOps
+            </p>
+        </div>
+        
+        <div class="text-right">
+            <div class="text-xs font-mono text-gray-500">OBSERVER FRAME</div>
+            <div class="text-sm font-bold text-white">Hürth, Germany</div>
+            <div class="text-xs text-gray-500 mt-1">ds² = -c²dt² + dx² + dy² + dz²</div>
+        </div>
+
+        <div class="absolute bottom-10 left-0 w-full text-center animate-pulse">
+            <p class="text-sm font-mono text-gray-400 uppercase tracking-widest">
+                Scroll to translate along <span class="math-ctx">ct</span> axis
+            </p>
+            <div class="w-px h-12 bg-gradient-to-b from-transparent via-cyan-500 to-transparent mx-auto mt-2"></div>
+        </div>
+    </div>
+
+    <!-- Labels will be injected here -->
+    <div id="labels-container"></div>
+
+    <!-- Main Application Script -->
+    <script type="module">
+        // Importing standard Three.js module (No complex addons to prevent loading errors)
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+        // --- 1. COORDINATE SYSTEM DEFINITION ---
+        // We define a Minkowski-like diagram in 3D Euclidean space for visualization.
+        // Vertical Axis (Z in Three.js) maps to Time (ct).
+        // Horizontal Plane (X, Y) maps to Space.
+        // Scale: 1 unit Z = approx 1 month of time.
+
+        const events = [
+            // --- ACADEMIC WORLDLINE (x = -5) ---
+            { 
+                id: 'edu1', 
+                type: 'academic', 
+                year: '2015-2019', 
+                title: 'B.Sc Physics', 
+                org: 'Shahjalal Univ (SUST)', 
+                desc: 'Project: Wigner Monte Carlo. Rigid computational foundations.', 
+                // Time mapping: 2015 is deep past. Let's say Z = -50
+                pos: new THREE.Vector3(-6, -2, -60), 
+                color: '#00ffff' 
+            },
+            { 
+                id: 'award1', 
+                type: 'academic', 
+                year: '2016', 
+                title: 'Silver Medal', 
+                org: 'Univ Physics Competition', 
+                desc: 'Global recognition in analytical physics solving.', 
+                pos: new THREE.Vector3(-6, -1, -50), 
+                color: '#00ffff' 
+            },
+            { 
+                id: 'cert1', 
+                type: 'academic', 
+                year: '2023', 
+                title: 'Deep Learning Spec.', 
+                org: 'DeepLearning.AI / IBM', 
+                desc: 'Advanced ML, Signal Processing & Neural Networks.', 
+                pos: new THREE.Vector3(-6, 0, 20), 
+                color: '#00ffff' 
+            },
+            { 
+                id: 'edu2', 
+                type: 'academic', 
+                year: '2023-Present', 
+                title: 'M.Sc Physics', 
+                org: 'University of Cologne', 
+                desc: 'Specialization in Computational Physics.', 
+                pos: new THREE.Vector3(-6, 2, 30), 
+                color: '#00ffff' 
+            },
+
+            // --- PROFESSIONAL WORLDLINE (x = 5) ---
+            { 
+                id: 'work1', 
+                type: 'work', 
+                year: '2017', 
+                title: 'System Admin', 
+                org: 'HEXit', 
+                desc: 'Linux (CentOS), Network Mapping, Cybersecurity.', 
+                pos: new THREE.Vector3(6, -2, -40), 
+                color: '#ff8800' 
+            },
+            { 
+                id: 'work2', 
+                type: 'work', 
+                year: '2021', 
+                title: 'Subject Matter Expert', 
+                org: 'Shikho Technologies', 
+                desc: 'Interactive Physics Curriculum & Automation.', 
+                pos: new THREE.Vector3(6, 0, 0), 
+                color: '#ff8800' 
+            },
+            { 
+                id: 'work3', 
+                type: 'work', 
+                year: '2024-Present', 
+                title: 'Working Student: Algorithms', 
+                org: 'Luna Innovations', 
+                desc: 'DFOS Algorithms, MLOps, Microservices.', 
+                pos: new THREE.Vector3(6, 2, 40), 
+                color: '#ff8800' 
+            },
+        ];
+
+        // Interaction Bosons (Exchange particles representing skill transfer)
+        const interactions = [
+            { from: 'edu1', to: 'work2', label: 'Monte Carlo Logic -> Curriculum' },
+            { from: 'cert1', to: 'work3', label: 'DL Theory -> MLOps Imp.' }
+        ];
+
+        // --- 2. SCENE SETUP ---
+        const canvas = document.querySelector('#gl-canvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#050505');
+        scene.fog = new THREE.FogExp2(0x050505, 0.015); // Fog mimics the "observability horizon"
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // --- 3. GEOMETRY GENERATION ---
+
+        // Helper: Create Glowing Tube (Worldline)
+        function createWorldline(points, color) {
+            const curve = new THREE.CatmullRomCurve3(points);
+            const geometry = new THREE.TubeGeometry(curve, 64, 0.3, 8, false);
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 3, // High intensity to simulate neon without post-processing
+                roughness: 0.1,
+                metalness: 0.5
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+            return mesh;
+        }
+
+        // Interpolate points for smooth curves
+        // Academic Path: (-6, y, z)
+        const academicPath = [
+            new THREE.Vector3(-6, -5, -80), // Past
+            ...events.filter(e => e.type === 'academic').map(e => e.pos),
+            new THREE.Vector3(-6, 5, 80)    // Future
+        ];
+        createWorldline(academicPath, 0x00ffff);
+
+        // Professional Path: (6, y, z)
+        const workPath = [
+            new THREE.Vector3(6, -5, -80),
+            ...events.filter(e => e.type === 'work').map(e => e.pos),
+            new THREE.Vector3(6, 5, 80)
+        ];
+        createWorldline(workPath, 0xff8800);
+
+        // Grid (Spacetime Fabric)
+        const gridHelper = new THREE.GridHelper(30, 30, 0x222222, 0x111111);
+        gridHelper.position.set(0, -5, 0);
+        gridHelper.scale.set(1, 1, 5); // Stretch along Time axis
+        scene.add(gridHelper);
+
+        // Light Cones (Visualizing Causal Structure at Origin)
+        const coneGeo = new THREE.ConeGeometry(4, 8, 4, 1, true); // Open ended cone
+        const coneMat = new THREE.MeshBasicMaterial({ color: 0x333333, wireframe: true, transparent: true, opacity: 0.3 });
+        
+        // Past Light Cone
+        const pastCone = new THREE.Mesh(coneGeo, coneMat);
+        pastCone.position.set(0, 0, -4);
+        pastCone.rotation.x = -Math.PI / 2;
+        scene.add(pastCone);
+
+        // Future Light Cone
+        const futureCone = new THREE.Mesh(coneGeo, coneMat);
+        futureCone.position.set(0, 0, 4);
+        futureCone.rotation.x = Math.PI / 2;
+        scene.add(futureCone);
+
+
+        // --- 4. EVENTS & INTERACTIONS ---
+
+        const eventMeshes = [];
+        const labelsMap = {};
+
+        events.forEach(ev => {
+            // Event Geometry (Octahedron representing a specific point in spacetime)
+            const geo = new THREE.OctahedronGeometry(0.6, 0);
+            const mat = new THREE.MeshStandardMaterial({
+                color: '#ffffff',
+                emissive: ev.color,
+                emissiveIntensity: 2,
+                wireframe: true
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(ev.pos);
+            mesh.userData = { id: ev.id, originalColor: ev.color };
+            scene.add(mesh);
+            eventMeshes.push(mesh);
+
+            // Local Light Source
+            const light = new THREE.PointLight(ev.color, 2, 15);
+            light.position.copy(ev.pos);
+            scene.add(light);
+
+            // DOM Label Creation
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'event-label w-72 p-4 rounded-lg backdrop-blur-md border border-white/10 bg-black/60 shadow-xl';
+            labelDiv.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-mono text-gray-400">ct: ${ev.year}</span>
+                    <span class="w-2 h-2 rounded-full" style="background-color: ${ev.color}"></span>
+                </div>
+                <h3 class="text-lg font-bold text-white leading-tight">${ev.title}</h3>
+                <div class="text-sm font-semibold text-gray-300 mt-1">${ev.org}</div>
+                <p class="text-xs text-gray-400 mt-2 leading-relaxed border-t border-white/10 pt-2">${ev.desc}</p>
+            `;
+            document.getElementById('labels-container').appendChild(labelDiv);
+            labelsMap[ev.id] = labelDiv;
+        });
+
+        // Boson Beams (Interactions)
+        interactions.forEach(int => {
+            const startNode = events.find(e => e.id === int.from);
+            const endNode = events.find(e => e.id === int.to);
+
+            if(startNode && endNode) {
+                const points = [startNode.pos, endNode.pos];
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMat = new THREE.LineDashedMaterial({
+                    color: 0xffffff,
+                    linewidth: 1,
+                    scale: 1,
+                    dashSize: 1,
+                    gapSize: 0.5,
+                    opacity: 0.3,
+                    transparent: true
+                });
+                const line = new THREE.Line(lineGeo, lineMat);
+                line.computeLineDistances();
+                scene.add(line);
+                
+                // Add animate function to line
+                line.userData.animate = () => {
+                    lineMat.dashOffset -= 0.05;
+                };
+                eventMeshes.push(line); // Just to track for animation loop
+            }
+        });
+
+        // Stars
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 4000;
+        const starPos = new Float32Array(starCount * 3);
+        for(let i=0; i<starCount*3; i++) {
+            starPos[i] = (Math.random() - 0.5) * 300; // Spread wide
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0x888888, size: 0.2 });
+        const starMesh = new THREE.Points(starGeo, starMat);
+        scene.add(starMesh);
+
+        // --- 5. LOGIC & ANIMATION ---
+
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        window.addEventListener('pointermove', (e) => {
+            pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+            pointer.y = - (e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Scroll Logic -> Z Translation
+            // Map scroll (0 to 1) to Z (-70 to 70)
+            const scrollY = window.scrollY;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const scrollFraction = Math.max(0, Math.min(1, scrollY / maxScroll));
+            
+            const targetZ = scrollFraction * 140 - 70; // Range -70 to +70
+            
+            // Camera trails the "Present"
+            // We smoothly interpolate camera position for a "flight" feel
+            camera.position.z += (targetZ - 10 - camera.position.z) * 0.05;
+            camera.position.y += (1 - camera.position.y) * 0.05;
+            
+            // Camera looks slightly ahead into the future
+            camera.lookAt(0, 0, camera.position.z + 50);
+
+            // Object Animation
+            eventMeshes.forEach(obj => {
+                if(obj.isMesh) {
+                    obj.rotation.x += 0.01;
+                    obj.rotation.y += 0.01;
+                } else if (obj.userData.animate) {
+                    obj.userData.animate();
+                }
+            });
+
+            // Raycasting (Hover Effects)
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObjects(scene.children.filter(c => c.type === 'Mesh' && c.geometry.type === 'OctahedronGeometry'));
+
+            // Reset Styles
+            Object.values(labelsMap).forEach(el => {
+                el.style.transform = 'translate(-50%, -50%) scale(1)';
+                el.style.borderColor = 'rgba(255,255,255,0.1)';
+                el.style.zIndex = 5;
+            });
+
+            if(intersects.length > 0) {
+                const hit = intersects[0].object;
+                const label = labelsMap[hit.userData.id];
+                if(label) {
+                    label.style.transform = 'translate(-50%, -50%) scale(1.1)';
+                    label.style.borderColor = 'rgba(255,255,255,0.8)';
+                    label.style.zIndex = 20;
+                }
+            }
+
+            // Label Projection (3D -> 2D)
+            events.forEach(ev => {
+                const label = labelsMap[ev.id];
+                
+                // Get 3D position
+                const pos = ev.pos.clone();
+                pos.y += 2.5; // Offset label above node
+
+                // Project to screen space
+                pos.project(camera);
+
+                // If inside camera view (NDC -1 to 1) and not behind camera
+                // Note: Three.js frustum culling manual check
+                const isVisible = (pos.z < 1 && pos.z > -1 && Math.abs(pos.x) < 1.2 && Math.abs(pos.y) < 1.2);
+
+                if (isVisible) {
+                    const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (-(pos.y * 0.5) + 0.5) * window.innerHeight;
+
+                    label.style.left = `${x}px`;
+                    label.style.top = `${y}px`;
+                    
+                    // Distance fading
+                    const dist = camera.position.distanceTo(ev.pos);
+                    const opacity = Math.max(0, 1 - (dist / 40)); // Fade out if > 40 units away
+                    label.style.opacity = opacity;
+                } else {
+                    label.style.opacity = 0;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

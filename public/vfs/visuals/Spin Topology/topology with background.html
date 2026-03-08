@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Showcase Dimension - Editorial</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            margin: 0; overflow: hidden; background-color: #050505; 
+            font-family: 'Courier New', Courier, monospace; color: #fff; 
+        }
+
+        /* --- BACKGROUND LAYER --- */
+        #bg-canvas { 
+            position: absolute; top: 0; left: 0; 
+            width: 100vw; height: 100vh; z-index: 0; 
+            pointer-events: none; 
+        }
+
+        /* --- DUAL HEMISPHERE LAYOUT --- */
+        #left-hemi {
+            position: absolute; top: 0; left: 0;
+            width: 50vw; height: 100vh; z-index: 10;
+            pointer-events: auto; 
+        }
+        
+        #right-hemi {
+            position: absolute; top: 0; right: 0;
+            width: 50vw; height: 100vh; z-index: 10;
+            pointer-events: none; 
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+
+        /* --- EDITORIAL PAPER UI (FASHION MAGAZINE STYLE) --- */
+        #cards-container {
+            position: relative;
+            width: 90%;
+            max-width: 800px; 
+            height: 80vh; 
+            perspective: 2000px;
+            margin-top: -70vh;
+        }
+
+        .research-card {
+            position: absolute;
+            top: 50%;
+            background: #fdfcf9; 
+            border: 1px solid #111; 
+            padding: 3rem 2.5rem; 
+            box-sizing: border-box;
+            box-shadow: 15px 15px 0px rgba(0, 255, 204, 0.15); 
+            pointer-events: auto; 
+            transition: opacity 0.1s, transform 0.1s, box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            will-change: transform, opacity;
+            opacity: 0;
+            overflow: hidden; 
+
+            background-color: #fdfcf9;
+            
+            background-image: 
+                linear-gradient(#e6e2d8 1px, transparent 1px),
+                linear-gradient(90deg, #e6e2d8 1px, transparent 1px);
+            background-size: 25px 25px; /* Size of the grid squares */
+            background-position: center center;
+        }
+
+        .research-card:hover {
+            box-shadow: 25px 25px 0px rgba(0, 255, 204, 0.25);
+        }
+
+        /* The Giant Editorial Watermark Number */
+        .editorial-number {
+            position: absolute;
+            top: -30px;
+            right: -10px;
+            font-family: 'Playfair Display', 'Bodoni MT', 'Times New Roman', serif;
+            font-size: 12rem;
+            font-weight: bold;
+            color: #f0ece1; 
+            line-height: 1;
+            z-index: 0;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .card-content { position: relative; z-index: 1; 
+            /* Simulates ink soaking into the paper texture */
+            mix-blend-mode: multiply;
+        }
+
+        .card-header { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 0.7rem; font-weight: bold;
+            color: #111; 
+            letter-spacing: 4px; 
+            margin-bottom: 2rem; 
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .card-title { 
+            font-family: 'Playfair Display', 'Bodoni MT', 'Times New Roman', serif;
+            font-size: 3rem; font-weight: normal; font-style: italic;
+            color: #111; 
+            line-height: 1.1; margin-bottom: 1.5rem;
+            max-width: 90%;
+        }
+
+        .card-body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 0.95rem; line-height: 1.6; 
+            color: #444; margin-bottom: 2.5rem;
+            max-width: 85%;
+        }
+
+        .card-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        
+        .tag { 
+            background: transparent; 
+            border: 1px solid #111; 
+            color: #111; padding: 4px 10px; 
+            font-size: 0.65rem; letter-spacing: 1px; 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            text-transform: uppercase;
+        }
+
+        /* HUD Overlay */
+        #hud-overlay {
+            position: absolute; bottom: 30px; left: 30px; pointer-events: none; z-index: 20;
+            background: rgba(0, 0, 0, 0.5); padding: 15px; border-left: 2px solid #00ffcc; font-size: 12px;
+        }
+        .stat-row { display: flex; justify-content: space-between; width: 220px; margin-bottom: 5px; }
+        .stat-label { color: #5588aa; } .stat-value { color: #00ffcc; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+    <div id="left-hemi"></div>
+    <div id="right-hemi">
+        <div id="cards-container"></div>
+    </div>
+
+    <div id="hud-overlay">
+        <div class="stat-row"><span class="stat-label">SCROLL_VAR (s)</span><span class="stat-value" id="hud-s">0.00</span></div>
+        <div class="stat-row"><span class="stat-label">TOPOLOGY</span><span class="stat-value" id="hud-phase">TORUS</span></div>
+        <div class="stat-row"><span class="stat-label">PARTICLE ω</span><span class="stat-value" id="hud-omega">0.00 rad/s</span></div>
+    </div>
+
+<script>
+        const bgCanvas = document.getElementById('bg-canvas');
+        const ctx = bgCanvas.getContext('2d');
+        let width, height;
+        let strings = [];
+        
+        // Increased resolution and density
+        const stringCount = 90; 
+        const pointsPerString = 170; 
+
+        const baseRestoring = 0.00004; 
+        const baseDamping = 0.9976; 
+        const spongeWidth = 25; 
+        const maxExtraDamping = 0.15; 
+
+        // Source wave parameters
+        const sourceAmplitude = 0.08;
+        const sourceFrequency = 0.003; 
+        const sourceRadius = 400; 
+        const waveNumber = 0.035; 
+
+        let mouse = { x: -1000, y: -1000, px: -1000, py: -1000, vx: 0, vy: 0 };
+        let hasInteracted = false;
+
+        class Point {
+            constructor(x, y, gridX, gridY) {
+                this.x = x; this.y = y; this.baseY = y; this.vy = 0;
+                
+                // 1. Dual-Hemisphere Refraction: Left side is dense/slow, Right side is fast
+                this.c2 = (x < window.innerWidth / 2) ? 0.0015 : 0.006;
+                
+                this.localDamping = baseDamping;
+                let minDist = Math.min(gridX, gridY);
+                if (minDist < spongeWidth) {
+                    let penetration = (spongeWidth - minDist) / spongeWidth;
+                    this.localDamping = baseDamping - (maxExtraDamping * Math.pow(penetration, 2));
+                }
+            }
+            update() {
+                this.vy += (this.baseY - this.y) * baseRestoring;
+                this.vy *= this.localDamping;
+                this.y += this.vy;
+            }
+        }
+
+        function initBG() {
+            width = bgCanvas.width = window.innerWidth;
+            height = bgCanvas.height = window.innerHeight;
+            strings = [];
+            const xStep = width / (pointsPerString - 1);
+            const yStep = height / (stringCount + 1);
+            for (let i = 0; i < stringCount; i++) {
+                let points = [];
+                for (let j = 0; j < pointsPerString; j++) points.push(new Point(j * xStep, (i + 1) * yStep, j, i));
+                strings.push(points);
+            }
+        }
+
+        function animateBG(currentTime) {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw dual-hemisphere atmospheric background
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.3)'; // Fast medium (Right / Cards)
+            ctx.fillRect(width / 2, 0, width / 2, height); 
+            ctx.fillStyle = 'rgba(10, 15, 20, 0.3)'; // Slow medium (Left / Topology)
+            ctx.fillRect(0, 0, width / 2, height); 
+
+            mouse.vx *= 0.5; mouse.vy *= 0.5;
+            const sourceX = width; const sourceY = height;
+
+            for (let i = 0; i < stringCount; i++) {
+                for (let j = 0; j < pointsPerString; j++) {
+                    let p = strings[i][j];
+
+                    // Mouse Interaction
+                    let dx = mouse.x - p.x, dy = mouse.y - p.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 120) {
+                        let influence = 1 - (dist / 120); 
+                        p.vy += mouse.vy * 0.05 * influence; 
+                    }
+
+                    // Source Wave Generator (Originating from bottom right)
+                    let s_dx = sourceX - p.x, s_dy = sourceY - p.baseY; 
+                    let s_dist = Math.sqrt(s_dx*s_dx + s_dy*s_dy);
+                    if (s_dist < sourceRadius) {
+                        let s_influence = Math.pow(1 - (s_dist / sourceRadius), 2); 
+                        let projected_d = (s_dx + s_dy) / Math.SQRT2;
+                        p.vy += Math.cos(currentTime * sourceFrequency - waveNumber * projected_d) * sourceAmplitude * s_influence;
+                    }
+
+                    // Displacement Laplacian Approximation
+                    let u = p.y - p.baseY;
+                    let forceLeft = (j > 0) ? (strings[i][j-1].y - p.y) : (strings[i][j+1].y - p.y);
+                    let forceRight = (j < pointsPerString - 1) ? (strings[i][j+1].y - p.y) : (strings[i][j-1].y - p.y);
+                    let u_up = (i > 0) ? (strings[i-1][j].y - strings[i-1][j].baseY) : (strings[i+1][j].y - strings[i+1][j].baseY);
+                    let u_down = (i < stringCount - 1) ? (strings[i+1][j].y - strings[i+1][j].baseY) : (strings[i-1][j].y - strings[i-1][j].baseY);
+
+                    // Apply local c^2 wave speed
+                    p.vy += (forceLeft + forceRight + (u_up - u) + (u_down - u)) * p.c2;
+                }
+            }
+
+            ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 1.0; 
+            for (let i = 0; i < stringCount; i++) {
+                ctx.beginPath();
+                for (let j = 0; j < pointsPerString; j++) {
+                    let p = strings[i][j]; p.update();
+                    j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+                }
+                ctx.globalAlpha = 0.35; ctx.stroke();
+            }
+            requestAnimationFrame(animateBG);
+        }
+
+        window.addEventListener('mousemove', e => {
+            if (!hasInteracted) { 
+                mouse.px = mouse.x = e.clientX; 
+                mouse.py = mouse.y = e.clientY; 
+                hasInteracted = true; return; 
+            }
+            mouse.px = mouse.x; mouse.py = mouse.y;
+            mouse.x = e.clientX; mouse.y = e.clientY;
+            mouse.vx = mouse.x - mouse.px; mouse.vy = mouse.y - mouse.py;
+        });
+
+        window.addEventListener('resize', initBG);
+        initBG(); 
+        requestAnimationFrame(animateBG); // Initiate loop with time parameter
+    </script>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- 1. RESEARCH DATA ---
+        const researchData = [
+            { id: "RES-01", title: "Wavelet-Based CNNs", desc: "Integration of Discrete Wavelet Transforms into Convolutional Neural Networks to prevent high-frequency spatial information loss during max-pooling. Achieved higher compression efficiency.", tags: ["Python", "TensorFlow", "Signal Processing"] },
+            { id: "RES-02", title: "Quantum Monte Carlo", desc: "Path integral formulation mapping a d-dimensional quantum system to a (d+1)-dimensional classical system. Visualized bosonic exchange and topological reconnections.", tags: ["C++", "Quantum Mechanics", "Statistical Physics"] },
+            { id: "RES-03", title: "Tensor Networks (MPS)", desc: "Matrix Product States for compressing exponentially large quantum Hilbert spaces. Performed Singular Value Decomposition (SVD) truncation on internal entanglement bonds.", tags: ["Julia", "Linear Algebra", "Many-Body Physics"] },
+            { id: "RES-04", title: "Neutrino Oscillation", desc: "Wigner Monte Carlo simulation of neutrino flavor state superpositions propagating through space, tracking the phase shift governed by the PMNS matrix.", tags: ["Fortran", "Particle Physics", "Monte Carlo"] },
+            { id: "RES-05", title: "Ising Phase Transitions", desc: "Simulation of spontaneous symmetry breaking and the divergence of correlation length near a critical temperature in a 3D lattice array.", tags: ["C++", "Statistical Mechanics", "Phase Transitions"] }
+        ];
+
+        const container = document.getElementById('cards-container');
+        researchData.forEach((data, i) => {
+            const numStr = (i + 1).toString().padStart(2, '0');
+            container.innerHTML += `
+                <div class="research-card" id="card-${i}">
+                    <div class="editorial-number">${numStr}</div>
+                    <div class="card-content">
+                        <div class="card-header">${data.id}</div>
+                        <div class="card-title">${data.title}</div>
+                        <div class="card-body">${data.desc}</div>
+                        <div class="card-tags">${data.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                    </div>
+                </div>
+            `;
+        });
+        const cards = document.querySelectorAll('.research-card');
+
+        // --- 2. THREE.JS SETUP ---
+        const leftHemi = document.getElementById('left-hemi');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, (window.innerWidth / 2) / window.innerHeight, 0.1, 100);
+        camera.position.set(8, 6, 8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth / 2, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        leftHemi.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.enableZoom = false; controls.enablePan = false;
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const dir1 = new THREE.DirectionalLight(0x00ffcc, 2.5); dir1.position.set(5, 5, 5); scene.add(dir1);
+        const dir2 = new THREE.DirectionalLight(0xff0066, 2.0); dir2.position.set(-5, -2, -5); scene.add(dir2);
+
+        const R = 3.0, segmentsU = 150, segmentsV = 60;
+        const geometry = new THREE.BufferGeometry();
+        const vertices = new Float32Array((segmentsU + 1) * (segmentsV + 1) * 3);
+        const indices = [];
+        for (let i = 0; i < segmentsU; i++) {
+            for (let j = 0; j < segmentsV; j++) {
+                let a = i * (segmentsV + 1) + j, b = a + (segmentsV + 1), c = a + 1, d = b + 1;
+                indices.push(a, b, d); indices.push(a, d, c);
+            }
+        }
+        geometry.setIndex(indices); geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        const material = new THREE.MeshStandardMaterial({ color: 0x4488ff, roughness: 0.3, metalness: 0.4, side: THREE.DoubleSide, transparent: true, opacity: 0.9, wireframe: true });
+        const mesh = new THREE.Mesh(geometry, material); scene.add(mesh);
+
+        const particle = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffcc00 })); scene.add(particle);
+        const normalArrow = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(), 1.5, 0x00ffcc, 0.3, 0.2); scene.add(normalArrow);
+        particle.visible = false; normalArrow.visible = false;
+
+        // --- 3. UNIFIED SCROLL & TIME STATE ---
+        let targetScroll = 0.0;
+        let currentScroll = 0.0;
+        
+        const clock = new THREE.Clock();
+        let autonomousParticleU = 0.0;
+        const particleOmega = 0.25; 
+        
+        window.addEventListener('wheel', (event) => {
+            targetScroll += event.deltaY * 0.002;
+            targetScroll = Math.max(0, Math.min(targetScroll, 9.0)); 
+        });
+
+        function evaluateMasterEquation(u_norm, v_norm, T_val) {
+            const u = u_norm * 2.0 * Math.PI;
+            const geomT = Math.min(T_val, 4.0);
+            const phase = Math.floor(geomT) === 4 ? 3 : Math.floor(geomT);
+            let rawLambda = geomT - phase; if (geomT >= 4.0) rawLambda = 1.0; 
+            const lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda); 
+
+            let f1, f2, v, tau, vmax;
+            if (phase === 0) { vmax = 2.0 * Math.PI; v = v_norm * vmax; f1 = (1.0 - lambda) * Math.cos(v) + lambda * Math.sin(v); f2 = Math.sin(v); tau = 0.0; }
+            else if (phase === 1) { vmax = Math.PI * (2.0 - lambda); v = v_norm * vmax; f1 = Math.sin(v); f2 = Math.sin(v); tau = 0.0; }
+            else if (phase === 2) { vmax = Math.PI; v = v_norm * vmax; f1 = Math.sin(v); f2 = Math.sin(v); tau = 0.5 * lambda; }
+            else if (phase === 3) { vmax = Math.PI * (1.0 + lambda); v = v_norm * vmax; f1 = Math.sin(v); f2 = Math.sin(v); tau = 0.5; }
+
+            const twistAngle = tau * u;
+            const x_prime = f1 * Math.cos(twistAngle) - f2 * Math.sin(twistAngle);
+            const z_prime = f1 * Math.sin(twistAngle) + f2 * Math.cos(twistAngle);
+            return { pos: new THREE.Vector3((R + x_prime) * Math.cos(u), z_prime, -(R + x_prime) * Math.sin(u)) };
+        }
+
+        // --- 4. ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+            currentScroll += (targetScroll - currentScroll) * 0.08;
+            
+            // --- TOPOLOGY UPDATE ---
+            const positions = geometry.attributes.position.array;
+            let index = 0;
+            for (let i = 0; i <= segmentsU; i++) {
+                for (let j = 0; j <= segmentsV; j++) {
+                    const data = evaluateMasterEquation(i / segmentsU, j / segmentsV, currentScroll);
+                    positions[index++] = data.pos.x; positions[index++] = data.pos.y; positions[index++] = data.pos.z;
+                }
+            }
+            geometry.attributes.position.needsUpdate = true;
+            geometry.computeVertexNormals();
+
+            // --- AUTONOMOUS PARTICLE PHYSICS ---
+            if (currentScroll >= 4.0) {
+                particle.visible = true; normalArrow.visible = true;
+                
+                autonomousParticleU = (autonomousParticleU + particleOmega * dt) % 2.0;
+                let pu = autonomousParticleU; 
+                let pv = 0.5; 
+                
+                const pData = evaluateMasterEquation(pu, pv, 4.0);
+                particle.position.copy(pData.pos);
+                
+                const d = 0.001;
+                const Tu = new THREE.Vector3().subVectors(evaluateMasterEquation(pu+d, pv, 4.0).pos, pData.pos);
+                const Tv = new THREE.Vector3().subVectors(evaluateMasterEquation(pu, pv+d, 4.0).pos, pData.pos);
+                normalArrow.position.copy(pData.pos);
+                normalArrow.setDirection(new THREE.Vector3().crossVectors(Tu, Tv).normalize());
+
+                document.getElementById('hud-omega').innerText = particleOmega.toFixed(2) + " rad/s";
+            } else { 
+                particle.visible = false; normalArrow.visible = false; 
+                autonomousParticleU = 0.0; 
+                document.getElementById('hud-omega').innerText = "0.00 rad/s";
+            }
+
+            // --- CARDS CASCADING UPDATE (EDITORIAL ASYMMETRY) ---
+            cards.forEach((card, i) => {
+                const triggerPoint = 1.5 + i * 1.0; 
+                const diff = currentScroll - triggerPoint;
+                
+                // Determine layout rules mathematically by index
+                const isEven = i % 2 === 0;
+                card.style.width = isEven ? '80%' : '65%';
+                card.style.left = isEven ? '0' : 'auto';
+                card.style.right = isEven ? 'auto' : '0';
+                
+                const baseTilt = isEven ? -2 : 3; 
+
+                if (diff < 0) {
+                    // IN THE MESSY DECK
+                    const stackDepth = Math.abs(diff);
+                    const clampedDepth = Math.min(stackDepth, 3); 
+                    
+                    const yOffset = 250 + (clampedDepth * 40); 
+                    const zOffset = -100 * clampedDepth;
+                    
+                    const xOffset = isEven ? -(clampedDepth * 20) : (clampedDepth * 20);
+                    const rotateZ = baseTilt + (isEven ? -clampedDepth * 2 : clampedDepth * 2);
+
+                    card.style.transform = `translate3d(${xOffset}px, calc(-50% + ${yOffset}px), ${zOffset}px) rotateZ(${rotateZ}deg)`;
+                    card.style.opacity = 1.0 - (clampedDepth * 0.25);
+                    card.style.zIndex = 10 - Math.floor(stackDepth);
+                    card.style.pointerEvents = 'auto';
+                    
+                } else if (diff < 1.0) {
+                    // ACTIVE TO PAST (Floating up with parallax)
+                    const yOffset = -300 * diff; 
+                    const xOffset = isEven ? -10 * diff : 15 * diff;
+                    const opacity = 1.0 - diff;
+                    
+                    card.style.transform = `translate3d(${xOffset}px, calc(-50% + ${yOffset}px), 0px) rotateZ(${baseTilt}deg)`;
+                    card.style.opacity = opacity;
+                    card.style.zIndex = 10;
+                    card.style.pointerEvents = 'auto';
+                } else {
+                    // ARCHIVED
+                    card.style.opacity = 0;
+                    card.style.pointerEvents = 'none';
+                }
+            });
+
+            // Update HUD
+            document.getElementById('hud-s').innerText = currentScroll.toFixed(2);
+            document.getElementById('hud-phase').innerText = currentScroll < 4.0 ? "MORPHING" : "MÖBIUS MANIFOLD";
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = (window.innerWidth / 2) / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth / 2, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

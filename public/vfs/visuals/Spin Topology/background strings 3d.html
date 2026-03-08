@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Refraction Wave Membrane</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #050505; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 10px; left: 10px;
+            color: #00f2ff;
+            font-family: monospace;
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+<div id="info">Left-Click: Rotate Camera | Scroll: Zoom | Mouse Move: Excite Field<br>Right Half: Fast Medium | Left Half: Dense Medium</div>
+
+<script>
+// --- 1. Three.js Scene Setup ---
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x050505, 0.001);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
+// Position the camera to look down at the membrane diagonally
+camera.position.set(0, 800, 1200);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x050505);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+
+// --- 2. Physics & Grid Parameters ---
+const stringCount = 90; // Depth (Z-axis)
+const pointsPerString = 170; // Width (X-axis)
+const spacing = 12; // Spatial distance between nodes (\Delta x and \Delta z)
+
+const gridWidth = (pointsPerString - 1) * spacing;
+const gridDepth = (stringCount - 1) * spacing;
+
+const baseRestoring = 0.00004; 
+const baseDamping = 0.9976; 
+const spongeWidth = 25; 
+const maxExtraDamping = 0.15; 
+
+// Phased Array parameters
+const sourceAmplitude = 12.0; // Scaled up for 3D visibility
+const sourceFrequency = 0.003; 
+const sourceRadius = 500; 
+const waveNumber = 0.035; 
+
+// Raycasting setup for mouse interaction
+const raycaster = new THREE.Raycaster();
+const mouseNDC = new THREE.Vector2(-2, -2);
+const intersectionPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+let worldMouse = new THREE.Vector3(0, 0, 0);
+
+let hasInteracted = false;
+let mouse = { x: -10000, z: -10000, px: -10000, pz: -10000, vx: 0, vz: 0 };
+
+// --- 3. Physics Data Structure ---
+class Point {
+    constructor(x, z, gridX, gridZ) {
+        this.x = x;
+        this.y = 0; // Pure displacement (u)
+        this.baseY = 0; 
+        this.z = z;
+        this.vy = 0;
+        
+        // Refraction zone: X < 0 is the slow/dense medium
+        this.c2 = (x < 0) ? 0.0015 : 0.006;
+        
+        this.localDamping = baseDamping;
+        let minDist = Math.min(gridX, gridZ);
+        
+        if (minDist < spongeWidth) {
+            let penetration = (spongeWidth - minDist) / spongeWidth;
+            this.localDamping = baseDamping - (maxExtraDamping * Math.pow(penetration, 2));
+        }
+    }
+
+    update() {
+        let restoringForce = (this.baseY - this.y) * baseRestoring;
+        this.vy += restoringForce;
+        this.vy *= this.localDamping;
+        this.y += this.vy;
+    }
+}
+
+let strings = [];
+let lines = []; // Array to hold the THREE.Line objects
+
+// Initialize the mathematical grid and visual geometry
+const materialFast = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.5 });
+const materialSlow = new THREE.LineBasicMaterial({ color: 0x0055ff, transparent: true, opacity: 0.5 });
+
+for (let i = 0; i < stringCount; i++) {
+    let points = [];
+    let rowZ = (i * spacing) - (gridDepth / 2); // Center along Z
+    
+    // Create a Float32Array to hold the 3D vertices for this specific string
+    let positions = new Float32Array(pointsPerString * 3);
+    
+    for (let j = 0; j < pointsPerString; j++) {
+        let colX = (j * spacing) - (gridWidth / 2); // Center along X
+        points.push(new Point(colX, rowZ, j, i));
+        
+        // Populate the initial geometry buffer
+        let idx = j * 3;
+        positions[idx] = colX;
+        positions[idx+1] = 0; // Y axis is up/down displacement
+        positions[idx+2] = rowZ;
+    }
+    strings.push(points);
+    
+    let geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    
+    // Apply a slightly different color to the string based on its physical properties
+    // (We use a single material for the string, so we evaluate the center point)
+    let line = new THREE.Line(geometry, materialFast);
+    scene.add(line);
+    lines.push(line);
+}
+
+// Add a faint vertical plane to show the refraction boundary (X = 0)
+const boundaryGeo = new THREE.PlaneGeometry(gridDepth, 200);
+boundaryGeo.rotateY(Math.PI / 2);
+const boundaryMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05, side: THREE.DoubleSide });
+const boundaryMesh = new THREE.Mesh(boundaryGeo, boundaryMat);
+scene.add(boundaryMesh);
+
+// --- 4. The Integration Loop ---
+function animate(currentTime) {
+    requestAnimationFrame(animate);
+    controls.update();
+
+    // Calculate interactive cursor velocity based on 3D raycast
+    mouse.vx *= 0.5;
+    mouse.vz *= 0.5;
+
+    // Phased array origin (Bottom-Right corner in 3D: Max X, Max Z)
+    const sourceX = gridWidth / 2;
+    const sourceZ = gridDepth / 2;
+
+    for (let i = 0; i < stringCount; i++) {
+        let positionAttribute = lines[i].geometry.attributes.position;
+        let positions = positionAttribute.array;
+
+        for (let j = 0; j < pointsPerString; j++) {
+            let p = strings[i][j];
+
+            // A. Kinetic Excitation via Raycast
+            let dx = mouse.x - p.x;
+            let dz = mouse.z - p.z;
+            let dist = Math.sqrt(dx*dx + dz*dz);
+            
+            if (dist < 150) {
+                let influence = 1 - (dist / 150); 
+                // Combine vx and vz to create an overall kinetic magnitude
+                let velocityMag = Math.sqrt(mouse.vx*mouse.vx + mouse.vz*mouse.vz);
+                p.vy += velocityMag * 0.02 * influence; // Upward splash
+            }
+
+            // B. Directional Phased Forcing
+            let s_dx = sourceX - p.x; 
+            let s_dz = sourceZ - p.z; 
+            let s_dist = Math.sqrt(s_dx*s_dx + s_dz*s_dz);
+            
+            if (s_dist < sourceRadius) {
+                let s_influence = Math.pow(1 - (s_dist / sourceRadius), 2); 
+                let projected_d = (s_dx + s_dz) / Math.SQRT2;
+                p.vy += Math.cos(currentTime * sourceFrequency - waveNumber * projected_d) * sourceAmplitude * s_influence;
+            }
+
+            // C. Pure Displacement Laplacian
+            let u = p.y; // BaseY is 0 in this updated coordinate space
+
+            let forceLeft = (j > 0) ? (strings[i][j-1].y - u) : (strings[i][j+1].y - u);
+            let forceRight = (j < pointsPerString - 1) ? (strings[i][j+1].y - u) : (strings[i][j-1].y - u);
+            let forceUp = (i > 0) ? (strings[i-1][j].y - u) : (strings[i+1][j].y - u);
+            let forceDown = (i < stringCount - 1) ? (strings[i+1][j].y - u) : (strings[i-1][j].y - u);
+
+            p.vy += (forceLeft + forceRight + forceUp + forceDown) * p.c2;
+        }
+
+        // Apply physics updates and write the new Y values to the GPU buffer
+        for (let j = 0; j < pointsPerString; j++) {
+            let p = strings[i][j];
+            p.update();
+            positions[j * 3 + 1] = p.y; 
+        }
+        
+        // Notify the GPU that this specific buffer has changed and needs rendering
+        positionAttribute.needsUpdate = true;
+    }
+
+    renderer.render(scene, camera);
+}
+
+// --- 5. Event Listeners & Raycasting ---
+window.addEventListener('mousemove', e => {
+    // 1. Convert to Normalized Device Coordinates (-1 to +1)
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    // 2. Fire the mathematical ray from the camera
+    raycaster.setFromCamera(mouseNDC, camera);
+    
+    // 3. Find where the ray intersects our mathematical Y=0 plane
+    raycaster.ray.intersectPlane(intersectionPlane, worldMouse);
+
+    if (worldMouse) {
+        if (!hasInteracted) {
+            mouse.px = worldMouse.x;
+            mouse.pz = worldMouse.z;
+            mouse.x = worldMouse.x;
+            mouse.z = worldMouse.z;
+            hasInteracted = true;
+            return;
+        }
+
+        mouse.px = mouse.x;
+        mouse.pz = mouse.z;
+        mouse.x = worldMouse.x;
+        mouse.z = worldMouse.z;
+        
+        mouse.vx = mouse.x - mouse.px;
+        mouse.vz = mouse.z - mouse.pz;
+    }
+});
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+animate(0);
+</script>
+</body>
+</html>

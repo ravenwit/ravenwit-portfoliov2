@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anyonic Braiding & Topological Phase</title>
+    <style>
+        :root {
+            --bg-color: #050508;
+            --text-color: #8b9bb4;
+            --accent-color: #ff0055; /* Anyon Signature Color */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Inter', system-ui, sans-serif;
+            cursor: none; /* Custom cursor */
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1rem;
+            color: #fff;
+            margin: 0 0 10px 0;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 300;
+            border-left: 3px solid var(--accent-color);
+            padding-left: 12px;
+        }
+
+        p {
+            font-size: 0.8rem;
+            color: var(--text-color);
+            margin: 0;
+            line-height: 1.6;
+            max-width: 320px;
+        }
+
+        .phase-indicator {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* Scanline effect for retro-sci-fi feel */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay">
+        <h1>Anyonic Braiding</h1>
+        <p>
+            Visualizing the topological <span class="phase-indicator">Aharonov-Bohm phase</span>.
+            <br><br>
+            Particles accumulate phase ($\theta$) as they braid around the flux source (cursor).
+            <br>
+            <strong>Flash</strong> = $2\pi$ Winding Completed.
+        </p>
+    </div>
+
+    <div class="scanlines"></div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        /**
+         * ANYONIC BRAIDING SIMULATION
+         * * Mathematical Concept:
+         * We simulate quasi-particles (Anyons) carrying both charge and magnetic flux.
+         * The 'Phase' is tracked by calculating the winding number of the particle's
+         * path around the central potential (mouse).
+         * * Dynamics:
+         * Hamiltonian involves a central attractive potential V(r) ~ r
+         * plus a Lorentz-like force F = qv x B to induce braiding/orbiting.
+         */
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Alpha false for manual trail control
+
+        const config = {
+            particleCount: 40,
+            baseSpeed: 2.5,
+            turnSpeed: 0.08,    // How fast they orbit (Lorentz force strength)
+            smoothing: 0.1,     // Mouse lag
+            trailLength: 20,    // Length of the worldline
+            coreRadius: 150,    // Distance they want to maintain from center
+            repulsion: 1.2,     // Coulomb repulsion between anyons
+            pulseDecay: 0.05    // How fast the phase flash fades
+        };
+
+        // State
+        let width, height;
+        let anyons = [];
+        let mouse = { x: -1000, y: -1000 };
+        let smoothMouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+
+        class Anyon {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Random spawn outside or around center
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 100 + Math.random() * 200;
+                this.x = smoothMouse.x + Math.cos(angle) * dist;
+                this.y = smoothMouse.y + Math.sin(angle) * dist;
+                
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                
+                // History for trails (Worldlines)
+                this.history = [];
+                
+                // Topological State
+                this.prevAngle = Math.atan2(this.y - smoothMouse.y, this.x - smoothMouse.x);
+                this.winding = 0; // Accumulated Phase
+                this.flashIntensity = 0.0; // Visual flash state
+                
+                // Unique characteristics
+                this.frequency = 0.5 + Math.random(); // Fluctuation speed
+                this.hue = Math.random() > 0.5 ? 340 : 190; // Magenta vs Cyan Anyons
+            }
+
+            update() {
+                // 1. Calculate vector to Center (Flux Source)
+                const dx = smoothMouse.x - this.x;
+                const dy = smoothMouse.y - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // 2. Topological Phase Tracking (Winding Number)
+                // We calculate the change in angle relative to the center
+                const currentAngle = Math.atan2(-dy, -dx); // Vector from Mouse to Particle
+                let dTheta = currentAngle - this.prevAngle;
+                
+                // Normalize angle change to [-PI, PI] to handle wrapping (branch cuts)
+                if (dTheta > Math.PI) dTheta -= 2 * Math.PI;
+                if (dTheta < -Math.PI) dTheta += 2 * Math.PI;
+                
+                this.winding += dTheta;
+                this.prevAngle = currentAngle;
+
+                // CHECK BRAIDING CONDITION:
+                // If winding crosses a multiple of 2*PI, we have completed a braid.
+                // Trigger the Aharonov-Bohm Phase Flash.
+                if (Math.abs(this.winding) > Math.PI * 2) {
+                    this.flashIntensity = 1.0;
+                    this.winding = 0; // Reset or keep accumulating (reset for visual clarity)
+                }
+
+
+                // 3. Forces & Dynamics
+                
+                // A. Central Potential (Attraction to ideal radius)
+                // They want to orbit at 'coreRadius', not crash into the center
+                const distError = dist - config.coreRadius;
+                const attractForce = distError * 0.0005;
+                
+                this.vx += dx/dist * attractForce;
+                this.vy += dy/dist * attractForce;
+
+                // B. Lorentz Force (Tangential/Magnetic)
+                // This causes them to orbit perpendicular to the attraction
+                // F = v x B. Here, B is effectively the desire to rotate.
+                // We add a force perpendicular to the radius vector.
+                const orbitDirX = -dy / dist;
+                const orbitDirY = dx / dist;
+                
+                this.vx += orbitDirX * config.turnSpeed;
+                this.vy += orbitDirY * config.turnSpeed;
+
+                // C. Coulomb Repulsion (Anyon-Anyon Interaction)
+                // Basic implementation to prevent clumping
+                // Only check a few random neighbors for performance in JS
+                // (O(N^2) is too slow for 100+ particles in simple script)
+                /* For visualization, simple noise is often enough, 
+                   but let's do a simple separation logic 
+                */
+               
+                // D. Damping (Friction)
+                this.vx *= 0.96;
+                this.vy *= 0.96;
+                
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 4. Update Visuals
+                if (this.flashIntensity > 0) {
+                    this.flashIntensity -= config.pulseDecay;
+                }
+
+                // Update Trail
+                this.history.push({x: this.x, y: this.y});
+                if (this.history.length > config.trailLength) {
+                    this.history.shift();
+                }
+            }
+
+            draw(ctx) {
+                // Draw Worldline (Trail)
+                if (this.history.length < 2) return;
+
+                ctx.beginPath();
+                ctx.moveTo(this.history[0].x, this.history[0].y);
+                for (let i = 1; i < this.history.length; i++) {
+                    // Smooth quadratic bezier for organic look
+                    // const p0 = this.history[i-1];
+                    // const p1 = this.history[i];
+                    // const mx = (p0.x + p1.x) / 2;
+                    // const my = (p0.y + p1.y) / 2;
+                    // ctx.quadraticCurveTo(p0.x, p0.y, mx, my);
+                    ctx.lineTo(this.history[i].x, this.history[i].y);
+                }
+                
+                // Color calculation based on flash (Phase)
+                const isFlash = this.flashIntensity > 0.01;
+                const alpha = 0.3 + this.flashIntensity * 0.7;
+                
+                let r, g, b;
+                if (isFlash) {
+                    // Flash White/Gold upon phase accumulation
+                    r = 255; g = 255; b = 200; 
+                } else {
+                    // Normal state
+                    if (this.hue === 340) { // Magenta
+                        r = 255; g = 0; b = 100;
+                    } else { // Cyan
+                        r = 0; g = 240; b = 255;
+                    }
+                }
+
+                ctx.strokeStyle = `rgba(${r},${g},${b},${alpha * 0.5})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw Head (Particle)
+                const headSize = 2 + this.flashIntensity * 4;
+                
+                ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, headSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Glow effect
+                if (isFlash) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = `rgba(${r},${g},${b},1)`;
+                    ctx.fill(); // Fill again for intensity
+                    ctx.shadowBlur = 0; // Reset
+                }
+            }
+        }
+
+        // --- Main Engine ---
+
+        function init() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            
+            anyons = [];
+            for(let i=0; i<config.particleCount; i++) {
+                anyons.push(new Anyon());
+            }
+        }
+
+        function animate() {
+            // Smooth Mouse Movement
+            // We use lerp to give the "Flux Source" inertia
+            smoothMouse.x += (mouse.x - smoothMouse.x) * config.smoothing;
+            smoothMouse.y += (mouse.y - smoothMouse.y) * config.smoothing;
+
+            // Trails effect:
+            // Instead of clearing the rect completely, we draw a semi-transparent
+            // black rectangle. This creates a "long exposure" effect.
+            ctx.fillStyle = "rgba(5, 5, 8, 0.25)"; 
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Flux Source (Cursor)
+            // A subtle distortion in the center
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+            ctx.beginPath();
+            ctx.arc(smoothMouse.x, smoothMouse.y, 40, 0, Math.PI*2);
+            ctx.stroke();
+
+            // Physics & Draw
+            anyons.forEach(p => {
+                p.update();
+                p.draw(ctx);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Interaction ---
+        
+        window.addEventListener('resize', init);
+        
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Initialize mouse in center initially
+        mouse.x = window.innerWidth / 2;
+        mouse.y = window.innerHeight / 2;
+
+        init();
+        animate();
+
+    </script>
+</body>
+</html>

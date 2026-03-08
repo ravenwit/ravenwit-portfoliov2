@@ -2,3 +2,10 @@ node_modules
 dist
 .DS_Store
 *.local
+
+skills.txt
+.agent
+
+output_vectors/
+icons_demo/
+

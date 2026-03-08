@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eigenmatrix Micro-HUD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Jersey 10 Charted Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+10+Charted&display=swap" rel="stylesheet">
+
+    <!-- Micro 5 Charted Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&display=swap" rel="stylesheet">
+
+    <!-- Sixtyfour Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&family=Sixtyfour&display=swap"
+        rel="stylesheet">
+
+    <!-- Doto Google Font for industrial aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Micro+5+Charted&family=Sixtyfour&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-purple: #bc13fe;
+            --bg-color: #020204;
+            /* MICRO SIZE SETTINGS */
+            --cell-size: 25px;
+            --gap: 3px;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: hidden;
+            height: 600vh;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 10;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(0, 243, 255, 0.1) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanline {
+            0% {
+                bottom: 100%;
+            }
+
+            100% {
+                bottom: -100px;
+            }
+        }
+
+        #viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1200px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        #hud-ui {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        #year-display {
+            font-size: 4rem;
+            font-weight: 100;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #year-label {
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: -10px;
+        }
+
+        #timeline-bar {
+            width: 4px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            position: absolute;
+            left: -15px;
+            top: 10px;
+        }
+
+        #timeline-progress {
+            width: 100%;
+            background: var(--neon-cyan);
+            height: 0%;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            transition: height 0.1s linear;
+        }
+
+        #triptych-container {
+            /* Protect the 3D space of all children */
+            transform-style: preserve-3d;
+            perspective: 1000px;
+
+            /* Smooth transition for when mouse leaves */
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        #triptych {
+            position: relative;
+            /* Anchor for absolute title */
+            display: flex;
+            gap: 45px;
+            align-items: center;
+            transform-style: preserve-3d;
+            animation: eigen-float 10s ease-in-out infinite;
+            transform: rotateX(10deg);
+        }
+
+        #triptych:hover {
+            transform: rotateX(0deg);
+            animation: none;
+        }
+
+        /* Master unified title */
+        .triptych-master-title {
+            position: absolute;
+            top: -65px;
+            /* Nudged up slightly since Charted tends to render taller */
+            left: 50%;
+            transform: translateX(-50%) translateZ(25px);
+            /* Lift title elegantly over matrices */
+            font-family: 'Doto', sans-serif;
+            font-size: 1rem;
+            /* Scaled up to counteract charted wireframe thinness */
+            color: rgba(0, 243, 255, 0.9);
+            letter-spacing: 4px;
+            white-space: nowrap;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.4), 0 0 20px rgba(0, 243, 255, 0.2);
+            pointer-events: none;
+            /* Extra Kaizen UI flair to fit the military/retro-future aesthetic */
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .triptych-master-title::before,
+        .triptych-master-title::after {
+            content: '';
+            display: block;
+            width: 30px;
+            height: 2px;
+            background: rgba(255, 100, 255, 0.6);
+            box-shadow: 0 0 5px rgba(0, 243, 255, 0.4);
+        }
+
+        .matrix-wrapper {
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        /* Subtle angling for the outer monitors */
+        #wrapper-areas {
+            transform: rotateY(-10deg) translateZ(20px);
+        }
+
+        #wrapper-tools {
+            transform: rotateY(10deg) translateZ(20px);
+        }
+
+        #wrapper-categories {
+            transform: translateZ(25px);
+        }
+
+        .bracket {
+            position: absolute;
+            top: -10px;
+            bottom: -10px;
+            width: 15px;
+            border: 2px solid rgba(255, 100, 0, 0.4);
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+
+        .bracket.left {
+            left: -20px;
+            border-right: none;
+        }
+
+        .bracket.right {
+            right: -20px;
+            border-left: none;
+        }
+
+        .matrix {
+            display: grid;
+            gap: var(--gap);
+            transform-style: preserve-3d;
+        }
+
+        .matrix-6x6 {
+            grid-template-columns: repeat(6, var(--cell-size));
+            grid-template-rows: repeat(6, var(--cell-size));
+        }
+
+        .matrix-7x7 {
+            grid-template-columns: repeat(7, var(--cell-size));
+            grid-template-rows: repeat(7, var(--cell-size));
+        }
+
+        /* Title labels for each matrix */
+        .matrix-title {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.55rem;
+            color: rgba(0, 243, 255, 0.7);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        @keyframes eigen-float {
+            0% {
+                transform: rotateX(7deg) rotateY(0deg);
+            }
+
+            50% {
+                transform: rotateX(17deg) rotateY(4deg);
+            }
+
+            100% {
+                transform: rotateX(7deg) rotateY(0deg);
+            }
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.01) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .cell::after {
+            content: '';
+            width: 1.5px;
+            height: 1.5px;
+            background: rgba(255, 255, 255, 0.15);
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        /* Elevate the ENTIRE cell on hover to defeat backdrop-filter 3D clipping bugs */
+        .cell:hover {
+            z-index: 9999;
+            transform: translateZ(12px);
+        }
+
+        /* --- ITEM --- */
+        .item {
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(4px);
+            box-shadow: inset 0 0 8px rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            transform-style: preserve-3d;
+            transform: translateZ(0px);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 2px;
+            /* Default fallback stroke width */
+            --icon-stroke-width: 1.5px;
+        }
+
+        .item-icon {
+            width: 1.2rem;
+            height: 1.2rem;
+            filter: drop-shadow(0 0 3px currentColor);
+            transition: transform 0.2s, filter 0.3s;
+            will-change: transform;
+            transform: translateZ(12px);
+        }
+
+        #matrix-areas .item-icon,
+        #matrix-tools .item-icon {
+            width: 1.3rem;
+            height: 1.3rem;
+        }
+
+        .item span {
+            position: absolute;
+            bottom: calc(100% + 5px);
+            left: 50%;
+            transform: translateX(-50%) translateZ(0px);
+            background: rgba(5, 5, 10, 0.95);
+            border: 1px solid currentColor;
+            color: white;
+            padding: 4px 8px;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            box-shadow: 0 0 10px currentColor, 0 4px 15px rgba(0, 0, 0, 0.8);
+            border-radius: 3px;
+        }
+
+        .item:hover {
+            transform: translateZ(0px);
+            background: rgba(30, 30, 45, 1);
+            backdrop-filter: none;
+            box-shadow: inset 0 0 15px currentColor;
+        }
+
+        .item:hover span {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateZ(20px);
+        }
+
+        .item:hover .item-icon {
+            /* transform: translateZ(10px) scale(1.15); */
+            transform: scale(1.15);
+            filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 4px rgba(255, 255, 255, 1));
+        }
+
+
+        .item:hover span {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Categories */
+        .cat-physics {
+            border-color: rgba(216, 180, 254, 0.6);
+            color: #d8b4fe;
+            --icon-stroke-width: 0.5px;
+        }
+
+        .cat-math {
+            border-color: rgba(96, 165, 250, 0.6);
+            color: #60a5fa;
+        }
+
+        .cat-ml_data {
+            border-color: rgba(248, 113, 113, 0.6);
+            color: #ff7272;
+            --icon-stroke-width: 0.5px;
+        }
+
+        .cat-security {
+            border-color: rgba(74, 222, 128, 0.6);
+            color: #4ade80;
+            --icon-stroke-width: 0.5px;
+        }
+
+        .cat-dev {
+            border-color: rgba(251, 191, 36, 0.6);
+            color: #fbbf24;
+            --icon-stroke-width: 1px;
+        }
+
+        .cat-arts {
+            border-color: rgba(244, 114, 182, 0.6);
+            color: #ffd65c;
+            --icon-stroke-width: 0.5px;
+        }
+
+        .cat-music {
+            border-color: rgba(147, 197, 253, 0.6);
+            color: #93c5fd;
+            --icon-stroke-width: 0.5px;
+        }
+
+        /* Animations */
+        @keyframes coherence {
+            0% {
+                opacity: 0;
+                transform: scale(0.1);
+                filter: blur(3px);
+            }
+
+            60% {
+                opacity: 0.7;
+                transform: scale(1.4);
+                filter: blur(0px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .spawning {
+            animation: coherence 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .long-term {
+            animation: eigen-pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes eigen-pulse {
+
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+                filter: brightness(1.4);
+            }
+        }
+
+        .short-term {
+            animation: container-uncertainty 0.2s infinite;
+        }
+
+        @keyframes container-uncertainty {
+            0% {
+                box-shadow: inset 0 0 8px currentColor;
+            }
+
+            20% {
+                box-shadow: inset 1px 0 var(--neon-cyan), inset -1px 0 var(--neon-purple);
+            }
+
+            40% {
+                box-shadow: inset -1px 0 var(--neon-cyan), inset 1px 0 var(--neon-purple);
+            }
+
+            60% {
+                box-shadow: inset 0 0 8px currentColor;
+            }
+
+            80% {
+                box-shadow: inset 1px 0 var(--neon-cyan);
+            }
+
+            100% {
+                box-shadow: inset 0 0 8px currentColor;
+            }
+        }
+
+        /* Cancel uncertainty on hover so the tooltip and item remain solid */
+        .short-term:hover {
+            animation: none;
+            transform: translateZ(3px);
+            z-index: 9999;
+        }
+
+
+        .merging {
+            z-index: 999;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="scanline"></div>
+
+    <div id="hud-ui">
+        <div id="timeline-bar">
+            <div id="timeline-progress"></div>
+        </div>
+        <div style="margin-left: 20px;">
+            <div id="year-label">System State</div>
+            <div id="year-display">2004</div>
+        </div>
+    </div>
+
+    <div id="viewport">
+        <div id="triptych-container">
+            <div id="triptych">
+
+                <!-- Master Interface Title -->
+                <div class="triptych-master-title">INTERESTS / TOYS</div>
+
+                <!-- Left Matrix: Areas -->
+                <div class="matrix-wrapper" id="wrapper-areas">
+                    <!-- <div class="matrix-title">STATE // AREAS</div> -->
+                    <div class="bracket left"></div>
+                    <div class="bracket right"></div>
+                    <div id="matrix-areas" class="matrix matrix-6x6"></div>
+                </div>
+
+                <!-- Center Matrix: Categories -->
+                <div class="matrix-wrapper" id="wrapper-categories">
+                    <!-- <div class="matrix-title">DOMAINS</div> -->
+                    <div class="bracket left" style="border-width: 3px;"></div>
+                    <div class="bracket right" style="border-width: 3px;"></div>
+                    <div id="matrix-categories" class="matrix matrix-7x7"></div>
+                </div>
+
+                <!-- Right Matrix: Tools -->
+                <div class="matrix-wrapper" id="wrapper-tools">
+                    <!-- <div class="matrix-title">OPERAND // TOOLS</div> -->
+                    <div class="bracket left"></div>
+                    <div class="bracket right"></div>
+                    <div id="matrix-tools" class="matrix matrix-6x6"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ICON_MAP = {
+            'AdS/CFT Correspondence': '../public/icons/AdS_CFT_Correspondence.svg',
+            'Holographic Principle': '../public/icons/Holographic_Principle.svg',
+            'Gravitational Waves': '../public/icons/Gravitational_Waves.svg',
+            'Quantum Error Correction': '../public/icons/Quantum_Error_Correction.svg',
+            'Phase Transitions': '../public/icons/Phase_Transitions.svg',
+            'Renormalization': '../public/icons/Renormalization.svg',
+            'Category Theory': '../public/icons/Category_Theory.svg',
+            'Elliptic Curves': '../public/icons/Elliptic_Curves.svg',
+            'Sympy': '../public/icons/Sympy.svg',
+            'Sagemath': '../public/icons/Sagemath.svg',
+            'Adversarial Generative Networks (GANs)': '../public/icons/Adversarial_Generative_Networks__GANs_.svg',
+            'Neural Networks': '../public/icons/Neural_Networks.svg',
+            'Keras': '../public/icons/Keras.svg',
+            'TensorFlow': '../public/icons/TensorFlow.svg',
+            'Scipy': '../public/icons/Scipy.svg',
+            'Numpy': '../public/icons/Numpy.svg',
+            'Pandas': '../public/icons/Pandas.svg',
+            'Scikit-learn': '../public/icons/Scikit_learn.svg',
+            'OpenCV': '../public/icons/OpenCV.svg',
+            'Matplotlib': '../public/icons/Matplotlib.svg',
+            'Cryptography': '../public/icons/Cryptography.svg',
+            'Metasploit': '../public/icons/Metasploit.svg',
+            'Wireshark': '../public/icons/Wireshark.svg',
+            'Linux Server Administration': '../public/icons/Linux_Server_Administration.svg',
+            'bash': '../public/icons/bash.svg',
+            'Aircrack-ng': '../public/icons/Aircrack_ng.svg',
+            'BeEF': '../public/icons/BeEF.svg',
+            'Ettercap': '../public/icons/Ettercap.svg',
+            'Hexdump': '../public/icons/Hexdump.svg',
+            'Node.js': '../public/icons/Node_js.svg',
+            'Gatsby': '../public/icons/Gatsby.svg',
+            'HTML': '../public/icons/HTML.svg',
+            'JavaScript': '../public/icons/JavaScript.svg',
+            'PHP': '../public/icons/PHP.svg',
+            'Laravel': '../public/icons/Laravel.svg',
+            '.NET Framework': '../public/icons/_NET_Framework.svg',
+            'C': '../public/icons/C.svg',
+            'C++': '../public/icons/C__.svg',
+            'Qt Framework': '../public/icons/Qt_Framework.svg',
+            'Arduino IDE': '../public/icons/Arduino_IDE.svg',
+            'Git': '../public/icons/Git.svg',
+            'LaTeX': '../public/icons/LaTeX.svg',
+            'VS Code': '../public/icons/VS_Code.svg',
+            'Arch Linux': '../public/icons/Arch_Linux.svg',
+            'Ubuntu': '../public/icons/Ubuntu.svg',
+            'Violin': '../public/icons/Violin.svg',
+            'Origami': '../public/icons/Origami.svg',
+            'Kirigami': '../public/icons/Kirigami.svg',
+            'Paper Crafts': '../public/icons/Paper_Crafts.svg',
+            'Rubik\'s Cube': '../public/icons/Rubik_s_Cube.svg',
+            'Adobe Photoshop': '../public/icons/Adobe_Photoshop.svg',
+            'Music': '../public/icons/Music.svg',
+            'Movies': '../public/icons/Movies.svg',
+            'Kalimba': '../public/icons/Kalimba.svg',
+            'Arpspoof': '../public/icons/Arpspoof.svg',
+            'CentOS': '../public/icons/CentOS.svg',
+            'Debian': '../public/icons/Debian.svg',
+            'Dnsspoof': '../public/icons/Dnsspoof.svg',
+            'Gdb': '../public/icons/Gdb.svg',
+            'Manjaro': '../public/icons/Manjaro.svg',
+            'Red Hat Linux': '../public/icons/Red_Hat_Linux.svg',
+            'Robotics': '../public/icons/Robotics.svg',
+            'jQuery': '../public/icons/jQuery.svg',
+            'MATLAB': '../public/icons/MATLAB.svg',
+            'Microsoft Visual Basic 6.0': '../public/icons/Microsoft_Visual_Basic_6_0.svg',
+            'MS Office Suite': '../public/icons/MS_Office_Suite.svg',
+            'PyCharm': '../public/icons/PyCharm.svg',
+            'Visual Studio': '../public/icons/Visual_Studio.svg',
+            'Cardistry': '../public/icons/Cardistry.svg',
+            'Adobe Lightroom': '../public/icons/Adobe_Lightroom.svg',
+            'Adobe Premiere Pro': '../public/icons/Adobe_Premiere_Pro.svg',
+            'Figma': '../public/icons/Figma.svg',
+            // --- NEW CATEGORY ICONS ---
+            'THEORETICAL PHYSICS': '../public/icons/category_physics.svg',
+            'PURE MATHEMATICS': '../public/icons/category_math.svg',
+            'MACHINE LEARNING & DATA SCIENCE': '../public/icons/category_ml_data.svg',
+            'SECURITY & SYSTEMS': '../public/icons/category_security.svg',
+            'SOFTWARE DEVELOPMENT': '../public/icons/category_dev.svg',
+            'ARTS': '../public/icons/category_arts.svg',
+            'MUSIC': '../public/icons/category_music.svg'
+        };
+
+        const getIcon = (name) => ICON_MAP[name] || '';
+        const getCatClass = (catId) => `cat-${catId}`;
+
+        let allAreas = [];
+        let allTools = [];
+        let rootCategories = [];
+
+        const START_YEAR = 2004;
+        const END_YEAR = 2027;
+
+        // --- GRID INIT ---
+        const matrixAreasEl = document.getElementById('matrix-areas');
+        const matrixToolsEl = document.getElementById('matrix-tools');
+        const matrixCatEl = document.getElementById('matrix-categories');
+
+        const gridStateAreas = Array(36).fill(null);
+        const gridStateTools = Array(36).fill(null);
+        const gridStateCat = Array(49).fill(null);
+
+        for (let i = 0; i < 36; i++) {
+            let c1 = document.createElement('div'); c1.className = 'cell'; matrixAreasEl.appendChild(c1);
+            let c2 = document.createElement('div'); c2.className = 'cell'; matrixToolsEl.appendChild(c2);
+        }
+        for (let i = 0; i < 49; i++) {
+            let c3 = document.createElement('div'); c3.className = 'cell'; matrixCatEl.appendChild(c3);
+        }
+
+        const activeAreas = {};
+        const activeTools = {};
+        const activeCategories = {};
+
+        // --- DIAGONAL LOGIC ---
+        // 6x6 main diagonal indices: [0, 7, 14, 21, 28, 35]
+        const DIAG_6x6 = [0, 7, 14, 21, 28, 35];
+        // 7x7 main diagonal indices: [0, 8, 16, 24, 32, 40, 48]
+        const DIAG_7x7 = [0, 8, 16, 24, 32, 40, 48];
+
+        // Categories must ONLY go on the 7x7 main diagonal.
+        function getAvailableCatCell() {
+            const available = gridStateCat.map((val, idx) => val === null ? idx : null)
+                .filter(idx => idx !== null && DIAG_7x7.includes(idx));
+            if (available.length === 0) return null;
+            return available[Math.floor(Math.random() * available.length)];
+        }
+
+        // Areas/Tools must AVOID the 6x6 main diagonal.
+        function getAvailableItemCell(gridState, is6x6) {
+            const forbiddenDiags = is6x6 ? DIAG_6x6 : [];
+            const available = gridState.map((val, idx) => val === null ? idx : null)
+                .filter(idx => idx !== null && !forbiddenDiags.includes(idx));
+            if (available.length === 0) return null;
+            return available[Math.floor(Math.random() * available.length)];
+        }
+
+        // --- UPDATE LOOP ---
+        function update(year) {
+            document.getElementById('year-display').innerText = year;
+
+            const totalYears = END_YEAR - START_YEAR;
+            const progressPct = ((year - START_YEAR) / totalYears) * 100;
+            document.getElementById('timeline-progress').style.height = `${progressPct}%`;
+
+            // 1. Process Areas
+            const activeAreasItems = allAreas.filter(h => year >= h.start && year <= h.end);
+            activeAreasItems.forEach(item => {
+                if (!activeAreas[item.name]) {
+                    const idx = getAvailableItemCell(gridStateAreas, true);
+                    if (idx !== null) spawnItem(item, idx, gridStateAreas, activeAreas, matrixAreasEl, 6);
+                }
+            });
+            Object.keys(activeAreas).forEach(name => {
+                if (!activeAreasItems.find(h => h.name === name)) {
+                    mergeAndRemove(name, activeAreas, gridStateAreas, 6);
+                }
+            });
+
+            // 2. Process Tools
+            const activeToolsItems = allTools.filter(h => year >= h.start && year <= h.end);
+            activeToolsItems.forEach(item => {
+                if (!activeTools[item.name]) {
+                    const idx = getAvailableItemCell(gridStateTools, true);
+                    if (idx !== null) spawnItem(item, idx, gridStateTools, activeTools, matrixToolsEl, 6);
+                }
+            });
+            Object.keys(activeTools).forEach(name => {
+                if (!activeToolsItems.find(h => h.name === name)) {
+                    mergeAndRemove(name, activeTools, gridStateTools, 6);
+                }
+            });
+
+            // 3. Process Categories
+            // A category is active if ANY of its items (area or tool) are active
+            const currentlyActiveIds = new Set();
+            [...activeAreasItems, ...activeToolsItems].forEach(item => currentlyActiveIds.add(item.catId));
+
+            rootCategories.forEach(cat => {
+                const isActive = currentlyActiveIds.has(cat.id);
+                if (isActive) {
+                    if (!activeCategories[cat.name]) {
+                        const idx = getAvailableCatCell();
+                        if (idx !== null) spawnItem(cat, idx, gridStateCat, activeCategories, matrixCatEl, 7);
+                    }
+                } else {
+                    if (activeCategories[cat.name]) {
+                        mergeAndRemove(cat.name, activeCategories, gridStateCat, 7);
+                    }
+                }
+            });
+
+            // DEBUG LOGGING THE DOM
+            const debugItem = document.querySelector('.item.spawning');
+            if (debugItem) {
+                console.log("DEBUG DOM OUTER HTML:", debugItem.outerHTML);
+            }
+        }
+
+        function spawnItem(itemDef, cellIndex, gridState, trackingDict, matrixEl, dim) {
+            const cell = matrixEl.children[cellIndex];
+            const typeClass = itemDef.isShortTerm ? 'short-term' : 'long-term';
+
+            const div = document.createElement('div');
+            div.className = `item spawning ${getCatClass(itemDef.catId)} ${typeClass}`;
+            div.innerHTML = `<span>${itemDef.name}</span>`;
+
+            let iconPath = getIcon(itemDef.name);
+            if (!iconPath) {
+                // If it's a category and has no explicit icon mapped, fallback to generic
+                if (dim === 7) {
+                    console.log('Missing category icon for', itemDef.name);
+                }
+            }
+
+            if (iconPath) {
+                fetch(iconPath)
+                    .then(res => {
+                        if (!res.ok) throw new Error("Not found");
+                        return res.text();
+                    })
+                    .then(svgCode => {
+                        if (!svgCode.includes('<svg')) return;
+                        let recoloredSvg = svgCode.replace(/stroke="[^"]+"/g, match => {
+                            return match.includes('none') ? match : 'stroke="currentColor"';
+                        }).replace(/fill="[^"]+"/g, match => {
+                            return match.includes('none') ? match : 'fill="currentColor"';
+                        });
+
+                        recoloredSvg = recoloredSvg.replace(/stroke-width="[^"]+"/g, 'stroke-width="var(--icon-stroke-width, 2.5px)"');
+                        recoloredSvg = recoloredSvg.replace(/<path/g, '<path vector-effect="non-scaling-stroke"');
+
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(recoloredSvg, "image/svg+xml");
+                        const svgEl = doc.documentElement;
+                        svgEl.classList.add('item-icon');
+                        div.prepend(svgEl);
+                    })
+                    .catch(e => { });
+            }
+
+            cell.appendChild(div);
+            gridState[cellIndex] = itemDef.name;
+            trackingDict[itemDef.name] = {
+                element: div,
+                cellIndex: cellIndex,
+                isShortTerm: itemDef.isShortTerm,
+                name: itemDef.name
+            };
+        }
+
+        function mergeAndRemove(name, trackingDict, gridState, dim) {
+            const itemObj = trackingDict[name];
+            if (!itemObj || itemObj.isExiting) return;
+
+            itemObj.isExiting = true;
+            const el = itemObj.element;
+            const currentIdx = itemObj.cellIndex;
+
+            // Simple shrink out animation since cross-grid merging is too complex
+            el.classList.add('merging');
+            el.classList.remove('short-term', 'long-term');
+            el.style.transition = 'all 0.5s ease-in';
+
+            requestAnimationFrame(() => {
+                el.style.transform = `translate(0px, -50px) scale(0)`;
+                el.style.opacity = '0';
+                el.style.filter = 'blur(10px) brightness(3)';
+            });
+
+            setTimeout(() => {
+                if (el.parentNode) el.parentNode.removeChild(el);
+                gridState[currentIdx] = null;
+                delete trackingDict[name];
+            }, 500);
+        }
+
+        // --- FETCH DATA ---
+        fetch('../public/data/hobbies.json')
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(cat => {
+                    rootCategories.push({
+                        name: cat.category,
+                        id: cat.id,
+                        catId: cat.id,
+                        isShortTerm: false
+                    });
+
+                    if (cat.items) {
+                        cat.items.forEach(item => {
+                            const start = parseInt(item.time_range.start) || START_YEAR;
+                            const end = item.time_range.end === "Present" ? 9999 : parseInt(item.time_range.end);
+                            const parsedItem = {
+                                name: item.name,
+                                catId: cat.id,
+                                start: start,
+                                end: end,
+                                duration: (end === 9999 ? 2026 : end) - start,
+                                isShortTerm: ((end === 9999 ? 2026 : end) - start) < 3 && end !== 9999
+                            };
+
+                            if (item.type === 'area') {
+                                allAreas.push(parsedItem);
+                            } else if (item.type === 'tool') {
+                                allTools.push(parsedItem);
+                            }
+                        });
+                    }
+                });
+
+                // Init view
+                update(START_YEAR);
+
+                window.addEventListener('scroll', () => {
+                    const maxScroll = document.body.scrollHeight - window.innerHeight;
+                    const progress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+                    const currentYear = Math.floor(START_YEAR + (progress * (END_YEAR - START_YEAR)));
+                    requestAnimationFrame(() => update(currentYear));
+                });
+            })
+            .catch(err => {
+                console.error("Failed to load hobbies.json:", err);
+            });
+
+        // --- MAGNETIC PARALLAX EFFECT ---
+        const triptychContainer = document.getElementById('triptych-container');
+
+        triptychContainer.addEventListener('mousemove', (e) => {
+            // Kaizen: Only compute layout bounds when needed, calculate normalized state
+            const rect = triptychContainer.getBoundingClientRect();
+
+            // Normalize origin to center (-1 to 1) 
+            const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+
+            const maxTilt = 6; // Max 4 degrees for subtle industrial feel
+
+            // Magnetic effect: Edge pulls towards screen
+            const tiltX = y * maxTilt;
+            const tiltY = -x * maxTilt;
+
+            // Disable CSS transition during rapid mouse move for instant tactile feel
+            triptychContainer.style.transition = 'none';
+            triptychContainer.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+        });
+
+        triptychContainer.addEventListener('mouseleave', () => {
+            // Restore smooth transition and return to dead center gracefully
+            triptychContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            triptychContainer.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riemann Sphere Conformal Flow</title>
+    
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', monospace; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        
+        #ui {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85); padding: 20px; border-radius: 8px;
+            border: 1px solid #334155; border-top: 4px solid #f59e0b;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            width: 500px; backdrop-filter: blur(4px); z-index: 10;
+        }
+        
+        .label-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+        .math-text { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; text-align: center; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #f59e0b; }
+        
+        .legend { position: absolute; top: 30px; left: 30px; background: rgba(15, 23, 42, 0.8); padding: 15px; border-radius: 8px; border: 1px solid #334155; z-index: 10;}
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .line { width: 20px; height: 3px; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div class="legend">
+        <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: #f59e0b;">Conformal Spherical Flow</h3>
+        <div class="legend-item"><div class="dot" style="background: #fbbf24;"></div> Origin (u=0) [Fixed]</div>
+        <div class="legend-item"><div class="dot" style="background: #ef4444;"></div> Singularity (u=-1) [Fixed]</div>
+        <div class="legend-item"><div class="dot" style="background: #10b981;"></div> Target Eval (u=4)</div>
+        <div class="legend-item"><div class="dot" style="background: #a855f7;"></div> Absolute Infinity (u=∞)</div>
+        <div class="legend-item"><div class="line" style="background: #0ff;"></div> Convergence Boundary |u|=1</div>
+    </div>
+
+    <div id="ui">
+        <div class="label-row">
+            <span>Divergent Cartesian Map (τ = 0)</span>
+            <span>Convergent Conformal Map (τ = 1)</span>
+        </div>
+        <input type="range" id="tau-slider" min="0" max="1" step="0.001" value="0">
+        <div class="math-text">
+            Möbius Homotopy: $$ H(u, \tau) = \frac{u}{\tau u + (1+\tau)} $$
+            Current τ: <span id="tau-val" style="color:#f59e0b; font-weight: bold;">0.000</span>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 3, 7);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
+
+        // --- MATH UTILITIES ---
+        const mapStereographic = (ux, uy) => {
+            if (ux === Infinity) return { sX: 0, sY: 1, sZ: 0 }; // North Pole. Y is up in Three.js
+            const magSq = ux**2 + uy**2;
+            const denom = magSq + 1;
+            return {
+                sX: (2 * ux) / denom,
+                sY: (magSq - 1) / denom,  // Math Z -> Three.js Y (Up)
+                sZ: (2 * uy) / denom      // Math Y -> Three.js Z (Depth)
+            };
+        };
+
+        const applyMobiusHomotopy = (ux, uy, tau) => {
+            if (ux === Infinity) {
+                if (tau === 0) return { x: Infinity, y: 0 };
+                return { x: 1 / tau, y: 0 };
+            }
+            // H = u / (tau*u + 1 + tau)
+            const D_real = tau * ux + 1 + tau;
+            const D_imag = tau * uy;
+            const D_sq = D_real**2 + D_imag**2;
+
+            if (D_sq < 0.0001) return { x: Infinity, y: 0 };
+
+            return {
+                x: (ux * D_real + uy * D_imag) / D_sq,
+                y: (uy * D_real - ux * D_imag) / D_sq
+            };
+        };
+
+        // --- MANIFOLD GENERATION ---
+        const sphereRadius = 2.0;
+        const maxExtrusion = 2.0; 
+        const geometry = new THREE.SphereGeometry(sphereRadius, 150, 150);
+        const positions = geometry.attributes.position;
+        const colors = [];
+        
+        // Store original base u_0 for each vertex
+        const baseU = [];
+
+        for (let i = 0; i < positions.count; i++) {
+            const sX = positions.getX(i) / sphereRadius;
+            const sY = positions.getY(i) / sphereRadius; // Math Z
+            const sZ = positions.getZ(i) / sphereRadius; // Math Y
+
+            let ux = Infinity, uy = 0;
+            if (sY < 0.999) {
+                ux = sX / (1 - sY);
+                uy = sZ / (1 - sY);
+            }
+
+            // Observable magnitude and color are constant for the vertex
+            const realPart = 1 + ux;
+            const denomSq = realPart**2 + uy**2;
+            let magnitude = 0;
+            if (ux !== Infinity) {
+                magnitude = 1 / Math.sqrt(denomSq);
+                if (magnitude > maxExtrusion) magnitude = maxExtrusion;
+            }
+
+            const phase = (ux === Infinity) ? 0 : Math.atan2(-uy, realPart);
+            const hue = (phase + Math.PI) / (2 * Math.PI);
+            const color = new THREE.Color().setHSL(hue, 1.0, 0.5);
+            colors.push(color.r, color.g, color.b);
+
+            baseU.push({ x: ux, y: uy, mag: magnitude });
+        }
+
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        const material = new THREE.MeshStandardMaterial({ 
+            vertexColors: true, side: THREE.DoubleSide, roughness: 0.3, metalness: 0.2
+        });
+        const sphereMesh = new THREE.Mesh(geometry, material);
+        scene.add(sphereMesh);
+
+        // --- PHYSICAL MARKERS ---
+        const createMarker = (color) => {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.12, 32, 32), new THREE.MeshStandardMaterial({ color }));
+            scene.add(mesh); return mesh;
+        };
+
+        const originMesh = createMarker(0xfbbf24);
+        const poleMesh = createMarker(0xef4444);
+        const targetMesh = createMarker(0x10b981);
+        const infMesh = createMarker(0xa855f7);
+
+        // --- EQUATOR (CONVERGENCE BOUNDARY) ---
+        const ringGeo = new THREE.BufferGeometry();
+        const ringBaseU = [];
+        for(let theta = 0; theta <= 2*Math.PI; theta += 0.05) {
+            ringBaseU.push({ x: Math.cos(theta), y: Math.sin(theta) });
+        }
+        ringGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(ringBaseU.length * 3), 3));
+        const ringMat = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 3 });
+        const ringLine = new THREE.LineLoop(ringGeo, ringMat);
+        scene.add(ringLine);
+
+        // --- UPDATE LOOP ---
+        const slider = document.getElementById('tau-slider');
+        const tauDisplay = document.getElementById('tau-val');
+
+        function updateGeometry(tau) {
+            // Update Surface
+            const posAttr = geometry.attributes.position;
+            for (let i = 0; i < baseU.length; i++) {
+                const u_tau = applyMobiusHomotopy(baseU[i].x, baseU[i].y, tau);
+                const st = mapStereographic(u_tau.x, u_tau.y);
+                const totalRadius = sphereRadius + baseU[i].mag;
+                
+                posAttr.setXYZ(i, st.sX * totalRadius, st.sY * totalRadius, st.sZ * totalRadius);
+            }
+            posAttr.needsUpdate = true;
+            geometry.computeVertexNormals();
+
+            // Function to position markers with extrusion
+            const setMarker = (mesh, u_initial, magnitude) => {
+                const u_t = applyMobiusHomotopy(u_initial.x, u_initial.y, tau);
+                const st = mapStereographic(u_t.x, u_t.y);
+                const r = sphereRadius + magnitude;
+                mesh.position.set(st.sX * r, st.sY * r, st.sZ * r);
+            };
+
+            setMarker(originMesh, {x:0, y:0}, 1.0);
+            setMarker(poleMesh, {x:-1, y:0}, maxExtrusion);
+            setMarker(targetMesh, {x:4, y:0}, 0.2);
+            setMarker(infMesh, {x:Infinity, y:0}, 0);
+
+            // Update Convergence Boundary Ring
+            const ringAttr = ringGeo.attributes.position;
+            for (let i = 0; i < ringBaseU.length; i++) {
+                const u_t = applyMobiusHomotopy(ringBaseU[i].x, ringBaseU[i].y, tau);
+                const st = mapStereographic(u_t.x, u_t.y);
+                // Draw slightly above the surface base so it doesn't clip
+                const r = sphereRadius + 0.05; 
+                ringAttr.setXYZ(i, st.sX * r, st.sY * r, st.sZ * r);
+            }
+            ringAttr.needsUpdate = true;
+        }
+
+        slider.addEventListener('input', (e) => {
+            const tau = parseFloat(e.target.value);
+            tauDisplay.innerText = tau.toFixed(3);
+            updateGeometry(tau);
+        });
+
+        // Init
+        updateGeometry(0);
+
+        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+        animate();
+
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+    </script>
+</body>
+</html>

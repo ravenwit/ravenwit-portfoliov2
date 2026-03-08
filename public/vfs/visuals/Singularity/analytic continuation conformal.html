@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conformal Analytic Dashboard</title>
+    
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', monospace; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; display: block; }
+        
+        /* Right-Side Control Panel */
+        #control-panel {
+            position: absolute; top: 30px; right: 30px;
+            background: rgba(15, 23, 42, 0.85); padding: 20px; border-radius: 8px;
+            border: 1px solid #334155; border-top: 4px solid #8b5cf6;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+            width: 320px; backdrop-filter: blur(4px); z-index: 10;
+        }
+        
+        #control-panel h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.1rem; color: #e2e8f0; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        
+        .slider-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; margin-bottom: 5px; font-weight: bold; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #8b5cf6; margin-bottom: 15px; }
+        
+        .btn {
+            display: block; width: 100%; padding: 10px; background: rgba(139, 92, 246, 0.1);
+            color: #a78bfa; border: 1px solid #8b5cf6; border-radius: 4px;
+            font-family: inherit; font-weight: bold; cursor: pointer; transition: all 0.2s;
+        }
+        .btn:hover { background: #8b5cf6; color: #0f172a; }
+        
+        .status-text { font-size: 0.85rem; color: #94a3b8; margin-top: 15px; text-align: center; line-height: 1.5; }
+
+        /* Bottom Equation Display */
+        #bottom-equation {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85); padding: 15px 30px; border-radius: 8px;
+            border: 1px solid #334155; border-bottom: 4px solid #10b981;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px); z-index: 10; text-align: center;
+        }
+        .eq-title { font-size: 0.9rem; color: #10b981; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+
+        /* Left Legend */
+        .legend { position: absolute; top: 30px; left: 30px; background: rgba(15, 23, 42, 0.8); padding: 15px; border-radius: 8px; border: 1px solid #334155; z-index: 10;}
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .line { width: 20px; height: 3px; }
+
+        /* Math Modal Styles */
+        #math-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center;
+            visibility: hidden; opacity: 0; transition: opacity 0.4s ease, visibility 0.4s; z-index: 100;
+        }
+        #math-modal.active { visibility: visible; opacity: 1; }
+        
+        .modal-card {
+            background: #1e293b; border: 1px solid #475569; border-top: 4px solid #8b5cf6;
+            border-radius: 12px; width: 800px; max-width: 90%; max-height: 85vh;
+            overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transform: scale(0.95) translateY(20px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 30px; position: relative;
+        }
+        #math-modal.active .modal-card { transform: scale(1) translateY(0); }
+        .close-btn { position: absolute; top: 20px; right: 25px; background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover { color: #ef4444; }
+        .modal-card h2 { margin-top: 0; color: #e2e8f0; font-weight: 300; letter-spacing: 1px; }
+        .modal-card h3 { color: #8b5cf6; margin-top: 25px; margin-bottom: 10px; font-size: 1.1rem; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        .modal-card p { color: #cbd5e1; line-height: 1.6; font-family: sans-serif; font-size: 0.95rem; }
+        .equation-box { background: #0f172a; padding: 15px; border-radius: 6px; overflow-x: auto; margin: 15px 0; border: 1px solid #334155; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div class="legend">
+        <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: #8b5cf6;">Topological Key</h3>
+        <div class="legend-item"><div class="dot" style="background: linear-gradient(90deg, #ff0000, #00ff00, #0000ff);"></div> Surface: Magnitude & Phase</div>
+        <div class="legend-item"><div class="line" style="background: #94a3b8;"></div> Dynamic Metric Tensor</div>
+        <div class="legend-item"><div class="dot" style="background: #fbbf24;"></div> Origin (Fixed at 0)</div>
+        <div class="legend-item"><div class="dot" style="background: #ef4444;"></div> Poles (Fixed at ±i)</div>
+        <div class="legend-item"><div class="dot" style="background: #10b981;"></div> Target Eval (g = 2)</div>
+        <div class="legend-item"><div class="line" style="background: #38bdf8; box-shadow: 0 0 5px #38bdf8;"></div> Static Convergence Boundary</div>
+    </div>
+
+    <div id="control-panel">
+        <h3>Transformation Control</h3>
+        <div class="slider-labels">
+            <span>g-plane (τ = 0)</span>
+            <span>w-plane (τ = 1)</span>
+        </div>
+        <input type="range" id="tau-slider" min="0" max="1" step="0.001" value="0">
+        <button class="btn" onclick="openModal()">🧮 View Deformation Math</button>
+        <div class="status-text">
+            Conformal Homotopy τ: <span id="tau-val" style="color:#a78bfa; font-weight: bold; font-size: 1.1rem;">0.000</span><br><br>
+            Observe how the target node is geometrically drawn into the absolute boundary of convergence.
+        </div>
+    </div>
+
+    <div id="bottom-equation">
+        <div class="eq-title">Analytic Continuation</div>
+        <div style="font-size: 1.1rem; color: #e2e8f0; margin-top: 5px;">
+            $$ Z(g) = \sum_{n=0}^{\infty} (-1)^n g^{2n} \implies \frac{1}{1+g^2} $$
+        </div>
+    </div>
+
+    <div id="math-modal">
+        <div class="modal-card">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h2>Rigorous Deformation Geometry</h2>
+
+            <h3>I. The Complex Surface Manifold</h3>
+            <p>The observable manifold is constructed from the analytic continuation of the infinite sum:</p>
+            <div class="equation-box">
+                $$ Z(g) = \frac{1}{1 + g^2} $$
+            </div>
+
+            <h3>II. Coordinate Morphing under Homotopy</h3>
+            <p>To safely pull the strongly coupled target \(g=2\) into the radius of convergence, we apply a conformal map that tames the divergent poles. The ideal mapping targets the branch cuts extending outward from the poles at \(g = \pm i\):</p>
+            <div class="equation-box">
+                $$ w(g) = \frac{g}{1 + \sqrt{1 + g^2}} $$
+            </div>
+            <p>We linearly interpolate the coordinates from the Cartesian plane to this conformal domain using the Homotopy \(H(g, \tau)\):</p>
+            <div class="equation-box">
+                $$ H(g, \tau) = (1 - \tau)g + \tau w(g) $$
+            </div>
+
+            <h3>III. Topological Tearing at the Branch Cuts</h3>
+            <p>As you slide the deformation parameter \( \tau \to 1 \), the complex square root \( \sqrt{1 + g^2} \) reveals its branch cut.</p>
+            <p>The conformal map resolves this by literally <strong>ripping the coordinate grid open</strong> along the imaginary axis, mapping the cut exactly onto the perimeter of the new unit disk. The target at \(g=2\) is smoothly pulled to \(w = 0.618\), safely inside the radius of convergence, while the poles remain permanently anchored at \(\pm i\).</p>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- MODAL LOGIC ---
+        function openModal() { document.getElementById('math-modal').classList.add('active'); }
+        function closeModal() { document.getElementById('math-modal').classList.remove('active'); }
+        document.getElementById('math-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+        // --- 3D SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(4, 5, 6);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(5, 10, 5);
+        scene.add(dirLight);
+
+        // --- 1. MANIFOLD GENERATION ---
+        const gridMin = -2.5, gridMax = 2.5;
+        const res = 150; 
+        const maxZ = 5.0; 
+
+        const geometry = new THREE.BufferGeometry();
+        const vertices = []; const colors = []; const indices = [];
+        const baseCoords = []; 
+
+        for(let i = 0; i <= res; i++) {
+            const x = gridMin + (i / res) * (gridMax - gridMin) + 0.0001; 
+            for(let j = 0; j <= res; j++) {
+                const y = gridMin + (j / res) * (gridMax - gridMin); 
+                
+                const realPart = 1 + x**2 - y**2;
+                const imagPart = 2 * x * y;
+                const denomSq = realPart**2 + imagPart**2;
+                
+                let magnitude = 1 / Math.sqrt(denomSq);
+                if(magnitude > maxZ) magnitude = maxZ; 
+                
+                const phase = Math.atan2(-imagPart, realPart); 
+                const hue = (phase + Math.PI) / (2 * Math.PI); 
+                
+                const color = new THREE.Color();
+                color.setHSL(hue, 1.0, 0.5);
+
+                baseCoords.push({ x: x, y: y, z: magnitude });
+                vertices.push(x, magnitude, y);
+                colors.push(color.r, color.g, color.b);
+            }
+        }
+
+        for(let i = 0; i < res; i++) {
+            for(let j = 0; j < res; j++) {
+                const a = i * (res + 1) + j;
+                const b = i * (res + 1) + (j + 1);
+                const c = (i + 1) * (res + 1) + j;
+                const d = (i + 1) * (res + 1) + (j + 1);
+                indices.push(a, b, d); indices.push(a, d, c);
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({ 
+            vertexColors: true, side: THREE.DoubleSide, roughness: 0.3, metalness: 0.1,
+            transparent: true, opacity: 0.85
+        });
+        const surfaceMesh = new THREE.Mesh(geometry, material);
+        scene.add(surfaceMesh);
+
+        // --- 2. DYNAMIC METRIC GRID GENERATION ---
+        const customGridGeo = new THREE.BufferGeometry();
+        const gridBaseCoords = [];
+        const gridLinesCount = 20; 
+        const segmentsPerLine = 100; 
+        
+        for(let k = 0; k <= gridLinesCount; k++) {
+            let cx = gridMin + (k/gridLinesCount)*(gridMax - gridMin);
+            if (Math.abs(cx) < 0.005) cx = 0.005; 
+            for(let s = 0; s < segmentsPerLine; s++) {
+                let y1 = gridMin + (s/segmentsPerLine)*(gridMax - gridMin);
+                let y2 = gridMin + ((s+1)/segmentsPerLine)*(gridMax - gridMin);
+                gridBaseCoords.push({x: cx, y: y1}, {x: cx, y: y2});
+            }
+            
+            let cy = gridMin + (k/gridLinesCount)*(gridMax - gridMin);
+            for(let s = 0; s < segmentsPerLine; s++) {
+                let x1 = gridMin + (s/segmentsPerLine)*(gridMax - gridMin);
+                let x2 = gridMin + ((s+1)/segmentsPerLine)*(gridMax - gridMin);
+                if (Math.abs(x1) < 0.005) x1 = 0.005;
+                if (Math.abs(x2) < 0.005) x2 = 0.005;
+                gridBaseCoords.push({x: x1, y: cy}, {x: x2, y: cy});
+            }
+        }
+        
+        const gridPosArray = new Float32Array(gridBaseCoords.length * 3);
+        customGridGeo.setAttribute('position', new THREE.BufferAttribute(gridPosArray, 3));
+        const gridMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.6 });
+        const dynamicGrid = new THREE.LineSegments(customGridGeo, gridMat);
+        scene.add(dynamicGrid);
+
+        // --- 3. PHYSICAL MARKERS ---
+        const createMarker = (color, radius=0.12) => {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 32), new THREE.MeshStandardMaterial({ color: color, roughness: 0.2 }));
+            scene.add(mesh); return mesh;
+        };
+        
+        const originMesh = createMarker(0xfbbf24, 0.15); 
+        const pole1Mesh = createMarker(0xef4444, 0.15);
+        const pole2Mesh = createMarker(0xef4444, 0.15);
+        const targetMesh = createMarker(0x10b981, 0.15);
+
+        // --- 4. STATIC CONVERGENCE RING ---
+        const ringGeo = new THREE.BufferGeometry();
+        const ringVerts = [];
+        for(let theta = 0; theta <= 2 * Math.PI; theta += 0.05) {
+            ringVerts.push(Math.cos(theta), 0.02, Math.sin(theta)); 
+        }
+        ringGeo.setAttribute('position', new THREE.Float32BufferAttribute(ringVerts, 3));
+        const ringLineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 3 });
+        const ringLine = new THREE.LineLoop(ringGeo, ringLineMat);
+        scene.add(ringLine);
+
+        // --- 5. HOMOTOPY MAPPING LOGIC ---
+        function applyHomotopy(x, y, tau) {
+            const A = 1 + x*x - y*y;
+            const B = 2 * x * y;
+            const mag = Math.sqrt(A*A + B*B);
+            
+            let Sx = Math.sqrt((mag + A) / 2);
+            let Sy = Math.sqrt((mag - A) / 2);
+            
+            if (B < 0) {
+                Sy = -Sy;
+            } else if (B === 0 && A < 0) {
+                Sy = Math.sign(y) * Sy; 
+            }
+
+            const Dx = 1 + Sx;
+            const Dy = Sy;
+            const D_magSq = Dx*Dx + Dy*Dy;
+
+            const Wx = (x * Dx + y * Dy) / D_magSq;
+            const Wy = (y * Dx - x * Dy) / D_magSq;
+
+            const Hx = (1 - tau) * x + tau * Wx;
+            const Hy = (1 - tau) * y + tau * Wy;
+
+            return { x: Hx, y: Hy };
+        }
+
+        // --- 6. UPDATE LOOP ---
+        const slider = document.getElementById('tau-slider');
+        const tauDisplay = document.getElementById('tau-val');
+
+        function updateGeometry(tau) {
+            // Update 3D Surface
+            const posAttr = geometry.attributes.position;
+            for (let i = 0; i < baseCoords.length; i++) {
+                const base = baseCoords[i];
+                const mapped = applyHomotopy(base.x, base.y, tau);
+                const arcZ = base.z + 1.0 * Math.sin(Math.PI * tau) * Math.exp(-0.5 * (base.x**2 + base.y**2));
+                posAttr.setXYZ(i, mapped.x, arcZ, mapped.y);
+            }
+            posAttr.needsUpdate = true;
+            geometry.computeVertexNormals();
+
+            // Update Dynamic Grid
+            const gridAttr = customGridGeo.attributes.position;
+            for (let i = 0; i < gridBaseCoords.length; i++) {
+                const mapped = applyHomotopy(gridBaseCoords[i].x, gridBaseCoords[i].y, tau);
+                gridAttr.setXYZ(i, mapped.x, 0.01, mapped.y);
+            }
+            gridAttr.needsUpdate = true;
+
+            // Update Markers
+            const oMap = applyHomotopy(0, 0, tau);
+            originMesh.position.set(oMap.x, 1.0, oMap.y);
+
+            const p1Map = applyHomotopy(0, 1, tau);
+            pole1Mesh.position.set(p1Map.x, maxZ, p1Map.y);
+            
+            const p2Map = applyHomotopy(0, -1, tau);
+            pole2Mesh.position.set(p2Map.x, maxZ, p2Map.y);
+
+            const tMap = applyHomotopy(2, 0, tau);
+            targetMesh.position.set(tMap.x, 0.2, tMap.y);
+        }
+
+        slider.addEventListener('input', (e) => {
+            const tau = parseFloat(e.target.value);
+            tauDisplay.innerText = tau.toFixed(3);
+            updateGeometry(tau);
+        });
+        
+        updateGeometry(0);
+
+        function animate() { 
+            requestAnimationFrame(animate); 
+            controls.update(); 
+            renderer.render(scene, camera); 
+        }
+        animate();
+
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+    </script>
+</body>
+</html>

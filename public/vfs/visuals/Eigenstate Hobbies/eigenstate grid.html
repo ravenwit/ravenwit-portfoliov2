@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eigenstate Grid | Holographic UI Demo</title>
+    <style>
+        :root {
+            --color-stable: #00ffff; /* Cyan for permanent */
+            --color-transient: #ff0055; /* Pink/Red for glitchy/transient */
+            --bg-glass: rgba(10, 20, 30, 0.6);
+            --grid-perspective: 1000px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- THE HUD CONTAINER (The Lens) --- */
+        #hud-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: var(--grid-perspective);
+            overflow: hidden;
+        }
+
+        /* Background Grid Lines (The Vacuum) */
+        .vacuum-grid {
+            position: absolute;
+            width: 200vw;
+            height: 200vh;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotateX(60deg) translateY(-200px) translateZ(-500px);
+            opacity: 0.2;
+            pointer-events: none;
+            animation: grid-scroll 20s linear infinite;
+        }
+
+        @keyframes grid-scroll {
+            0% { transform: rotateX(60deg) translateY(0) translateZ(-500px); }
+            100% { transform: rotateX(60deg) translateY(50px) translateZ(-500px); }
+        }
+
+        /* --- THE EIGENSTATE GRID PLANE --- */
+        .eigen-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 120px);
+            grid-template-rows: repeat(4, 120px);
+            gap: 20px;
+            transform-style: preserve-3d;
+            /* The tilt that matches your WebGL camera */
+            transform: rotateX(20deg) rotateY(0deg) scale(0.9);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* --- CELL STYLES --- */
+        .cell {
+            position: relative;
+            background: var(--bg-glass);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.3s, transform 0.3s;
+            transform: translateZ(50px); /* Start "popped out" */
+        }
+
+        .cell .icon { font-size: 3rem; margin-bottom: 10px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
+        .cell .label { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; text-align: center; }
+        
+        /* Grid Positions (Manual for demo, can be auto) */
+        .cell[data-pos="1"] { grid-column: 2; grid-row: 2; }
+        .cell[data-pos="2"] { grid-column: 5; grid-row: 2; }
+        .cell[data-pos="3"] { grid-column: 3; grid-row: 3; }
+        .cell[data-pos="4"] { grid-column: 4; grid-row: 3; }
+        .cell[data-pos="5"] { grid-column: 1; grid-row: 1; }
+        .cell[data-pos="6"] { grid-column: 6; grid-row: 4; }
+        .cell[data-pos="7"] { grid-column: 6; grid-row: 1; }
+        .cell[data-pos="8"] { grid-column: 1; grid-row: 4; }
+
+        /* --- STATE: STABLE (Permanent) --- */
+        .cell.stable {
+            border: 1px solid var(--color-stable);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+        }
+        .cell.stable.active {
+            opacity: 1;
+            transform: translateZ(0);
+            animation: pulse-stable 3s infinite ease-in-out;
+        }
+        .cell.stable .label { color: var(--color-stable); }
+
+        /* --- STATE: TRANSIENT (Fluctuating) --- */
+        .cell.transient {
+            border: 1px dashed var(--color-transient);
+            color: var(--color-transient);
+        }
+        .cell.transient.active {
+            opacity: 0.8;
+            transform: translateZ(10px);
+            /* The Glitch Animation */
+            animation: glitch-skew 2s infinite linear alternate-reverse;
+        }
+        .cell.transient .icon {
+            animation: glitch-opacity 0.2s infinite steps(2);
+        }
+
+        /* --- ANIMATIONS --- */
+
+        @keyframes pulse-stable {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 255, 255, 0.1); border-color: rgba(0, 255, 255, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(0, 255, 255, 0.4); border-color: rgba(0, 255, 255, 1); }
+        }
+
+        @keyframes glitch-skew {
+            0% { transform: translateZ(10px) skewX(0deg); }
+            10% { transform: translateZ(10px) skewX(-5deg); }
+            20% { transform: translateZ(10px) skewX(5deg); }
+            30% { transform: translateZ(10px) skewX(0deg); }
+            90% { transform: translateZ(10px) skewX(0deg); }
+            92% { transform: translateZ(10px) skewX(10deg); filter: hue-rotate(90deg); }
+            94% { transform: translateZ(10px) skewX(0deg); }
+            100% { transform: translateZ(10px) skewX(0deg); }
+        }
+
+        @keyframes glitch-opacity {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            52% { opacity: 0.2; }
+            54% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* --- CONTROLS (Demo Only) --- */
+        #controls {
+            position: fixed;
+            bottom: 30px;
+            width: 80%;
+            max-width: 600px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #333;
+            padding: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .slider-container { display: flex; align-items: center; gap: 15px; }
+        input[type="range"] { flex-grow: 1; cursor: pointer; accent-color: var(--color-stable); }
+        .instructions { font-size: 12px; color: #888; margin-top: 5px; text-align: center;}
+        h3 { margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; color: var(--color-stable); }
+
+    </style>
+</head>
+<body>
+
+    <div id="hud-container">
+        <div class="vacuum-grid"></div>
+
+        <div class="eigen-grid" id="grid-plane">
+            
+            <div class="cell stable" data-pos="1" data-trigger="0.1">
+                <span class="icon">🎻</span>
+                <span class="label">Violin</span>
+            </div>
+
+            <div class="cell stable" data-pos="2" data-trigger="0.3">
+                <span class="icon">🧊</span>
+                <span class="label">Rubiks</span>
+            </div>
+
+            <div class="cell stable" data-pos="3" data-trigger="0.5">
+                <span class="icon">🃏</span>
+                <span class="label">Cardistry</span>
+            </div>
+
+            <div class="cell stable" data-pos="4" data-trigger="0.6">
+                <span class="icon">🌌</span>
+                <span class="label">Physics</span>
+            </div>
+
+            <div class="cell transient" data-pos="5" data-trigger="0.2">
+                <span class="icon">⚙️</span>
+                <span class="label">Rust_Lang</span>
+            </div>
+
+            <div class="cell transient" data-pos="6" data-trigger="0.4">
+                <span class="icon">⚡</span>
+                <span class="label">WebGL</span>
+            </div>
+
+            <div class="cell transient" data-pos="7" data-trigger="0.7">
+                <span class="icon">🎹</span>
+                <span class="label">Synth</span>
+            </div>
+
+            <div class="cell transient" data-pos="8" data-trigger="0.8">
+                <span class="icon">📐</span>
+                <span class="label">Geometry</span>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="controls">
+        <h3>Time / Scroll Simulation</h3>
+        <div class="slider-container">
+            <span>START</span>
+            <input type="range" id="scrollSlider" min="0" max="100" value="0">
+            <span>END</span>
+        </div>
+        <div class="instructions">Drag slider to simulate scrolling through the timeline sector.</div>
+    </div>
+
+    <script>
+        const slider = document.getElementById('scrollSlider');
+        const gridPlane = document.getElementById('grid-plane');
+        const cells = document.querySelectorAll('.cell');
+
+        // Logic to simulate scroll interactions
+        slider.addEventListener('input', (e) => {
+            const progress = e.target.value / 100; // 0.0 to 1.0
+
+            // 1. Parallax Tilt Effect
+            // Rotates the plane slightly based on scroll to give depth
+            const rotX = 20 + (progress * 10); // Tiit from 20deg to 30deg
+            const transY = (progress * -50); // Move up slightly
+            gridPlane.style.transform = `rotateX(${rotX}deg) rotateY(0deg) translateY(${transY}px) scale(0.9)`;
+
+            // 2. Trigger Cells
+            cells.forEach(cell => {
+                const triggerPoint = parseFloat(cell.getAttribute('data-trigger'));
+                
+                // Logic: Is the scroll passed the trigger point?
+                // We add a small "window" so transient items can fade out if we scroll too far
+                const isTransient = cell.classList.contains('transient');
+                
+                if (progress > triggerPoint) {
+                    // It is active
+                    if (isTransient && progress > triggerPoint + 0.3) {
+                        // Fade out transient items if we scroll past them
+                        cell.classList.remove('active');
+                        cell.style.opacity = '0.1'; // Ghost trail
+                    } else {
+                        cell.classList.add('active');
+                        cell.style.opacity = isTransient ? '0.8' : '1';
+                    }
+                } else {
+                    // Not reached yet
+                    cell.classList.remove('active');
+                    cell.style.opacity = '0';
+                }
+            });
+        });
+
+        // Trigger initial state
+        slider.dispatchEvent(new Event('input'));
+
+    </script>
+</body>
+</html>

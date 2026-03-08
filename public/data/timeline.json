@@ -1,0 +1,247 @@
+[
+    {
+        "id": "higher-secondary",
+        "category": "career",
+        "x": -25,
+        "y": 10,
+        "z": -100,
+        "mass": 1.8,
+        "title": "HIGHER SECONDARY CERTIFICATE",
+        "subtitle": "Govt. Science College",
+        "location": "Dhaka, Bangladesh",
+        "date": "2013",
+        "time_range": {
+            "start": "2011",
+            "end": "2013"
+        },
+        "skills": [
+            "Physics",
+            "Chemistry",
+            "Math",
+            "IT"
+        ],
+        "responsibilities": [
+            "SECRETARY OF COLLEGE SCIENCE CLUB",
+            "EXCELLING IN NATIONAL SCIENCE CURRICULUM",
+            "DEVELOPING CORE MATHEMATICAL FOUNDATIONS",
+            "PARTICIPATING IN NATIONAL SCIENCE FESTIVALS"
+        ]
+    },
+    {
+        "id": "editor-magazine",
+        "category": "career",
+        "x": -30,
+        "y": 0,
+        "z": -300,
+        "mass": 3.5,
+        "title": "SUB-EDITOR & WRITER",
+        "subtitle": "PI-ZERO TO INFINITY",
+        "location": "Dhaka, Bangladesh",
+        "date": "April 2013 - September 2015",
+        "time_range": {
+            "start": "2013",
+            "end": "2015"
+        },
+        "skills": [
+            "Scientific Writing",
+            "Editing",
+            "Proofreading",
+            "Research"
+        ],
+        "responsibilities": [
+            "WRITING ARTICLES ON PHYSICS AND MATHEMATICS",
+            "EDITING ARTICLES FOR CLARITY AND ACCURACY",
+            "DEVELOPING EDUCATIONAL MATERIAL FOR THE MAGAZINE",
+            "RESEARCHING TOPICS FOR ARTICLES"
+        ]
+    },
+    {
+        "id": "bachelors-physics",
+        "category": "career",
+        "x": -30,
+        "y": 0,
+        "z": -500,
+        "mass": 4.5,
+        "title": "BACHELOR OF SCIENCE PHYSICS",
+        "subtitle": "Shahjalal University of Science and Technology",
+        "location": "Sylhet, Bangladesh",
+        "date": "April 2015 - April 2019",
+        "time_range": {
+            "start": "2015",
+            "end": "2019"
+        },
+        "skills": [
+            "Electrodynamics I & II",
+            "Quantum Mechanics I & II",
+            "Classical Mechanics",
+            "Quantum Field Theory"
+        ],
+        "responsibilities": [
+            "SIMULATING NEUTRINO OSCILLATIONS VIA WIGNER MONTE CARLO",
+            "STUDYING RELATIVISTIC DYNAMICS OF TWO-BODY CHARGED PARTICLES",
+            "ANALYZING ELECTROMAGNETIC FIELD EQUATIONS",
+            "PRESENTING RESEARCH AT NATIONAL CONFERENCES"
+        ]
+    },
+    {
+        "id": "hexit-sysadmin",
+        "category": "career",
+        "x": 40,
+        "y": -5,
+        "z": -700,
+        "mass": 2.5,
+        "title": "SYSTEM ADMINISTRATOR",
+        "subtitle": "HEXit",
+        "location": "Sylhet, Bangladesh",
+        "date": "March 2017 - Sept 2017",
+        "time_range": {
+            "start": "2017",
+            "end": "2017"
+        },
+        "skills": [
+            "Linux",
+            "Web Servers",
+            "Networking",
+            "Security"
+        ],
+        "responsibilities": [
+            "ADMINISTERING APACHE, MYSQL & FILE SERVERS",
+            "CREATING NETWORK ROUTES AND MANAGING DNS",
+            "ADDRESSING POTENTIAL SYSTEM INTRUSIONS",
+            "MONITORING SYSTEM PERFORMANCE",
+            "MITIGATING SYSTEM VULNERABILITIES"
+        ]
+    },
+    {
+        "id": "shikho-tech",
+        "category": "career",
+        "x": 20,
+        "y": 15,
+        "z": -1100,
+        "mass": 2.2,
+        "title": "SUBJECT MATTER EXPERT",
+        "subtitle": "Shikho Technologies Bangladesh Ltd",
+        "location": "Dhaka, Bangladesh",
+        "date": "Sept 2021 - Dec 2022",
+        "time_range": {
+            "start": "2021",
+            "end": "2022"
+        },
+        "skills": [
+            "Education",
+            "Pedagogy",
+            "Visualization",
+            "Communication"
+        ],
+        "responsibilities": [
+            "DESIGNING INNOVATIVE & ENGAGING LESSON PLANS",
+            "VISUALIZING COMPLEX PHYSICS CONCEPTS",
+            "DIRECTING ANIMATION PRODUCTION",
+            "REVIEWING SCRIPTS FOR OPTIMAL LEARNING"
+        ]
+    },
+    {
+        "id": "masters-physics",
+        "category": "career",
+        "x": -35,
+        "y": -10,
+        "z": -1300,
+        "mass": 5.0,
+        "title": "MASTER OF SCIENCE PHYSICS",
+        "subtitle": "University of Cologne",
+        "location": "Cologne, Germany",
+        "date": "2023 - 2027",
+        "time_range": {
+            "start": "2023",
+            "end": "2027"
+        },
+        "skills": [
+            "Quantum Field Theory",
+            "Statistical Mechanics",
+            "Quantum Error Correction",
+            "Many Body Physics"
+        ],
+        "responsibilities": [
+            "DEVELOPING INTEREST ON QUANTUM ERROR CORRECTION",
+            "UNDERSTANDING PHASE TRANSITION",
+            "SIMULATED QUANTUM PHASE TRANSITION WITH TENSOR NETWORKS",
+            "DEVELOPING INSIGHTS ON QUANTUM INFORMATION"
+        ]
+    },
+    {
+        "id": "luna-innovations",
+        "category": "career",
+        "x": 30,
+        "y": 5,
+        "z": -1400,
+        "mass": 5.5,
+        "title": "WORKING STUDENT - ALGORITHMS",
+        "subtitle": "Luna Innovations Germany GmbH",
+        "location": "Cologne, Germany",
+        "date": "April 2024 - March 2026",
+        "time_range": {
+            "start": "2024",
+            "end": "2026"
+        },
+        "skills": [
+            "Python",
+            "TensorFlow",
+            "MLOps",
+            "Signal Processing"
+        ],
+        "responsibilities": [
+            "ENGINEERING END-TO-END ML PIPELINES USING DVC",
+            "DEVELOPING CYCLEGAN FOR DATA AUGMENTATION USING PYTORCH",
+            "ARCHITECTING METADATA SEARCH ENGINE FOR TERABYTES OF SENSOR DATA",
+            "DEPLOYING CI/CD PIPELINES VIA JENKINS AND PREFECT"
+        ]
+    },
+    {
+        "id": "hobby-violin",
+        "category": "hobby",
+        "title": "VIOLIN",
+        "date": "2015 - Present",
+        "persisting": true,
+        "timeRange": [
+            2015,
+            2027
+        ],
+        "description": "Playing classical and contemporary pieces."
+    },
+    {
+        "id": "hobby-rubik",
+        "category": "hobby",
+        "title": "RUBIK'S CUBE",
+        "date": "2018 - 2020",
+        "persisting": false,
+        "timeRange": [
+            2018,
+            2020
+        ],
+        "description": "Speedcubing and learning advanced algorithms."
+    },
+    {
+        "id": "hobby-astronomy",
+        "category": "hobby",
+        "title": "AMATEUR ASTRONOMY",
+        "date": "2020 - Present",
+        "persisting": true,
+        "timeRange": [
+            2020,
+            2027
+        ],
+        "description": "Stargazing and astrophotography."
+    },
+    {
+        "id": "hobby-game-dev",
+        "category": "hobby",
+        "title": "GAME DEVELOPMENT",
+        "date": "2021 - 2023",
+        "persisting": false,
+        "timeRange": [
+            2021,
+            2023
+        ],
+        "description": "Prototyping mechanics in Godot and Unity."
+    }
+]
