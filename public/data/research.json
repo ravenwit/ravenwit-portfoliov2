@@ -46,7 +46,7 @@
     {
         "id": "2018",
         "title": "Ising Model Simulation",
-        "desc": "Simulation of spontaneous symmetry breaking in a 2D simple square grid, with periodic boundary conditions, using the Metropolis-Hastings algorithm with the functionality to calculate different observables like magnetization, specific heat and susceptibility at different temperatures. \\ \\ Currently planning to extend the simulation to different lattice structures with advanced algorithms (e.g., Wolf-Cluster algorithm) having the objective to understand criticality with conformal map.",
+        "desc": "Simulation of spontaneous symmetry breaking in a 2D simple square grid, with periodic boundary conditions, using the Metropolis-Hastings algorithm with the functionality to calculate different observables like magnetization, specific heat and susceptibility at different temperatures. \\ \\ Currently planning to extend the simulation to different lattice structures with advanced algorithms (e.g., Wolf-Cluster algorithm) having the objective to understand __criticality__ with conformal map.",
         "tags": [
             "Monte Carlo",
             "Metropolis-Hastings Algorithm",
@@ -56,12 +56,13 @@
     },
     {
         "id": "2024",
-        "title": "Inverse Ising Problem (Gradient Descent)",
-        "desc": "Simulation of spontaneous symmetry breaking and the divergence of correlation length near a critical temperature in a 3D lattice array.",
+        "title": "Statistical Inference of Ising Model Hamiltonian Parameters",
+        "desc": "Reconstruct the exact generative Hamiltonian couplings and external fields from observed empirical microstates by maximizing the thermodynamic logarithmic likelihood function.",
         "tags": [
-            "C++",
-            "Statistical Mechanics",
-            "Phase Transitions"
-        ]
+            "Inverse Ising Model",
+            "Statistical Inference",
+            "Statistical Mechanics"
+        ],
+        "link": "https://github.com/ravenwit/Inverse-Ising"
     }
 ]

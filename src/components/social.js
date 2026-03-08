@@ -1,9 +1,9 @@
 const SOCIAL_LINKS = [
-    { name: "RESEARCHGATE", url: "https://www.researchgate.net/" },
-    { name: "INSTAGRAM", url: "https://www.instagram.com/" },
-    { name: "GITHUB", url: "https://github.com/" },
-    { name: "LINKEDIN", url: "https://www.linkedin.com/" },
-    { name: "TWITTER", url: "https://twitter.com/" }
+    { name: "RESEARCHGATE", url: "https://www.researchgate.net/profile/Shakir-Ahmed-5" },
+    { name: "INSTAGRAM", url: "https://www.instagram.com/raven.shakir" },
+    { name: "GITHUB", url: "https://github.com/ravenwit" },
+    { name: "LINKEDIN", url: "https://www.linkedin.com/in/shakir-ahmed-raven" },
+    { name: "TWITTER", url: "https://twitter.com/shakir7733" }
 ];
 
 let recentLinks = [];

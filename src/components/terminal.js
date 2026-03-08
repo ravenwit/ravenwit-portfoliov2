@@ -154,32 +154,48 @@ export class TerminalController {
     }
 
     toggleTerminal() {
+        if (this.isAnimating) return;
+
         this.isOpen = !this.isOpen;
+        this.isAnimating = true;
+
         if (this.isOpen) {
             this.overlay.classList.add('terminal-open');
             this.overlay.classList.remove('terminal-hidden');
+            this.overlay.classList.remove('terminal-closing');
             document.body.style.overflow = 'hidden'; // Lock background scrolling
 
-            // Wait for transform animation before focusing
+            // Wait for crt-turn-on animation
             setTimeout(() => {
+                this.isAnimating = false;
                 this.input.focus();
                 // Play boot sequence if first time opening and empty history
                 if (this.historyContainer.innerHTML === '') {
                     playCRTBoot();
                     this.playBootSequence();
                 }
-            }, 50);
+            }, 400);
         } else {
             this.overlay.classList.remove('terminal-open');
-            this.overlay.classList.add('terminal-hidden');
+            this.overlay.classList.add('terminal-closing');
             document.body.style.overflow = ''; // Restore background scrolling
             this.input.blur();
+
             // Stop htop if running
             if (this.htopInterval) {
                 clearInterval(this.htopInterval);
                 this.htopInterval = null;
                 this.printLine('^C');
             }
+
+            // Wait for crt-turn-off animation before hiding
+            setTimeout(() => {
+                this.isAnimating = false;
+                if (!this.isOpen) {
+                    this.overlay.classList.remove('terminal-closing');
+                    this.overlay.classList.add('terminal-hidden');
+                }
+            }, 400);
         }
     }
 
