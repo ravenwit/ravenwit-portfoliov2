@@ -24,6 +24,7 @@ ${"=".repeat(88)}
 ||  > Uni Cologne, Germany                      |                                         ||
 ||                                              |                                         ||
 ${"=".repeat(88)}
-||  EOF. Waiting for next command..._                                                 ||
+||  EOF. Waiting for next command..._
+||  Type help and enter to see available commands
 ${"=".repeat(88)}
 `;

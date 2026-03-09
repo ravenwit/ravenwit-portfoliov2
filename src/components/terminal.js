@@ -219,7 +219,7 @@ export class TerminalController {
             pathStr = '/' + this.cwd.slice(1).join('/');
         }
 
-        return `[${user}@raven ${pathStr}]${symbol} `;
+        return `[${user}@ravenwit ${pathStr}]${symbol} `;
     }
 
     updatePrompt() {
