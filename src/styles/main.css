@@ -1551,6 +1551,17 @@ canvas {
         top: -10px;
         right: -5px;
     }
+
+    .res-card-collab {
+        font-size: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .res-card-body {
+        font-size: 0.95rem;
+        margin-bottom: 1.7rem;
+    }
+
 }
 
 @media (max-width: 768px) {
