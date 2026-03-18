@@ -125,13 +125,13 @@
 
     <div id="ui-hero" class="ui-layer">
         <div id="liquid-name-container"
-            style="position: absolute; width: 500px; height: 120px; top: calc(50% - 170px); left: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: auto; cursor: crosshair;">
+            style="position: absolute; width: clamp(300px, 40vw, 600px); height: clamp(72px, 9.6vw, 144px); top: 22vh; left: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: auto; cursor: crosshair;">
             <canvas id="liquidNameCanvas" width="500" height="120"
                 style="width:100%; height:100%; pointer-events: auto;" aria-label="Interactive liquid name animation"
                 role="img"></canvas>
         </div>
         <div id="fourier-container"
-            style="position: absolute; width: 600px; height: 600px; top: calc(50% + 10px);; left: 50%; transform: translate(-50%, -50%); z-index: 5;">
+            style="position: absolute; width: clamp(300px, 45vh, 700px); height: clamp(300px, 45vh, 700px); top: 50vh; left: 50%; transform: translate(-50%, -50%); z-index: 5;">
             <canvas id="fourierCanvas" width="600" height="600" style="width:100%; height:100%; border-radius: 50%;"
                 aria-label="Fourier series orbital animation" role="img"></canvas>
         </div>
@@ -192,6 +192,22 @@
                     rad/s</span></div>
         </div>
     </div>
+
+    <!-- AUDIO SOUND TOGGLE -->
+    <button id="audio-toggle" class="audio-toggle-btn" aria-label="Toggle Sound">
+        <!-- OFF ICON -->
+        <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+        <!-- ON ICON -->
+        <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <span class="audio-tooltip">SOUND: OFF</span>
+    </button>
 
     <!-- TERMINAL OVERLAY UI -->
     <div id="terminal-overlay" class="terminal-hidden">
