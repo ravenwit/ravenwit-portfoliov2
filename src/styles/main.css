@@ -115,56 +115,112 @@ canvas {
     animation: blink 1s infinite;
 }
 
-/* --- SATELLITE BUTTONS --- */
-.satellite-container {
+/* --- STRING CRADLE (Semi-Circle Social Beads) --- */
+#string-cradle {
     position: absolute;
-    top: 50%;
+    /* Positioned below the epicycles center */
+    top: calc(50% + 120px);
     left: 50%;
     transform: translate(-50%, -50%);
-    /* Base centering, JS adjusts this */
+    width: 420px;
+    height: 320px;
     z-index: 20;
     pointer-events: auto;
-    /* Allow interaction even if parent blocks */
-    width: 60px;
-    height: 60px;
 }
 
-.satellite-button {
+.orbital-bead {
+    position: absolute;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    background: rgba(10, 15, 25, 0.5);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    pointer-events: auto;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.1), inset 0 0 4px rgba(0, 0, 0, 0.6);
+    z-index: 2;
+}
+
+.document-bead {
+    width: 52px;
+    height: 52px;
+    border: 1.5px solid rgba(192, 132, 252, 0.6);
+    background: rgba(10, 15, 25, 0.7);
+    box-shadow: 0 0 12px rgba(192, 132, 252, 0.2), inset 0 0 6px rgba(0, 0, 0, 0.6);
+}
+
+.bead-core {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 255, 255, 0.5);
-    background: rgba(10, 15, 25, 0.4);
-    backdrop-filter: blur(4px);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    /* Snap/Bounce effect */
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.1), inset 0 0 5px rgba(0, 0, 0, 0.8);
-    cursor: pointer;
 }
 
-.satellite-icon {
-    width: 24px;
-    height: 24px;
-    fill: rgba(0, 255, 255, 0.8);
+.bead-icon {
+    width: 20px;
+    height: 20px;
+    fill: rgba(0, 255, 255, 0.7);
     transition: fill 0.3s ease;
 }
 
-.satellite-button:hover {
-    border-color: rgba(0, 255, 255, 1);
-    background: rgba(0, 255, 255, 0.15);
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.2);
-    transform: scale(1.15);
+.document-bead .bead-icon {
+    width: 26px;
+    height: 26px;
+    fill: rgba(192, 132, 252, 0.8);
 }
 
-.satellite-button:hover .satellite-icon,
-.satellite-button:hover svg path,
-.satellite-button:hover svg circle {
+.orbital-bead:hover {
+    border-color: rgba(0, 255, 255, 1);
+    background: rgba(0, 255, 255, 0.12);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 8px rgba(0, 255, 255, 0.15);
+    transform: scale(1.15);
+    z-index: 10;
+}
+
+.document-bead:hover {
+    border-color: rgba(192, 132, 252, 1);
+    background: rgba(192, 132, 252, 0.15);
+    box-shadow: 0 0 25px rgba(192, 132, 252, 0.5), inset 0 0 10px rgba(192, 132, 252, 0.2);
+}
+
+.orbital-bead:hover .bead-icon {
     fill: #fff;
 }
 
+/* Bead label (tooltip) — glitch-text reveal */
+.bead-label {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Doto', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #0ff;
+    text-shadow: 0 0 6px rgba(0, 255, 255, 0.6);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.document-bead .bead-label {
+    color: #c084fc;
+    text-shadow: 0 0 6px rgba(192, 132, 252, 0.6);
+    bottom: -32px;
+    font-size: 11px;
+}
+
+.orbital-bead:hover .bead-label {
+    opacity: 1;
+}
 
 /* --- HUD --- */
 #hud {
@@ -582,68 +638,87 @@ canvas {
     }
 }
 
-/* --- SCROLL ICON --- */
-.scroll-icon-container {
+/* --- SCROLL BEACON --- */
+.scroll-beacon {
     position: absolute;
-    bottom: 40px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
     pointer-events: none;
     z-index: 20;
+    /* Removed beacon-autohide so it persists until scrolled away */
+    animation: beacon-breathe 3s ease-in-out infinite;
 }
 
-.mouse-icon {
-    width: 18px;
-    height: 25px;
-    border: 1px solid rgba(0, 255, 255, 0.7);
-    border-radius: 7px;
-    position: relative;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.2);
-    animation: mouseBeep 2s infinite alternate cubic-bezier(0.1, 0.7, 1.0, 0.1);
+.scroll-beacon-text {
+    font-family: 'Doto', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(0, 255, 255, 0.8);
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+    font-variant: small-caps;
 }
 
-.wheel {
-    width: 2px;
-    height: 4px;
-    background-color: #0ff;
-    border-radius: 2px;
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    box-shadow: 0 0 8px #0ff;
-    animation: scrollWheel 1.5s infinite;
+.scroll-chevrons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
 }
 
-@keyframes scrollWheel {
+.chevron {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-right: 1.5px solid rgba(0, 255, 255, 0.7);
+    border-bottom: 1.5px solid rgba(0, 255, 255, 0.7);
+    transform: rotate(45deg);
+    animation: chevron-fall 1.8s ease-in-out infinite;
+    opacity: 0;
+}
+
+.chevron:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.chevron:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.chevron:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes chevron-fall {
     0% {
-        top: 6px;
+        opacity: 0;
+        transform: rotate(45deg) translateY(-6px);
+    }
+
+    30%,
+    60% {
         opacity: 1;
-        height: 8px;
+    }
+
+    100% {
+        opacity: 0;
+        transform: rotate(45deg) translateY(6px);
+    }
+}
+
+@keyframes beacon-breathe {
+
+    0%,
+    100% {
+        opacity: 0.7;
     }
 
     50% {
-        top: 14px;
-        opacity: 0.2;
-        height: 6px;
-    }
-
-    100% {
-        top: 6px;
         opacity: 1;
-        height: 8px;
-    }
-}
-
-@keyframes mouseBeep {
-    0% {
-        box-shadow: 0 0 5px rgba(0, 255, 255, 0.2), inset 0 0 5px rgba(0, 255, 255, 0.1);
-        border-color: rgba(0, 255, 255, 0.4);
-    }
-
-    100% {
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.6), inset 0 0 10px rgba(0, 255, 255, 0.4);
-        border-color: rgba(0, 255, 255, 1);
     }
 }
 
@@ -741,80 +816,37 @@ canvas {
     margin-right: 0;
 }
 
-/* --- QUANTUM SOCIAL LINKS --- */
-#quantum-world-line {
-    position: fixed;
-    right: 40px;
-    top: 70%;
-    transform: translateY(-50%);
-    height: 70vh;
-    width: 200px;
-    z-index: 50;
+/* --- TIMELINE BADGE --- */
+#timeline-badge {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 16px;
+    border: 1px solid rgba(0, 255, 255, 0.25);
+    border-radius: 2px;
+    background: rgba(5, 10, 20, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 30;
     pointer-events: none;
-    /* Let clicks pass through empty space */
 }
 
-.trajectory-line {
-    position: absolute;
-    right: 20px;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(to bottom, transparent, rgba(248, 155, 42, 0.6) 20%, rgba(246, 19, 144, 0.6) 80%, transparent);
-    box-shadow: 0 0 8px rgba(248, 169, 58, 0.5);
+.badge-title {
+    font-family: 'Doto', serif;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: rgba(0, 255, 255, 0.9);
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
 }
 
-.quanta-node {
-    position: absolute;
-    right: 17px;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    flex-direction: row-reverse;
-    text-decoration: none;
-    pointer-events: auto;
-    /* Re-enable pointer events for the links */
-}
-
-.node-core {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: #ff6600;
-    box-shadow: 0 0 10px #ff6600, 0 0 20px #ff6600;
-    transition: all 0.3s ease;
-}
-
-.quanta-node:hover .node-core,
-.quanta-node.observed .node-core {
-    transform: scale(1.5);
-    background-color: #fff;
-    box-shadow: 0 0 15px #fff, 0 0 30px #ff6600;
-}
-
-.node-label-container {
-    overflow: hidden;
-    margin-right: 15px;
-    /* Space between core and text */
-    display: flex;
-    justify-content: flex-end;
-}
-
-.node-label {
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
+.badge-subtitle {
+    font-family: 'Doto', monospace;
+    font-size: 9px;
     letter-spacing: 2px;
-    color: #ffffff;
-    text-shadow: 0 0 5px #ff6600, 0 0 10px #ff6600;
-    white-space: nowrap;
-    opacity: 0;
-    transform: translateX(20px);
-    transition: all 0.3s cubic-bezier(0.1, 0.7, 1.0, 0.1);
-}
-
-.quanta-node.observed .node-label {
-    opacity: 1;
-    transform: translateX(0);
+    color: rgba(0, 255, 255, 0.5);
 }
 
 /* --- HOBBIES UI --- */
@@ -830,7 +862,7 @@ canvas {
     position: absolute;
     top: 100px;
     /* Distance from top edge */
-    left: 70px;
+    left: 100px;
     /* Distance from left edge */
     width: auto;
     /* Remove 100vw */

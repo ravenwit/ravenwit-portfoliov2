@@ -150,13 +150,8 @@ async function init() {
         module.initLiquidTypography('liquidNameCanvas');
     });
 
-    import('./components/satellite.js').then(module => {
-        module.initSatelliteLabel('cv-satellite-container', 'cv-satellite', 340, 0.0015);
-        module.initSatelliteLabel('resume-satellite-container', 'resume-satellite', 340, 0.0017, Math.PI);
-    });
-
-    import('./components/social.js').then(module => {
-        module.initSocialQuanta();
+    import('./components/orbitalBeads.js').then(module => {
+        module.initOrbitalBeads();
     });
 
     initHobbies();
