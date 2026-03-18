@@ -164,7 +164,7 @@ export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGrou
     const hobbiesLayer = document.getElementById('hobbies-ui-layer');
     if (hobbiesLayer) hobbiesLayer.style.pointerEvents = 'none';
 
-    gsap.to('#quantum-world-line', { opacity: 0, duration: 0.4 });
+
 
     // Hide DOM Node UI
     document.querySelectorAll('.node-container').forEach(el => {
@@ -327,10 +327,7 @@ export function initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, r
             const hobbiesLayer = document.getElementById('hobbies-ui-layer');
             gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5, onStart: () => { if (hobbiesLayer) hobbiesLayer.style.pointerEvents = 'auto'; } });
 
-            const quantumLine = document.getElementById('quantum-world-line');
-            if (quantumLine) {
-                gsap.to('#quantum-world-line', { opacity: 1, duration: 0.5, onStart: () => quantumLine.style.pointerEvents = 'auto' });
-            }
+
 
             // Unhide nodes and restore events
             document.querySelectorAll('.node-container').forEach(el => {

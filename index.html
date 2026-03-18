@@ -92,6 +92,11 @@
     <div id="labels-container"></div>
 
     <div id="hobbies-ui-layer" class="ui-layer">
+        <!-- Timeline Badge -->
+        <div id="timeline-badge">
+            <span class="badge-title">Timeline</span>
+            <span class="badge-subtitle">▸ SCROLL TO TRAVERSE</span>
+        </div>
         <div id="hobbies-viewport">
             <div id="triptych-container">
                 <div id="triptych">
@@ -120,57 +125,26 @@
 
     <div id="ui-hero" class="ui-layer">
         <div id="liquid-name-container"
-            style="position: absolute; width: 500px; height: 120px; top: calc(50% - 170px); left: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: auto; cursor: crosshair;">
+            style="position: absolute; width: clamp(300px, 40vw, 600px); height: clamp(72px, 9.6vw, 144px); top: 22vh; left: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: auto; cursor: crosshair;">
             <canvas id="liquidNameCanvas" width="500" height="120"
                 style="width:100%; height:100%; pointer-events: auto;" aria-label="Interactive liquid name animation"
                 role="img"></canvas>
         </div>
         <div id="fourier-container"
-            style="position: absolute; width: 600px; height: 600px; top: calc(50% + 30px);; left: 50%; transform: translate(-50%, -50%); z-index: 5;">
+            style="position: absolute; width: clamp(300px, 45vh, 700px); height: clamp(300px, 45vh, 700px); top: 50vh; left: 50%; transform: translate(-50%, -50%); z-index: 5;">
             <canvas id="fourierCanvas" width="600" height="600" style="width:100%; height:100%; border-radius: 50%;"
                 aria-label="Fourier series orbital animation" role="img"></canvas>
         </div>
 
-        <!-- Orbital CV Button -->
-        <div id="cv-satellite-container" class="satellite-container">
-            <a id="cv-satellite" class="satellite-button" href="/Shakir_Ahmed_CV.pdf" target="_blank"
-                aria-label="Open CV">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="cv" class="satellite-icon">
-                    <path
-                        d="M365.5,30.274a7,7,0,0,0-5.022-2.124h-176a37.041,37.041,0,0,0-37,37V98.387h-53a37.042,37.042,0,0,0-37,37V446.85a37.042,37.042,0,0,0,37,37H327.518a37.042,37.042,0,0,0,37-37V413.582h53a37.041,37.041,0,0,0,37-37V124.808a7,7,0,0,0-1.978-4.876Zm1.977,22.136,63.485,65.4H376.781a9.311,9.311,0,0,1-9.3-9.3V52.41ZM350.518,446.85a23.026,23.026,0,0,1-23,23H94.482a23.026,23.026,0,0,1-23-23V135.386a23.026,23.026,0,0,1,23-23h53v264.2a37.041,37.041,0,0,0,37,37H350.518Zm67-47.268H184.482a23.025,23.025,0,0,1-23-23V65.147a23.025,23.025,0,0,1,23-23h169v66.358a23.327,23.327,0,0,0,23.3,23.3h63.736V376.583A23.026,23.026,0,0,1,417.518,399.582Z">
-                    </path>
-                    <path
-                        d="M392.3 339.3H204.68a7 7 0 0 0 0 14H392.3a7 7 0 0 0 0-14zM204.68 309.362H317a7 7 0 0 0 0-14H204.68a7 7 0 0 0 0 14zM230.494 257.556a6 6 0 0 0 6 5.922h.063l129.675-1.333a6 6 0 0 0 5.938-6.078L371.7 220.15A36.558 36.558 0 0 0 334.9 180.6l-7.426.075a6 6 0 0 0-5.728 4.42l-7.54 27.638-3.938-6.867 4.946-16.371a6 6 0 0 0-5.744-7.735h-.061l-18.779.191a6 6 0 0 0-5.646 7.851l5.311 16.366-2.91 5.758-7.137-26.205a6 6 0 0 0-5.789-4.423h-8.427a36.559 36.559 0 0 0-36 40.3zm70.868-63.708l-1.184 3.917-1.263-3.892zm-53.357 7.736a24.577 24.577 0 0 1 18.084-8.28h3.782L279.9 230.148a6 6 0 0 0 10.592 2.02 5.923 5.923 0 0 0 .555-.894l9.344-18.488 10.586 18.461a6 6 0 0 0 10.994-1.406l10.15-37.208 2.892-.029a24.558 24.558 0 0 1 24.705 26.783 5.888 5.888 0 0 0-.024.623l.391 30.2-117.675 1.209-.392-30.247a5.764 5.764 0 0 0-.037-.588A24.269 24.269 0 0 1 248.005 201.584zM299.056 180.084c.122 0 .244 0 .366 0a35.412 35.412 0 0 0 35.052-35.769l-.279-27.479a27.82 27.82 0 0 0-28.037-27.471l-31.432.319a11.636 11.636 0 0 0-11.518 11.754l.443 43.6A35.45 35.45 0 0 0 299.056 180.084zM279.5 113.208a31.246 31.246 0 0 0-4.15 2.629l-.067-6.647C276.6 110.54 278.008 111.888 279.5 113.208zm36.282 47.85a23.414 23.414 0 0 1-40.136-16.147l-.107-10.526c3.411-7.166 8.872-11.521 15.9-12.673a46.325 46.325 0 0 0 22.41 6.217 39.274 39.274 0 0 0 8.442-.923l.177 17.43A23.255 23.255 0 0 1 315.785 161.058zm-9.506-59.7a15.774 15.774 0 0 1 15.709 13.321c-9.608 2.954-19.559.76-29.635-6.575a64.646 64.646 0 0 1-7.581-6.527z">
-                    </path>
-                </svg>
-            </a>
-        </div>
 
-        <!-- Orbital Resume Button -->
-        <div id="resume-satellite-container" class="satellite-container">
-            <a id="resume-satellite" class="satellite-button" href="/Shakir_Ahmed_Resume.pdf" target="_blank"
-                aria-label="Open Resume">
-                <svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 512 512" viewBox="0 0 512 512"
-                    id="resume" class="satellite-icon">
-                    <path d="M436,66.68v378.64c0,27.99-22.69,50.68-50.68,50.68H126.68C98.69,496,76,473.31,76,445.32V66.68
-                                C76,38.69,98.69,16,126.68,16h258.64C413.31,16,436,38.69,436,66.68z"></path>
-                    <circle cx="173.5" cy="91" r="30"></circle>
-                    <path d="M385.317,511H126.683C90.465,511,61,481.535,61,445.317V66.683C61,30.465,90.465,1,126.683,1
-                                h258.635C421.535,1,451,30.465,451,66.683v378.635C451,481.535,421.535,511,385.317,511z M126.683,31
-                                C107.007,31,91,47.007,91,66.683v378.635C91,464.993,107.007,481,126.683,481h258.635C404.993,481,421,464.993,421,445.317
-                                V66.683C421,47.007,404.993,31,385.317,31H126.683z"></path>
-                    <path d="M211,188.5c-8.284,0-15-6.716-15-15c0-12.406-10.094-22.5-22.5-22.5S151,161.094,151,173.5
-                                c0,8.284-6.716,15-15,15s-15-6.716-15-15c0-28.948,23.552-52.5,52.5-52.5s52.5,23.552,52.5,52.5
-                                C226,181.784,219.284,188.5,211,188.5z"></path>
-                    <path
-                        d="M211 256h-75c-8.284 0-15-6.716-15-15s6.716-15 15-15h75c8.284 0 15 6.716 15 15S219.284 256 211 256zM211 316h-75c-8.284 0-15-6.716-15-15s6.716-15 15-15h75c8.284 0 15 6.716 15 15S219.284 316 211 316zM211 376h-75c-8.284 0-15-6.716-15-15s6.716-15 15-15h75c8.284 0 15 6.716 15 15S219.284 376 211 376zM376 196H271c-8.284 0-15-6.716-15-15s6.716-15 15-15h105c8.284 0 15 6.716 15 15S384.284 196 376 196zM376 256H271c-8.284 0-15-6.716-15-15s6.716-15 15-15h105c8.284 0 15 6.716 15 15S384.284 256 376 256zM316 316h-45c-8.284 0-15-6.716-15-15s6.716-15 15-15h45c8.284 0 15 6.716 15 15S324.284 316 316 316zM376 376H271c-8.284 0-15-6.716-15-15s6.716-15 15-15h105c8.284 0 15 6.716 15 15S384.284 376 376 376zM316 436H136c-8.284 0-15-6.716-15-15s6.716-15 15-15h180c8.284 0 15 6.716 15 15S324.284 436 316 436z">
-                    </path>
-                </svg>
-            </a>
-        </div>
-        <div class="scroll-icon-container">
-            <div class="mouse-icon">
-                <div class="wheel"></div>
+
+        <!-- Scroll Beacon -->
+        <div class="scroll-beacon">
+            <span class="scroll-beacon-text">SCROLL TO ENTER TIMELINE</span>
+            <div class="scroll-chevrons">
+                <span class="chevron"></span>
+                <span class="chevron"></span>
+                <span class="chevron"></span>
             </div>
         </div>
     </div>
@@ -200,27 +174,7 @@
         </div>
     </div>
 
-    <!-- QUANTUM SOCIAL LINKS -->
-    <div id="quantum-world-line">
-        <div class="trajectory-line"></div>
-        <!-- 5 Quanta Nodes hovering on the string -->
-        <a href="#" target="_blank" class="quanta-node" style="top: 20%;">
-            <div class="node-core"></div>
-            <div class="node-label-container"><span class="node-label"></span></div>
-        </a>
-        <a href="#" target="_blank" class="quanta-node" style="top: 40%;">
-            <div class="node-core"></div>
-            <div class="node-label-container"><span class="node-label"></span></div>
-        </a>
-        <a href="#" target="_blank" class="quanta-node" style="top: 60%;">
-            <div class="node-core"></div>
-            <div class="node-label-container"><span class="node-label"></span></div>
-        </a>
-        <a href="#" target="_blank" class="quanta-node" style="top: 80%;">
-            <div class="node-core"></div>
-            <div class="node-label-container"><span class="node-label"></span></div>
-        </a>
-    </div>
+
     <!-- RESEARCH PHASE UI -->
     <div id="ui-research" class="ui-layer" style="display: none; opacity: 0;">
         <div id="noise-overlay"></div>
@@ -238,6 +192,22 @@
                     rad/s</span></div>
         </div>
     </div>
+
+    <!-- AUDIO SOUND TOGGLE -->
+    <button id="audio-toggle" class="audio-toggle-btn" aria-label="Toggle Sound">
+        <!-- OFF ICON -->
+        <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+        <!-- ON ICON -->
+        <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <span class="audio-tooltip">SOUND: OFF</span>
+    </button>
 
     <!-- TERMINAL OVERLAY UI -->
     <div id="terminal-overlay" class="terminal-hidden">
