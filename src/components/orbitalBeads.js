@@ -10,13 +10,13 @@ export function initOrbitalBeads() {
     // ── Data ───────────────────────────────────────────────
     // Order: CV (left end) → socials → Resume (right end)
     const beadsData = [
-        { label: "CV", url: "/cv.pdf", iconPath: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", type: 'document', brandColor: '#c084fc' },
+        { label: "CV", url: "/Shakir_Ahmed_CV.pdf", iconPath: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z", type: 'document', brandColor: '#c084fc' },
         { label: "GITHUB", url: "https://github.com/ravenwit", iconPath: "M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.45-1.15-1.11-1.46-1.11-1.46c-.9-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2Z", type: 'social', brandColor: '#b0b0b0' },
         { label: "LINKEDIN", url: "https://linkedin.com/in/shakir-ahmed-raven", iconPath: "M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77Z", type: 'social', brandColor: '#0A66C2' },
         { label: "RESEARCHGATE", url: "https://www.researchgate.net/profile/Shakir-Ahmed-5", iconPath: "M19.58 2.09c8.53 0 12.33 6.13 12.33 11.91 0 5.86-3.95 11.83-12.72 11.83H2.09V2.09h17.49zm-.4 19.34c5.05 0 8.04-3.8 8.04-8.08 0-4.49-3.23-8.32-8.35-8.32H6.96v16.4h12.23zm-.08-11.23h-6.28V7.27h6.28c2.4 0 3.73 1.16 3.73 2.92 0 1.94-1.55 3.01-3.73 3.01zm-6.28 2.24h.93c.15 0 .31-.08.31-.23v-1.94h-1.24v2.17zm9.64.93c.31.23.47.62.47 1.01 0 1-.93 1.63-2.17 1.63h-1.63v-5.11h2.25c1.16 0 1.86.54 1.86 1.4 0 .46-.23.85-.78 1.07", type: 'social', brandColor: '#00D0AF' },
         { label: "TWITTER", url: "https://twitter.com/shakir7733", iconPath: "M22.46 6c-.77.35-1.6.58-2.46.69c.88-.53 1.56-1.37 1.88-2.38c-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29c0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15c0 1.49.75 2.81 1.91 3.56c-.71 0-1.37-.2-1.95-.5v.05c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07a4.28 4.28 0 0 0 4 2.98a8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21C16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56c.84-.6 1.56-1.36 2.14-2.23Z", type: 'social', brandColor: '#1DA1F2' },
         { label: "INSTA", url: "https://www.instagram.com/raven.shakir", iconPath: "M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3Z", type: 'social', brandColor: '#E1306C' },
-        { label: "RESUME", url: "/resume.pdf", iconPath: "M15 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9l-7-7zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6zm-1-8C12.45 5 12 4.55 12 4s.45-1 1-1 1 .45 1 1-.45 1-1 1z", type: 'document', brandColor: '#c084fc' },
+        { label: "RESUME", url: "/Shakir_Ahmed_Resume.pdf", iconPath: "M15 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9l-7-7zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6zm-1-8C12.45 5 12 4.55 12 4s.45-1 1-1 1 .45 1 1-.45 1-1 1z", type: 'document', brandColor: '#c084fc' },
     ];
 
     // ── Layout Config ──────────────────────────────────────
@@ -168,26 +168,26 @@ export function initOrbitalBeads() {
 
     if (audioToggleBtn) {
         audioToggleBtn.classList.add('muted');
-        
+
         audioToggleBtn.addEventListener('click', (e) => {
             // Stop click from bubbling up to document and causing other interactions if needed
             e.stopPropagation();
 
             isMuted = !isMuted;
             audioToggleBtn.classList.add('interacted'); // stops pulsing
-            
+
             const ctx = getAudioCtx();
             if (ctx.state === 'suspended') ctx.resume();
 
             if (isMuted) {
                 iconOff.style.display = 'block';
                 iconOn.style.display = 'none';
-                if(audioTooltip) audioTooltip.innerText = "SOUND: OFF";
+                if (audioTooltip) audioTooltip.innerText = "SOUND: OFF";
                 audioToggleBtn.classList.add('muted');
             } else {
                 iconOff.style.display = 'none';
                 iconOn.style.display = 'block';
-                if(audioTooltip) audioTooltip.innerText = "SOUND: ON";
+                if (audioTooltip) audioTooltip.innerText = "SOUND: ON";
                 audioToggleBtn.classList.remove('muted');
             }
         });
