@@ -8,367 +8,421 @@ import { initResearchBG } from '../components/researchBackground.js';
 import { updateResearchCards } from '../components/researchCards.js';
 import { researchLights } from '../components/researchTopology.js';
 
-export function initiateTransition(cameraPath, torusMat, gridMat, starsMat, nodeGroup) {
-    if (STATE.phase !== 'HERO' || STATE.transitioning) return;
+let transitionDeps = null;
+
+export function setTransitionDeps(deps) {
+    transitionDeps = deps;
+}
+
+// === BLACK HOLE ZOOM — Reusable Warp Effect ===
+// Used for any hero→destination transition: creates a "falling into a black hole" effect
+// using the torus shader's uStretch uniform, then resolves to the target phase.
+function blackHoleZoom(torusMesh, torusMat, targetPhase, onArrival) {
+    if (STATE.transitioning) return;
     STATE.phase = 'TRANSITION';
     STATE.transitioning = true;
 
-    gsap.to('#ui-hero', {
-        opacity: 0,
-        duration: 0.6,
-        ease: 'power2.out',
+    const tl = gsap.timeline({
         onComplete: () => {
-            document.getElementById('ui-hero').style.display = 'none';
-        }
-    });
-    nodeGroup.visible = true;
-
-    const endPos = cameraPath.getPointAt(0);
-    const lookTarget = cameraPath.getPointAt(0.01);
-
-    const tl = gsap.timeline({
-        onUpdate() {
-            // Damped camera chase — quaternion slerp each tick
-            const dummy = camera.clone();
-            dummy.position.copy(camera.position);
-            const focus = new THREE.Vector3().lerpVectors(
-                new THREE.Vector3(0, 0, 0), lookTarget, tl.progress() ** 2
-            );
-            dummy.lookAt(focus);
-            camera.quaternion.slerp(dummy.quaternion, 0.1);
-        },
-        onComplete() {
-            STATE.phase = 'TIMELINE';
+            STATE.phase = targetPhase;
             STATE.transitioning = false;
-            gsap.to('#hud', { opacity: 1, duration: 0.5 });
-            gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5 });
+            if (onArrival) onArrival();
         }
     });
 
-    // All tweens start at t=0 for parallel playback
-    tl.to(camera.position, { x: endPos.x, y: endPos.y, z: endPos.z, duration: 2, ease: 'power3.inOut' }, 0);
-    tl.to(torusMat.uniforms.uStretch, { value: 18.0, duration: 2, ease: 'power2.inOut' }, 0);
-    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp + 3.0, duration: 2, ease: 'power2.inOut' }, 0);
-    tl.to(gridMat.uniforms.uOpacity, { value: 1, duration: 2, ease: 'power2.inOut' }, 0);
-    tl.to(starsMat.uniforms.uOpacity, { value: 1, duration: 2, ease: 'power2.inOut' }, 0);
+    // 1) Fade out hero UI
+    const heroEl = document.getElementById('ui-hero');
+    if (heroEl) {
+        tl.to(heroEl, { opacity: 0, duration: 0.3, ease: 'power2.out' }, 0);
+    }
 
-    // Relativistic Spaghettification (Scale up past camera & Blur)
-    tl.to('#fourier-container', {
-        scale: 12,
-        opacity: 0,
-        filter: 'blur(20px)',
-        duration: 1.5,
-        ease: 'expo.in',
-        onComplete: () => { document.getElementById('fourier-container').style.display = 'none'; }
-    }, 0);
-
-    // Optical Warp Flash
-    tl.to('#optical-flash', { opacity: 0.8, duration: 1.0, ease: 'power2.in' }, 0.5);
-    tl.to('#optical-flash', { opacity: 0, duration: 0.5, ease: 'power2.out' }, 1.5);
-
-    tl.to('.scanlines', { opacity: 0.6, duration: 2, ease: 'power2.inOut' }, 0);
-    tl.to('.vignette', { background: 'radial-gradient(circle at center, transparent 20%, #000 120%)', duration: 2 }, 0);
+    // 2) Stretch the torus into a tunnel (the "black hole" effect)
+    tl.to(torusMat.uniforms.uStretch, { value: 18.0, duration: 1.2, ease: 'power2.in' }, 0.2);
+    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp + 10.0, duration: 0.8, ease: 'power2.in' }, 0.2);
+    
+    // 3) Optical flash
+    tl.to('#optical-flash', { opacity: 0.8, duration: 0.6, ease: 'power2.in' }, 0.6);
+    
+    // 4) Flash fades, warp resolves
+    tl.to('#optical-flash', { opacity: 0, duration: 0.4, ease: 'power2.out' }, 1.2);
+    tl.to(torusMat.uniforms.uStretch, { value: 0, duration: 0.6, ease: 'power2.out' }, 1.2);
+    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp, duration: 0.6, ease: 'power2.out' }, 1.2);
+    tl.to(torusMat.uniforms.uOpacity, { value: 0.3, duration: 0.4 }, 1.2);
 }
 
-export function initiateBackToHero(torusMat, gridMat, starsMat, nodeGroup) {
+// === HERO → TIMELINE ===
+export function initiateHeroToTimeline() {
+    if (STATE.phase !== 'HERO' || STATE.transitioning) return;
+    if (!transitionDeps) return;
+
+    const { torusMesh, torusMat, gridMat, starsMat, nodeGroup, cameraPath } = transitionDeps;
+
+    // Hard-reset scroll
+    STATE.scrollY = 0;
+    STATE.targetScrollY = 0;
+    setScrollTargetY(0);
+
+    blackHoleZoom(torusMesh, torusMat, 'TIMELINE', () => {
+        // Restore timeline scene
+        nodeGroup.visible = true;
+        torusMat.visible = false;
+        torusMat.uniforms.uOpacity.value = 0;
+        gridMat.visible = true;
+        gridMat.uniforms.uOpacity.value = 1;
+        starsMat.visible = true;
+        starsMat.uniforms.uOpacity.value = 1;
+        torusMesh.scale.set(1, 1, 1);
+
+        // Camera to path start
+        const startPos = cameraPath.getPointAt(0);
+        const lookPos = cameraPath.getPointAt(0.01);
+        camera.position.copy(startPos);
+        camera.lookAt(lookPos);
+        camera.fov = 75;
+        camera.updateProjectionMatrix();
+
+        // Show timeline UI — ensure display is set before GSAP opacity animation
+        ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
+            let el = document.getElementById(id);
+            if (el) {
+                el.style.display = '';
+                el.style.opacity = 0;
+            }
+        });
+        gsap.to('#hud, #timeline-scale-container, #radar-round-container', { 
+            opacity: 1, 
+            duration: 0.5,
+            onStart: () => {
+                ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if(el) el.style.pointerEvents = 'auto';
+                });
+            } 
+        });
+
+        // Ensure hobbies layer is visible
+        const hobbiesLayer = document.getElementById('hobbies-ui-layer');
+        if (hobbiesLayer) {
+            hobbiesLayer.style.display = '';
+            hobbiesLayer.style.opacity = 0;
+        }
+        gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5 });
+        document.querySelectorAll('.node-container').forEach(el => {
+            el.style.display = 'flex';
+            el.style.pointerEvents = 'auto';
+        });
+    });
+}
+
+// === HERO → WORKS ===
+export function initiateHeroToWorks() {
+    if (STATE.phase !== 'HERO' || STATE.transitioning) return;
+    if (!transitionDeps) return;
+
+    const { torusMesh, torusMat, researchMesh } = transitionDeps;
+
+    blackHoleZoom(torusMesh, torusMat, 'WORKS', () => {
+        // Hide timeline geometry
+        if (transitionDeps.nodeGroup) transitionDeps.nodeGroup.visible = false;
+        if (transitionDeps.gridMat) transitionDeps.gridMat.visible = false;
+        if (transitionDeps.starsMat) transitionDeps.starsMat.visible = false;
+        
+        // Reset torus for hero return
+        torusMat.uniforms.uOpacity.value = 0;
+        torusMat.visible = false;
+
+        // Camera to works position
+        camera.position.set(0, 2, 8);
+        camera.lookAt(0, 0, 0);
+        camera.fov = 45;
+        camera.updateProjectionMatrix();
+
+        // Show works UI
+        const worksUI = document.getElementById('ui-works');
+        if (worksUI) {
+            worksUI.style.display = 'block';
+            worksUI.style.opacity = 0;
+            gsap.to(worksUI, { opacity: 1, duration: 0.6 });
+        }
+
+        // Show first exhibit (Megh)
+        import('../components/worksSection.js').then(mod => {
+            if (mod.showExhibit) mod.showExhibit(0);
+        });
+
+        // Hide hero
+        const heroEl = document.getElementById('ui-hero');
+        if (heroEl) heroEl.style.pointerEvents = 'none';
+    });
+}
+
+// === TIMELINE → HERO ===
+export function initiateTimelineToHero() {
     if (STATE.phase !== 'TIMELINE' || STATE.transitioning) return;
+    if (!transitionDeps) return;
+
     STATE.phase = 'TRANSITION';
     STATE.transitioning = true;
 
-    gsap.to('#hud', { opacity: 0, duration: 0.4 });
-    gsap.to('#hobbies-ui-layer', { opacity: 0, duration: 0.4 });
+    const { torusMesh, torusMat, gridMat, starsMat, nodeGroup } = transitionDeps;
 
-    const endPos = new THREE.Vector3(0, 0, 50);
-
-    nodeGroup.visible = false;
-
-    // Immediately hide any DOM node labels to prevent them from sticking to the screen
-    document.querySelectorAll('.node-container').forEach(el => {
-        el.style.display = 'none';
-
-        // Reset expanded cards just in case
-        const card = el.querySelector('.hud-card');
-        if (card) {
-            card.classList.remove('expanded');
-            card.classList.add('minimized');
-        }
-
-        // Reset button
-        const btn = el.querySelector('.expander-btn');
-        if (btn) btn.innerHTML = "[ + ]";
-    });
-
-    const tl = gsap.timeline({
-        onUpdate() {
-            const dummy = camera.clone();
-            dummy.position.copy(camera.position);
-            dummy.lookAt(0, 0, 0);
-            camera.quaternion.slerp(dummy.quaternion, 0.1);
-        },
-        onComplete() {
-            STATE.phase = 'HERO';
-            STATE.transitioning = false;
-            STATE.targetScrollY = 0;
-            STATE.scrollY = 0;
-
-            const heroEl = document.getElementById('ui-hero');
-            if (heroEl) {
-                heroEl.style.display = 'block';
-                gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
-            }
-
-            const liquidEl = document.getElementById('liquid-name-container');
-            if (liquidEl) {
-                setTimeout(() => liquidEl.style.pointerEvents = 'auto', 800);
-            }
+    // Fade out timeline UI
+    gsap.to('#hud, #timeline-scale-container, #radar-round-container', { 
+        opacity: 0, 
+        duration: 0.4,
+        onComplete: () => {
+            ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
+                let el = document.getElementById(id);
+                if(el) el.style.pointerEvents = 'none';
+            });
         }
     });
-
-    tl.to(camera.position, { x: endPos.x, y: endPos.y, z: endPos.z, duration: 2, ease: 'power3.inOut' }, 0);
-    tl.to(torusMat.uniforms.uStretch, { value: 0, duration: 2, ease: 'power2.inOut' }, 0);
-    tl.to(gridMat.uniforms.uOpacity, { value: 0, duration: 2, ease: 'power2.inOut' }, 0);
-    tl.to(starsMat.uniforms.uOpacity, { value: 0, duration: 2, ease: 'power2.inOut' }, 0);
-
-    // Restore DOM Node for rendering
-    document.getElementById('fourier-container').style.display = 'block';
-
-    // HTML Reverse Spaghettification 
-    tl.to('#fourier-container', {
-        scale: 1,
-        opacity: 1,
-        filter: 'blur(0px)',
-        duration: 2.0,
-        ease: 'expo.out'
-    }, 0);
-
-    // Optical Warp Flash (Reverse)
-    tl.to('#optical-flash', { opacity: 0.8, duration: 0.4, ease: 'power2.in' }, 0);
-    tl.to('#optical-flash', { opacity: 0, duration: 1.2, ease: 'power2.out' }, 0.8);
-
-    tl.to('.scanlines', { opacity: 0.15, duration: 2, ease: 'power2.inOut' }, 0);
-    tl.to('.vignette', { background: 'radial-gradient(circle at center, transparent 40%, #000 150%)', duration: 2 }, 0);
-}
-
-export function initiateResearchTransition(torusMat, gridMat, starsMat, nodeGroup, researchMesh) {
-    if (STATE.phase !== 'TIMELINE' || STATE.transitioning) return;
-    STATE.phase = 'TRANSITION';
-    STATE.transitioning = true;
-    STATE.researchVelocity = 0;
-    STATE.researchScrollY = 0;
-
-    // Fade out timeline HUD quickly and block pointer events
-    gsap.to('#hud', { opacity: 0, duration: 0.4 });
-    document.getElementById('hud').style.pointerEvents = 'none';
-
     gsap.to('#hobbies-ui-layer', { opacity: 0, duration: 0.4 });
-    const hobbiesLayer = document.getElementById('hobbies-ui-layer');
-    if (hobbiesLayer) hobbiesLayer.style.pointerEvents = 'none';
-
-    gsap.to('#quantum-world-line', { opacity: 0, duration: 0.4 });
-
-    // Hide DOM Node UI
     document.querySelectorAll('.node-container').forEach(el => {
         el.style.display = 'none';
         el.style.pointerEvents = 'none';
     });
 
-    // Reset research elements immediately so they can transition in correctly
-    const researchUI = document.getElementById('ui-research');
-    if (researchUI) {
-        researchUI.style.display = 'block';
-        researchUI.style.opacity = 0;
-    }
-    document.getElementById('research-cards-container').style.opacity = 0;
-    const bgCanvas = document.getElementById('research-bg-canvas');
-    if (bgCanvas) bgCanvas.style.opacity = 0;
-
-    // Explicitly hide left-hemi DOM until Torus scales up
-    const leftHemi = document.getElementById('left-hemi');
-    if (leftHemi) leftHemi.style.opacity = 0;
-
-    // Calculate dynamic end point deep in the Z axis
-    const startZ = camera.position.z;
-    const warpDepth = startZ - 1500;
+    // Fade out timeline geometry
+    gsap.to(torusMat.uniforms.uOpacity, { value: 0, duration: 0.8, ease: 'power2.in' });
+    gsap.to(gridMat.uniforms.uOpacity, { value: 0, duration: 0.8, ease: 'power2.in' });
+    gsap.to(starsMat.uniforms.uOpacity, { value: 0, duration: 0.8, ease: 'power2.in' });
 
     const tl = gsap.timeline({
-        onComplete() {
-            STATE.phase = 'RESEARCH';
+        onComplete: () => {
+            STATE.phase = 'HERO';
             STATE.transitioning = false;
         }
     });
 
-    // 1. FOV Stretch (Spaghettification)
-    tl.to(camera, {
-        fov: 120,
-        duration: 2.0,
-        ease: 'power2.inOut',
-        onUpdate: () => { camera.updateProjectionMatrix(); }
-    }, 0);
-
-    // 2. Warp Speed past the end of the grid into pure blackness
-    tl.to(camera.position, { z: warpDepth, duration: 2.2, ease: 'power3.in' }, 0);
-
-    // 3. Fade out timeline geometry rapidly as we warp
-    tl.to(torusMat.uniforms.uOpacity, { value: 0, duration: 1.0, ease: 'power2.in' }, 0.5);
-    tl.to(gridMat.uniforms.uOpacity, { value: 0, duration: 1.0, ease: 'power2.in' }, 0.5);
-    tl.to(starsMat.uniforms.uOpacity, { value: 0, duration: 1.5, ease: 'power2.in' }, 0.7);
-
-    // 4. MÖBIUS GENESIS 
-    // Wait until warp is fully saturated (2.2s), then swap coordinates after extreme short 0.1s void
     tl.call(() => {
-        // Unmount timeline elements completely to save GPU cycles while in Research Chamber
         nodeGroup.visible = false;
         gridMat.visible = false;
         torusMat.visible = false;
         starsMat.visible = false;
 
-
-        // Lock camera to the research station coordinate
-        camera.position.set(8, 6, 8);
+        // Camera to hero position
+        camera.position.set(0, 0, 50);
         camera.lookAt(0, 0, 0);
+        camera.fov = 75;
+        camera.updateProjectionMatrix();
 
-        // Prep the Research Mesh right at the origin, solid wireframe torus at 0.001 scale
+        // Restore torus for hero
+        torusMat.visible = true;
+        torusMat.uniforms.uOpacity.value = 1;
+        torusMat.uniforms.uStretch.value = 0;
+        torusMesh.scale.set(2.5, 2.5, 2.5);
+    }, null, 0.8);
+
+    // Show hero UI
+    tl.call(() => {
+        const heroEl = document.getElementById('ui-hero');
+        if (heroEl) {
+            heroEl.style.display = 'block';
+            heroEl.style.pointerEvents = 'auto';
+            gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
+        }
+    }, null, 1.0);
+}
+
+// === WORKS → HERO ===
+export function initiateWorksToHero() {
+    if (STATE.phase !== 'WORKS' || STATE.transitioning) return;
+    if (!transitionDeps) return;
+
+    STATE.phase = 'TRANSITION';
+    STATE.transitioning = true;
+
+    const { torusMesh, torusMat } = transitionDeps;
+
+    // Fade out works UI
+    const worksUI = document.getElementById('ui-works');
+    if (worksUI) gsap.to(worksUI, { opacity: 0, duration: 0.4 });
+
+    // Destroy current exhibit
+    import('../components/worksSection.js').then(mod => {
+        if (mod.destroyCurrentExhibit) mod.destroyCurrentExhibit();
+    });
+
+    // Hide GeoFNO container if visible
+    const geofnoContainer = document.getElementById('geofno-container');
+    if (geofnoContainer) geofnoContainer.style.display = 'none';
+    const isingContainer = document.getElementById('ising-container');
+    if (isingContainer) isingContainer.style.display = 'none';
+
+    const tl = gsap.timeline({
+        onComplete: () => {
+            STATE.phase = 'HERO';
+            STATE.transitioning = false;
+        }
+    });
+
+    tl.call(() => {
+        // Camera to hero
+        camera.position.set(0, 0, 50);
+        camera.lookAt(0, 0, 0);
+        camera.fov = 75;
+        camera.updateProjectionMatrix();
+
+        // Restore torus
+        torusMat.visible = true;
+        torusMat.uniforms.uOpacity.value = 1;
+        torusMat.uniforms.uStretch.value = 0;
+        torusMesh.scale.set(2.5, 2.5, 2.5);
+    }, null, 0.2);
+
+    tl.call(() => {
+        if (worksUI) worksUI.style.display = 'none';
+        const heroEl = document.getElementById('ui-hero');
+        if (heroEl) {
+            heroEl.style.display = 'block';
+            heroEl.style.pointerEvents = 'auto';
+            gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
+        }
+    }, null, 0.4);
+}
+
+// === WORKS → RESEARCH ===
+export function initiateWorksToResearch() {
+    if (STATE.phase !== 'WORKS' || STATE.transitioning) return;
+    if (!transitionDeps) return;
+
+    STATE.phase = 'TRANSITION';
+    STATE.transitioning = true;
+
+    const { torusMesh, torusMat, researchMesh } = transitionDeps;
+
+    STATE.researchScrollY = 0;
+    STATE.researchVelocity = 0;
+
+    const worksUI = document.getElementById('ui-works');
+    if (worksUI) gsap.to(worksUI, { opacity: 0, duration: 0.3 });
+
+    // Destroy current exhibit
+    import('../components/worksSection.js').then(mod => {
+        if (mod.destroyCurrentExhibit) mod.destroyCurrentExhibit();
+    });
+
+    const geofnoContainer = document.getElementById('geofno-container');
+    if (geofnoContainer) geofnoContainer.style.display = 'none';
+    const isingContainer = document.getElementById('ising-container');
+    if (isingContainer) isingContainer.style.display = 'none';
+
+    const tl = gsap.timeline({
+        onComplete: () => {
+            STATE.phase = 'RESEARCH';
+            STATE.transitioning = false;
+        }
+    });
+
+    tl.call(() => {
+        // Mount research
         researchMesh.visible = true;
         researchLights.visible = true;
         researchMesh.scale.set(0.001, 0.001, 0.001);
         researchMesh.position.set(0, 0, 0);
 
-        // Crucial: Unblock the parent UI wrapper so the leftHemi canvas can actually be seen!
-        if (researchUI) researchUI.style.display = 'block';
-    }, null, 2.3);
+        // Hide torus
+        torusMat.visible = false;
 
-    // Fade FOV down to 45 quickly right as genesis starts
-    tl.to(camera, { fov: 45, duration: 0.5, ease: 'power2.out', onUpdate: () => camera.updateProjectionMatrix() }, 2.3);
+        // Camera to research position
+        camera.position.set(8, 6, 8);
+        camera.lookAt(0, 0, 0);
+        camera.fov = 45;
+        camera.updateProjectionMatrix();
+    }, null, 0.2);
 
-    // Fade in the master UI wrapper instantly, and gracefully fade the left-hemi WebGL layer 
-    if (researchUI) tl.to(researchUI, { opacity: 1, duration: 0.1 }, 2.3);
-    if (leftHemi) tl.to(leftHemi, { opacity: 1, duration: 0.5 }, 2.3);
+    // Grow research mesh
+    tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 0.3);
 
-    // 5. Fade in beautiful new UI elements immediately against the dark background
+    // Show research UI
+    const researchUI = document.getElementById('ui-research');
+    if (researchUI) {
+        researchUI.style.display = 'block';
+        researchUI.style.opacity = 0;
+        tl.to(researchUI, { opacity: 1, duration: 0.8 }, 0.5);
+    }
+    const leftHemi = document.getElementById('left-hemi');
+    if (leftHemi) {
+        leftHemi.style.opacity = 0;
+        tl.to(leftHemi, { opacity: 1, duration: 0.8 }, 0.5);
+    }
+    const bgCanvas = document.getElementById('research-bg-canvas');
+    if (bgCanvas) {
+        bgCanvas.style.opacity = 0;
+        tl.to(bgCanvas, { opacity: 1, duration: 0.8 }, 0.5);
+    }
+
     tl.call(() => {
         if (bgCanvas) {
             initResearchBG();
             import('../components/researchBackground.js').then(m => m.bindResearchMouse());
         }
-
-        // Critically initialize the mathematical CSS grid transformations so they don't 'jump' when the phase shifts!
         updateResearchCards(0);
-
         window.dispatchEvent(new Event('resize'));
-    }, null, 2.4);
+    }, null, 0.8);
 
-    if (bgCanvas) tl.to(bgCanvas, { opacity: 1, duration: 1.0 }, 2.5);
+    tl.fromTo('#research-cards-container', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out' }, 1.0);
+    tl.fromTo('.research-card', { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power2.out' }, 1.1);
 
-    // Slide up the entire container smoothly
-    tl.fromTo('#research-cards-container', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1.0, ease: 'power2.out' }, 2.6);
-
-    // Stagger fade opacity only! So it doesn't fight the `translate3d` CSS physics on individual cards!
-    tl.fromTo('.research-card',
-        { opacity: 0 },
-        { opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power2.out' }, 2.7);
-
-    // Pop the torus in on the left AFTER the cards have settled
-    tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 3.5);
+    if (worksUI) {
+        tl.call(() => { worksUI.style.display = 'none'; }, null, 0.5);
+    }
 }
 
-export function initiateTimelineReturn(torusMat, gridMat, starsMat, nodeGroup, researchMesh, cameraPath) {
+// === RESEARCH → HERO ===
+export function initiateResearchToHero() {
     if (STATE.phase !== 'RESEARCH' || STATE.transitioning) return;
+    if (!transitionDeps) return;
+
     STATE.phase = 'TRANSITION';
     STATE.transitioning = true;
 
-    // Fade out Research UI quickly
+    const { torusMesh, torusMat, researchMesh } = transitionDeps;
+
+    // Fade out research UI
     const researchUI = document.getElementById('ui-research');
-    if (researchUI) researchUI.style.opacity = 0;
-
-    // Pre-calculate the exact destination point on the spline we are returning to
-    // The total virtual scroll maxes out at 8000. 
-    // We want the reverse scroll to land exactly at the precipice of the timeline plunge (Year 2026).
-    const thresholdScroll = 5700; // Physical scroll units (approx 82% of 8000)
-    const timelineProgress = Math.min(Math.max(thresholdScroll / 8000, 0), 1.0);
-    const targetPos = cameraPath.getPointAt(timelineProgress);
-    const targetLook = cameraPath.getPointAt(Math.min(timelineProgress + 0.01, 1.0));
-
-    // Calculate a dynamic start position for lookAt interpolation
-    const startLook = { x: 0, y: 0, z: 0 };
-
-    // HARD SYNC 1: Immediately lock scroll.js coordinates to the end destination.
-    // This prevents animate.js from grabbing default targetY=0 if a race condition hits.
-    STATE.scrollY = thresholdScroll;
-    STATE.targetScrollY = thresholdScroll;
-    setScrollTargetY(thresholdScroll);
-
-    // An object to hold our tweenable lookAt target during the transition
-    const lookTarget = { x: startLook.x, y: startLook.y, z: startLook.z };
+    if (researchUI) gsap.to(researchUI, { opacity: 0, duration: 0.4 });
+    const leftHemi = document.getElementById('left-hemi');
+    if (leftHemi) gsap.to(leftHemi, { opacity: 0, duration: 0.4 });
+    const bgCanvas = document.getElementById('research-bg-canvas');
+    if (bgCanvas) gsap.to(bgCanvas, { opacity: 0, duration: 0.4 });
 
     const tl = gsap.timeline({
-        onUpdate() {
-            camera.lookAt(lookTarget.x, lookTarget.y, lookTarget.z);
-        },
-        onComplete() {
+        onComplete: () => {
             if (researchUI) researchUI.style.display = 'none';
             researchMesh.visible = false;
             researchLights.visible = false;
 
-            // Turn off Dual-Renderer DOM
-            const leftHemi = document.getElementById('left-hemi');
-            if (leftHemi) leftHemi.style.opacity = 0;
-
-            nodeGroup.visible = true;
-
-
-            // Turn WebGL rendering bounds physically back on before scaling Opacity up
-            torusMat.visible = true;
-            gridMat.visible = true;
-            starsMat.visible = true;
-
-            // Fade Timeline HUD back in and restore interactivity
-            gsap.to('#hud', { opacity: 1, duration: 0.5, onStart: () => document.getElementById('hud').style.pointerEvents = 'auto' });
-
-            const hobbiesLayer = document.getElementById('hobbies-ui-layer');
-            gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5, onStart: () => { if (hobbiesLayer) hobbiesLayer.style.pointerEvents = 'auto'; } });
-
-            const quantumLine = document.getElementById('quantum-world-line');
-            if (quantumLine) {
-                gsap.to('#quantum-world-line', { opacity: 1, duration: 0.5, onStart: () => quantumLine.style.pointerEvents = 'auto' });
-            }
-
-            // Unhide nodes and restore events
-            document.querySelectorAll('.node-container').forEach(el => {
-                el.style.display = 'flex';
-                el.style.pointerEvents = 'auto';
-            });
-
-            STATE.phase = 'TIMELINE';
+            STATE.phase = 'HERO';
             STATE.transitioning = false;
         }
     });
 
-    // Pop research torus out
-    gsap.to(researchMesh.scale, { x: 0.001, y: 0.001, z: 0.001, duration: 1.0, ease: 'power2.in' });
+    // Shrink research mesh
+    tl.to(researchMesh.scale, { x: 0.001, y: 0.001, z: 0.001, duration: 0.8, ease: 'power2.in' }, 0);
 
-    // Stretch FOV back out for Timeline
-    tl.to(camera, { fov: 75, duration: 1.0, ease: 'power2.out', onUpdate: () => camera.updateProjectionMatrix() }, 0.0);
+    // Camera back to hero
+    tl.call(() => {
+        camera.position.set(0, 0, 50);
+        camera.lookAt(0, 0, 0);
+        camera.fov = 75;
+        camera.updateProjectionMatrix();
 
-    // Physically glide the camera's X, Y, Z back to the absolute coordinate on the timeline spline
-    tl.to(camera.position, {
-        x: targetPos.x,
-        y: targetPos.y, // animate.js will independently add the breathing sine wave later
-        z: targetPos.z,
-        duration: 2.5,
-        ease: 'power3.inOut'
-    }, 0.0);
+        // Restore torus
+        torusMat.visible = true;
+        torusMat.uniforms.uOpacity.value = 1;
+        torusMat.uniforms.uStretch.value = 0;
+        torusMesh.scale.set(2.5, 2.5, 2.5);
+    }, null, 0.5);
 
-    // Smoothly rotate the camera's neck from staring at the Torus origin (0,0,0) towards the timeline track ahead
-    tl.to(lookTarget, {
-        x: targetLook.x,
-        y: targetLook.y,
-        z: targetLook.z,
-        duration: 2.5,
-        ease: 'power3.inOut'
-    }, 0.0);
-
-    // Fade in timeline background geometry at the tail end of the transition
-    tl.to(torusMat.uniforms.uOpacity, { value: 1, duration: 1.5, ease: 'power2.out' }, 1.0);
-    tl.to(gridMat.uniforms.uOpacity, { value: 1, duration: 1.5, ease: 'power2.out' }, 1.0);
-    tl.to(starsMat.uniforms.uOpacity, { value: 1, duration: 1.5, ease: 'power2.out' }, 1.5);
+    // Show hero
+    tl.call(() => {
+        const heroEl = document.getElementById('ui-hero');
+        if (heroEl) {
+            heroEl.style.display = 'block';
+            heroEl.style.pointerEvents = 'auto';
+            gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
+        }
+    }, null, 0.8);
 }

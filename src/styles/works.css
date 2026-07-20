@@ -1,0 +1,297 @@
+/* --- Works Section Styles --- */
+
+/* Works UI Layer — enable pointer events for interactivity */
+#ui-works {
+    pointer-events: auto;
+}
+
+/* Carousel container fills parent */
+#works-carousel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 15;
+}
+
+/* 3D interaction overlay — sits inside carousel, arrows must stay clickable */
+#works-3d-overlay {
+    pointer-events: auto;
+}
+
+/* Ensure carousel arrow buttons always receive clicks, even over the 3D overlay */
+.carousel-arrow {
+    z-index: 20;
+    pointer-events: auto !important;
+}
+
+/* Exhibit container fills carousel */
+#works-exhibit-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    pointer-events: auto;
+}
+
+/* Carousel Arrows */
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+}
+
+.carousel-arrow:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: translateY(-50%) scale(1);
+}
+
+.carousel-arrow-left {
+    left: 20px;
+}
+
+.carousel-arrow-right {
+    right: 20px;
+}
+
+.carousel-thumb {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.carousel-arrow-left .carousel-thumb {
+    right: -40px;
+}
+
+.carousel-arrow-right .carousel-thumb {
+    left: -40px;
+}
+
+/* GeoFNO Controls */
+#geofno-controls {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 12px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+}
+
+#geofno-controls button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+#geofno-controls button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#geofno-controls button.active {
+    background: #4466ff;
+    border-color: #4466ff;
+    color: #fff;
+}
+
+#geofno-play {
+    font-size: 16px !important;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#geofno-slider {
+    width: 300px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+}
+
+#geofno-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #4466ff;
+    cursor: pointer;
+}
+
+#geofno-frame-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    min-width: 120px;
+}
+
+.geofno-speed-btns {
+    display: flex;
+    gap: 4px;
+}
+
+/* GeoFNO Labels */
+.geofno-label {
+    position: absolute;
+    top: 30px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    pointer-events: none;
+}
+
+.gt-label {
+    left: 20%;
+    transform: translateX(-50%);
+    color: #4466ff;
+}
+
+.pred-label {
+    left: 80%;
+    transform: translateX(-50%);
+    color: #44ff66;
+}
+
+/* GeoFNO Loading Overlay */
+#geofno-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+}
+
+.geofno-progress-bar {
+    width: 300px;
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.geofno-progress-bar div {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+#gt-progress-fill {
+    background: #4466ff;
+}
+
+#pred-progress-fill {
+    background: #44ff66;
+}
+
+/* Back Button */
+.back-button {
+    transition: opacity 0.4s ease, background 0.3s ease;
+}
+
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Action Button (View More Projects) */
+.action-button {
+    transition: all 0.3s ease;
+}
+
+.action-button:hover {
+    background: #333 !important;
+    transform: translateX(-50%) scale(1.05);
+}
+
+
+/* Ising Controls */
+#ising-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Megh Exhibit */
+#megh-exhibit {
+    animation: megh-fade-in 0.5s ease;
+}
+
+@keyframes megh-fade-in {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .carousel-arrow {
+        width: 40px;
+        height: 40px;
+        font-size: 14px;
+    }
+    
+    #geofno-slider {
+        width: 150px;
+    }
+    
+    #megh-exhibit {
+        flex-direction: column !important;
+        padding: 20px !important;
+    }
+    
+    .megh-info {
+        max-width: 100% !important;
+    }
+}

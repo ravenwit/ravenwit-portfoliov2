@@ -53,8 +53,10 @@ export async function initResearchCards() {
 export function updateResearchCards(currentScroll) {
     const cards = document.querySelectorAll('.research-card');
     cards.forEach((card, i) => {
-        const triggerPoint = 1.5 + i * 1.0;
-        const diff = currentScroll - triggerPoint;
+        // Space them further apart in the scroll range
+        const triggerPoint = 1.5 + i * 2.5;
+        // Divide the scroll difference to physically slow down the card's movement
+        const diff = (currentScroll - triggerPoint) * 0.4;
 
         const isEven = i % 2 === 0;
         card.style.width = isEven ? '80%' : '65%';

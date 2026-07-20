@@ -65,7 +65,7 @@ function assembleTorus(torusData) {
     torusGeo.setAttribute('position', new THREE.BufferAttribute(tPos.slice(), 3));
     torusGeo.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
     const torusMat = new THREE.ShaderMaterial({
-        uniforms: { uTime: { value: 0 }, uNoiseTime: { value: 0 }, uTemperature: { value: 50.0 }, uStretch: { value: 0.0 } },
+        uniforms: { uTime: { value: 0 }, uNoiseTime: { value: 0 }, uTemperature: { value: 50.0 }, uStretch: { value: 0.0 }, uOpacity: { value: 1.0 } },
         vertexShader: torusVertexShader, fragmentShader: torusFragmentShader,
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
     });

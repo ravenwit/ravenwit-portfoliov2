@@ -2,13 +2,14 @@ import * as THREE from 'three';
 import { Timer } from 'three';
 import { CAREER_NODES, CONFIG } from '../config.js';
 import { STATE } from '../state.js';
-import { scene, camera, renderer, composer } from '../core/scene.js';
+import { scene, camera, renderer, composer, geofnoRenderer, geofnoScene, geofnoCamera, geofnoControls } from '../core/scene.js';
 import { updateScroll } from '../core/scroll.js';
 import { updateHobbies } from '../components/hobbies.js';
-import { initiateResearchTransition } from './transitions.js';
 import { researchMaterialUniforms, evaluateResearchParticleMath, researchParticle, researchNormalArrow, baseResearchMesh, researchLights, researchRenderer, researchScene, researchCamera, researchControls } from '../components/researchTopology.js';
 import { animateResearchBG, researchMouse } from '../components/researchBackground.js';
 import { updateResearchCards } from '../components/researchCards.js';
+import { updateGeofnoFrame } from '../components/exhibitGeofno.js';
+import { vortexInstances } from '../components/vortexSingularity.js';
 
 const timer = new Timer();
 let autonomousParticleU = 0.0;
@@ -58,7 +59,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
             // Scale the torus up natively in HERO phase
             const currentScale = torusMesh.scale.x;
-            const targetScale = 2.0;
+            const targetScale = 2.5;
             if (currentScale < targetScale) {
                 const newScale = currentScale + (targetScale - currentScale) * 0.02;
                 torusMesh.scale.set(newScale, newScale, newScale);
@@ -70,7 +71,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
             // Direct Mouse Parallax (same direction as mouse implies pushing deeper)
             if (STATE.mouse) {
-                targetX += STATE.mouse.x * 8.0; // Increased from 3.0
+                targetX += STATE.mouse.x * 8.0;
                 targetY += STATE.mouse.y * 8.0;
             }
 
@@ -78,6 +79,11 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             camera.position.x += (targetX - camera.position.x) * 0.05;
             camera.position.y += (targetY - camera.position.y) * 0.05;
             camera.lookAt(0, 0, 0);
+
+            // Update vortex hover detection
+            if (vortexInstances) {
+                vortexInstances.forEach(v => v.update(dt, STATE.mouse));
+            }
         }
         else if (STATE.phase === 'TIMELINE' && !STATE.transitioning) {
             const diff = STATE.targetScrollY - STATE.scrollY;
@@ -86,12 +92,22 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
             const pathProgress = Math.min(Math.max(STATE.scrollY / 8000, 0), 1.0);
 
-            // Trigger research transition earlier: ~0.82 corresponds to Z=-1460,
-            // which is immediately after passing the final 2026 career node (Z=-1400).
-            if (pathProgress > 0.75) {
-                initiateResearchTransition(torusMat, gridMat, starsMat, nodeGroup, researchMesh);
-                return;
+            // Timeline Scroll Hint (Specific Scroll Window)
+            const hint = document.getElementById('timeline-scroll-hint');
+            if (hint) {
+                // Adjust these numbers (between 0 and approx 8000) to define EXACTLY 
+                // when in the timeline scroll the text shows up and fades away.
+                const hintShowStart = 0;
+                const hintHideStart = 100;
+
+                if (STATE.scrollY >= hintShowStart && STATE.scrollY <= hintHideStart) {
+                    hint.style.opacity = '1';
+                } else {
+                    hint.style.opacity = '0';
+                }
             }
+
+            // Horizontal Radar Map Translation is moved below where camPos is calculated.
             const camPos = cameraPath.getPointAt(pathProgress);
             const lookPos = cameraPath.getPointAt(Math.min(pathProgress + 0.01, 1.0));
 
@@ -100,6 +116,70 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             camera.lookAt(lookPos);
             const xTurn = (lookPos.x - camPos.x);
             camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, -xTurn * 0.8, 0.1);
+
+            // -- Dual Radar Minimap Systems Update --
+
+            // 1. Timeline Translation
+            const timelineNodes = document.getElementById('timeline-nodes');
+            if (timelineNodes) {
+                timelineNodes.style.transform = `translateX(-50%) translateY(-${pathProgress * 100}%)`;
+            }
+
+            // 2. Spatial Round Radar Translation (2D inverted map pan)
+            const roundNodes = document.getElementById('radar-round-nodes');
+            if (roundNodes) {
+                const mapScale = 0.15; // Must match the static scale injected in main.js
+                // Slide the map opposite to the camera's X and Z to keep the player reticle at (0,0) relative visual center
+                roundNodes.style.transform = `translate(${-camPos.x * mapScale}px, ${-camPos.z * mapScale}px)`;
+                
+                // 3. Phosphor Persistence Engine
+                const radarScanLine = document.querySelector('.radar-round-scan');
+                if (radarScanLine) {
+                    const sweepDurationMs = 3000;
+                    const progress = (Date.now() % sweepDurationMs) / sweepDurationMs;
+                    const radarAngle = progress * Math.PI * 2; 
+
+                    // Sync the physical scanline DOM rotation to exact JS Math
+                    radarScanLine.style.transform = `rotate(${progress * 360}deg)`;
+
+                    const cx = camPos.x * mapScale;
+                    const cy = camPos.z * mapScale;
+                    
+                    const allDots = roundNodes.querySelectorAll('.radar-round-marker, .radar-star');
+                    for (let i = 0; i < allDots.length; i++) {
+                        const dot = allDots[i];
+                        if (dot.dataset.x !== undefined) {
+                            const dotX = parseFloat(dot.dataset.x);
+                            const dotY = parseFloat(dot.dataset.y);
+                            
+                            const dx = dotX - cx;
+                            const dy = dotY - cy;
+                            
+                            let dotAngle = Math.atan2(dy, dx) + (Math.PI / 2);
+                            if (dotAngle < 0) dotAngle += Math.PI * 2;
+                            
+                            let angleDiff = radarAngle - dotAngle;
+                            if (angleDiff < 0) angleDiff += Math.PI * 2;
+                            
+                            if (angleDiff < 0.15) {
+                                dot.style.opacity = '1';
+                                
+                                if (dot.classList.contains('radar-round-marker')) {
+                                    if (!dot.classList.contains('ping')) {
+                                        dot.classList.add('ping');
+                                        setTimeout(() => dot.classList.remove('ping'), 1000);
+                                    }
+                                }
+                            } else {
+                                let currentOp = parseFloat(dot.style.opacity || '0.1');
+                                if (currentOp > 0.1) {
+                                    dot.style.opacity = Math.max(0.1, currentOp * 0.94).toString(); 
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             const v_norm = Math.min(Math.abs(STATE.velocity) / CONFIG.c_sim, 0.999);
             STATE.coordinateTime += dt; STATE.properTime += dt / (1.0 / Math.sqrt(1.0 - v_norm * v_norm));
@@ -333,12 +413,21 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             let panProgress = 0;
             if (STATE.researchScrollY > 8.0) panProgress = Math.min(1.0, STATE.researchScrollY - 8.0);
             let easedPan = panProgress * panProgress * (3.0 - 2.0 * panProgress);
-            const leftHemi = document.getElementById('left-hemi');
+                const leftHemi = document.getElementById('left-hemi');
             if (leftHemi) leftHemi.style.transform = `translateX(${easedPan * 25}vw)`;
+        }
+        else if (STATE.phase === 'WORKS' && !STATE.transitioning) {
+            // WORKS phase: Update GeoFNO playback if active
+            if (STATE.worksExhibitIndex === 1) {
+                updateGeofnoFrame(dt);
+                if (geofnoRenderer && geofnoScene && geofnoCamera) {
+                    if (geofnoControls) geofnoControls.update();
+                    geofnoRenderer.render(geofnoScene, geofnoCamera);
+                }
+            }
         }
 
         // Critical Render Pass 2: The separated 50vw WebGL layer for the Topology
-        // This must run outside the 'RESEARCH' phase lock so it renders smoothly while scaling up during the 'TRANSITION' phase!
         if (baseResearchMesh && baseResearchMesh.visible) {
             if (researchControls) researchControls.update();
             if (researchRenderer && researchScene && researchCamera) {
