@@ -170,11 +170,11 @@ export function initIsingExhibit() {
             <div class="ising-right-panel">
                 <div class="telemetry-card">
                     <span class="telemetry-label">Energy Thermalization</span>
-                    <canvas id="ising-energy-graph" width="600" height="240" style="width: 100%; max-width: 300px; height: auto; display: block; border-radius: 4px;"></canvas>
+                    <canvas id="ising-energy-graph" width="600" height="400" style="width: 100%; max-width: 300px; aspect-ratio: 3 / 2; display: block; border-radius: 4px;"></canvas>
                 </div>
                 <div class="telemetry-card">
                     <span class="telemetry-label">Autocorrelation C(τ)</span>
-                    <canvas id="ising-acf-graph" width="600" height="240" style="width: 100%; max-width: 300px; height: auto; display: block; border-radius: 4px;"></canvas>
+                    <canvas id="ising-acf-graph" width="600" height="400" style="width: 100%; max-width: 300px; aspect-ratio: 3 / 2; display: block; border-radius: 4px;"></canvas>
                 </div>
             </div>
         </div>
