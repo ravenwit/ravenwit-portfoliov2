@@ -37,12 +37,12 @@
     pointer-events: auto;
 }
 
-/* Carousel Arrows */
 .carousel-arrow {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 20;
+    bottom: 40px;
+    top: auto;
+    transform: none;
+    z-index: 9999;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #fff;
@@ -56,18 +56,19 @@
     font-size: 20px;
     backdrop-filter: blur(8px);
     transition: all 0.3s ease;
+    pointer-events: auto !important;
 }
 
 .carousel-arrow:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.5);
-    transform: translateY(-50%) scale(1.1);
+    transform: scale(1.1);
 }
 
 .carousel-arrow:disabled {
     opacity: 0.3;
     cursor: not-allowed;
-    transform: translateY(-50%) scale(1);
+    transform: scale(1);
 }
 
 .carousel-arrow-left {
