@@ -2,6 +2,8 @@
 // Port of the R3F TorusVisualizer shader to vanilla Three.js.
 // Two shader modes: 'default' (rose gold / bioluminescent mint) and 'error' (heatmap).
 
+import * as THREE from 'three';
+
 export const torusPressureVertexShader = `
     varying vec2 vUv;
     varying vec3 vNormal;

@@ -200,42 +200,7 @@
     color: #44ff66;
 }
 
-/* GeoFNO Loading Overlay */
-#geofno-loading {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 30;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 30px;
-    border-radius: 12px;
-    text-align: center;
-    backdrop-filter: blur(8px);
-}
 
-.geofno-progress-bar {
-    width: 300px;
-    height: 6px;
-    background: #333;
-    border-radius: 3px;
-    overflow: hidden;
-    margin: 8px 0;
-}
-
-.geofno-progress-bar div {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
-#gt-progress-fill {
-    background: #4466ff;
-}
-
-#pred-progress-fill {
-    background: #44ff66;
-}
 
 /* Back Button */
 .back-button {
@@ -259,10 +224,9 @@
 
 /* Ising Controls */
 #ising-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
 }
 
 /* Megh Exhibit */
@@ -295,4 +259,15 @@
     .megh-info {
         max-width: 100% !important;
     }
+}
+.carousel-arrow .arrow-icon {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-arrow-left:hover .arrow-icon {
+    transform: translateX(-4px);
+}
+
+.carousel-arrow-right:hover .arrow-icon {
+    transform: translateX(4px);
 }

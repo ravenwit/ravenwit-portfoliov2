@@ -333,7 +333,9 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             STATE.researchVelocity *= 0.92; // Fluid friction
             if (Math.abs(STATE.researchVelocity) < 0.0001) STATE.researchVelocity = 0;
 
-            const targetScroll = Math.max(0.0, Math.min(STATE.researchScrollY, 13.0));
+            const numCards = document.querySelectorAll('.research-card').length || 5;
+            const maxScroll = Math.max(117.5, numCards * 2.5 + 0.5);
+            const targetScroll = Math.max(0.0, Math.min(STATE.researchScrollY, maxScroll));
             const decay = 5.0;
 
             // Apply critically damped spring lerp
@@ -356,28 +358,31 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             researchMesh.rotation.z = Math.sin(time * 0.3) * 0.05;
 
             // Autonomous Particle Physics
-            if (STATE.researchScrollY >= 4.0 && STATE.researchScrollY < 9.5) {
+            if (STATE.researchScrollY >= 23.5 && STATE.researchScrollY < 117.5) {
                 researchParticle.visible = true; researchNormalArrow.visible = true;
 
                 let particleScale = 1.0;
-                if (STATE.researchScrollY > 8.0) particleScale = Math.max(0, 1.0 - (STATE.researchScrollY - 8.0));
+                if (STATE.researchScrollY > 94.0) particleScale = Math.max(0, 1.0 - (STATE.researchScrollY - 94.0) / 23.5);
 
                 researchParticle.scale.set(particleScale, particleScale, particleScale);
                 researchNormalArrow.setLength(Math.max(0.01, 1.5 * particleScale), 0.3 * particleScale, 0.2 * particleScale);
 
-                autonomousParticleU = (autonomousParticleU + particleOmega * dt) % 2.0;
-                let pu = autonomousParticleU; let pv = 0.5;
+                // Scroll interactive mapping
+                let pu = (STATE.researchScrollY * 0.15) % 4.0;
+                if (pu < 0) pu += 4.0;
+                let pv = 0.5;
 
-                const pData = evaluateResearchParticleMath(pu, pv, 4.0);
+                const pData = evaluateResearchParticleMath(pu, pv, STATE.researchScrollY);
                 researchParticle.position.copy(pData.pos);
 
                 const dr = 0.001;
-                const Tu = new THREE.Vector3().subVectors(evaluateResearchParticleMath(pu + dr, pv, 4.0).pos, pData.pos);
-                const Tv = new THREE.Vector3().subVectors(evaluateResearchParticleMath(pu, pv + dr, 4.0).pos, pData.pos);
+                const Tu = new THREE.Vector3().subVectors(evaluateResearchParticleMath(pu + dr, pv, STATE.researchScrollY).pos, pData.pos);
+                const Tv = new THREE.Vector3().subVectors(evaluateResearchParticleMath(pu, pv + dr, STATE.researchScrollY).pos, pData.pos);
                 researchNormalArrow.position.copy(pData.pos);
                 researchNormalArrow.setDirection(new THREE.Vector3().crossVectors(Tu, Tv).normalize());
 
-                document.getElementById('hud-omega').innerText = (particleOmega * particleScale).toFixed(2) + " rad/s";
+                let apparentOmega = dt > 0 ? (STATE.researchVelocity / dt) * 0.15 : 0;
+                document.getElementById('hud-omega').innerText = (apparentOmega * particleScale).toFixed(2) + " rad/s";
             } else {
                 researchParticle.visible = false; researchNormalArrow.visible = false;
                 autonomousParticleU = 0.0;
@@ -393,17 +398,17 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             document.getElementById('hud-s').innerText = STATE.researchScrollY.toFixed(2);
             let phaseText = "MORPHING";
             if (STATE.researchScrollY <= 0.5) phaseText = "TORUS";
-            if (STATE.researchScrollY >= 10.8 && STATE.researchScrollY < 11.5) phaseText = "TORUS";
-            if (STATE.researchScrollY >= 12.0) phaseText = "COFFEE MUG";
-            if (STATE.researchScrollY >= 4.0 && STATE.researchScrollY < 9.0) phaseText = "MÖBIUS";
-            // else if (STATE.researchScrollY >= 9.0) phaseText = "KLEIN TOPOLOGY";
+            else if (STATE.researchScrollY > 0.5 && STATE.researchScrollY < 23.5) phaseText = "MORPHING";
+            else if (STATE.researchScrollY >= 23.5 && STATE.researchScrollY < 94.0) phaseText = "MÖBIUS";
+            else if (STATE.researchScrollY >= 94.0 && STATE.researchScrollY < 117.0) phaseText = "MORPHING";
+            else if (STATE.researchScrollY >= 117.0) phaseText = "TORUS";
             document.getElementById('hud-phase').innerText = phaseText;
 
             const quantumLine = document.getElementById('quantum-world-line');
             if (quantumLine) {
                 let qOpacity = 0;
-                if (STATE.researchScrollY > 10.5) {
-                    qOpacity = Math.min(1.0, (STATE.researchScrollY - 10.5) * 2.0);
+                if (STATE.researchScrollY > 94.0) {
+                    qOpacity = Math.min(1.0, (STATE.researchScrollY - 94.0) * 2.0);
                 }
                 quantumLine.style.opacity = qOpacity;
                 quantumLine.style.pointerEvents = qOpacity > 0.5 ? 'auto' : 'none';
@@ -411,7 +416,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
             // Pan Camera Centering Mechanics matching original HTML CSS transform rules
             let panProgress = 0;
-            if (STATE.researchScrollY > 8.0) panProgress = Math.min(1.0, STATE.researchScrollY - 8.0);
+            if (STATE.researchScrollY > 95.0) panProgress = Math.min(1.0, STATE.researchScrollY - 95.0);
             let easedPan = panProgress * panProgress * (3.0 - 2.0 * panProgress);
                 const leftHemi = document.getElementById('left-hemi');
             if (leftHemi) leftHemi.style.transform = `translateX(${easedPan * 25}vw)`;

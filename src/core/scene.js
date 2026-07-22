@@ -42,6 +42,11 @@ export async function initGeofnoRenderer(container) {
     geofnoRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     geofnoRenderer.setSize(container.clientWidth, container.clientHeight);
     geofnoRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    
+    geofnoCamera.aspect = container.clientWidth / container.clientHeight;
+    geofnoCamera.position.z = geofnoCamera.aspect < 1.0 ? 10 : 6;
+    geofnoCamera.updateProjectionMatrix();
+
     container.appendChild(geofnoRenderer.domElement);
     
     // Controls
@@ -89,6 +94,7 @@ export function setupResize() {
                 const cw = container.clientWidth;
                 const ch = container.clientHeight;
                 geofnoCamera.aspect = cw / ch;
+                geofnoCamera.position.z = (cw / ch) < 1.0 ? 10 : 6;
                 geofnoCamera.updateProjectionMatrix();
                 geofnoRenderer.setSize(cw, ch);
             }

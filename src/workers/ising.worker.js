@@ -43,6 +43,19 @@ function getMagnetization() {
     return Math.abs(sum) / N2;
 }
 
+function getEnergy() {
+    let E = 0;
+    for (let idx = 0; idx < N2; idx++) {
+        const i = Math.floor(idx / N);
+        const j = idx % N;
+        const right = grid[i * N + ((j + 1) % N)];
+        const down  = grid[((i + 1) % N) * N + j];
+        // Only count right and down neighbors to avoid double counting
+        E += -grid[idx] * (right + down);
+    }
+    return E / N2; // Energy per spin
+}
+
 initCheckerboard();
 
 self.onmessage = function(e) {
@@ -51,14 +64,16 @@ self.onmessage = function(e) {
     } else if (e.data.type === 'reset') {
         initCheckerboard();
         const mag = getMagnetization();
+        const energy = getEnergy();
         const out = new Uint8Array(N2);
         for (let i = 0; i < N2; i++) out[i] = grid[i] === 1 ? 1 : 0;
-        self.postMessage({ type: 'frame', data: out.buffer, mag }, [out.buffer]);
+        self.postMessage({ type: 'frame', data: out.buffer, mag, energy }, [out.buffer]);
     } else if (e.data.type === 'sweep') {
         doSweep();
         const mag = getMagnetization();
+        const energy = getEnergy();
         const out = new Uint8Array(N2);
         for (let i = 0; i < N2; i++) out[i] = grid[i] === 1 ? 1 : 0;
-        self.postMessage({ type: 'frame', data: out.buffer, mag }, [out.buffer]);
+        self.postMessage({ type: 'frame', data: out.buffer, mag, energy }, [out.buffer]);
     }
 };

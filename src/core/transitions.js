@@ -30,10 +30,14 @@ function blackHoleZoom(torusMesh, torusMat, targetPhase, onArrival) {
         }
     });
 
-    // 1) Fade out hero UI
+    // 1) Fade out hero UI and audio toggle
     const heroEl = document.getElementById('ui-hero');
     if (heroEl) {
         tl.to(heroEl, { opacity: 0, duration: 0.3, ease: 'power2.out' }, 0);
+    }
+    const audioToggle = document.getElementById('audio-toggle');
+    if (audioToggle) {
+        tl.to(audioToggle, { opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => audioToggle.style.pointerEvents = 'none' }, 0);
     }
 
     // 2) Stretch the torus into a tunnel (the "black hole" effect)
@@ -214,13 +218,18 @@ export function initiateTimelineToHero() {
         torusMesh.scale.set(2.5, 2.5, 2.5);
     }, null, 0.8);
 
-    // Show hero UI
+    // Show hero UI and audio toggle
     tl.call(() => {
         const heroEl = document.getElementById('ui-hero');
         if (heroEl) {
             heroEl.style.display = 'block';
             heroEl.style.pointerEvents = 'auto';
             gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
+        }
+        const audioToggle = document.getElementById('audio-toggle');
+        if (audioToggle) {
+            audioToggle.style.pointerEvents = 'auto';
+            gsap.to(audioToggle, { opacity: 1, duration: 0.8 });
         }
     }, null, 1.0);
 }
@@ -279,6 +288,11 @@ export function initiateWorksToHero() {
             heroEl.style.pointerEvents = 'auto';
             gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
         }
+        const audioToggle = document.getElementById('audio-toggle');
+        if (audioToggle) {
+            audioToggle.style.pointerEvents = 'auto';
+            gsap.to(audioToggle, { opacity: 1, duration: 0.8 });
+        }
     }, null, 0.4);
 }
 
@@ -308,66 +322,100 @@ export function initiateWorksToResearch() {
     const isingContainer = document.getElementById('ising-container');
     if (isingContainer) isingContainer.style.display = 'none';
 
-    const tl = gsap.timeline({
-        onComplete: () => {
-            STATE.phase = 'RESEARCH';
-            STATE.transitioning = false;
+    // 1. SHOW FULLSCREEN LOADER FIRST
+    const loader = document.getElementById('research-loading-overlay');
+    const topoWord = document.getElementById('loading-word-topology');
+    const wavesWord = document.getElementById('loading-word-waves');
+    if (loader) {
+        if (topoWord) {
+            topoWord.style.top = '0px';
+            topoWord.style.opacity = '1';
         }
-    });
-
-    tl.call(() => {
-        // Mount research
-        researchMesh.visible = true;
-        researchLights.visible = true;
-        researchMesh.scale.set(0.001, 0.001, 0.001);
-        researchMesh.position.set(0, 0, 0);
-
-        // Hide torus
-        torusMat.visible = false;
-
-        // Camera to research position
-        camera.position.set(8, 6, 8);
-        camera.lookAt(0, 0, 0);
-        camera.fov = 45;
-        camera.updateProjectionMatrix();
-    }, null, 0.2);
-
-    // Grow research mesh
-    tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 0.3);
-
-    // Show research UI
-    const researchUI = document.getElementById('ui-research');
-    if (researchUI) {
-        researchUI.style.display = 'block';
-        researchUI.style.opacity = 0;
-        tl.to(researchUI, { opacity: 1, duration: 0.8 }, 0.5);
-    }
-    const leftHemi = document.getElementById('left-hemi');
-    if (leftHemi) {
-        leftHemi.style.opacity = 0;
-        tl.to(leftHemi, { opacity: 1, duration: 0.8 }, 0.5);
-    }
-    const bgCanvas = document.getElementById('research-bg-canvas');
-    if (bgCanvas) {
-        bgCanvas.style.opacity = 0;
-        tl.to(bgCanvas, { opacity: 1, duration: 0.8 }, 0.5);
+        if (wavesWord) {
+            wavesWord.style.top = '20px';
+            wavesWord.style.opacity = '0';
+        }
+        loader.style.display = 'flex';
+        loader.offsetHeight; // Force reflow
+        loader.style.opacity = '1';
     }
 
-    tl.call(() => {
+    if (topoWord && wavesWord) {
+        setTimeout(() => {
+            topoWord.style.top = '-20px';
+            topoWord.style.opacity = '0';
+            wavesWord.style.top = '0px';
+            wavesWord.style.opacity = '1';
+        }, 1500); // 500ms fade-in + 1000ms reading time for TOPOLOGY
+    }
+
+    // 2. WAIT FOR BROWSER TO PAINT LOADER BEFORE FREEZING WITH SHADER COMPILE
+    setTimeout(() => {
+        const tl = gsap.timeline({
+            onComplete: () => {
+                STATE.phase = 'RESEARCH';
+                STATE.transitioning = false;
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.style.display = 'none', 500);
+                }
+            }
+        });
+
+        tl.call(() => {
+            // Mount research
+            researchMesh.visible = true;
+            researchLights.visible = true;
+            researchMesh.scale.set(0.001, 0.001, 0.001);
+            researchMesh.position.set(0, 0, 0);
+
+            // Hide torus
+            torusMat.visible = false;
+
+            // Camera to research position
+            camera.position.set(8, 6, 8);
+            camera.lookAt(0, 0, 0);
+            camera.fov = 45;
+            camera.updateProjectionMatrix();
+        }, null, 0.2);
+
+        // Grow research mesh
+        tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 0.3);
+
+        // Show research UI
+        const researchUI = document.getElementById('ui-research');
+        if (researchUI) {
+            researchUI.style.display = 'block';
+            researchUI.style.opacity = 0;
+            tl.to(researchUI, { opacity: 1, duration: 0.8 }, 0.5);
+        }
+        const leftHemi = document.getElementById('left-hemi');
+        if (leftHemi) {
+            leftHemi.style.opacity = 0;
+            tl.to(leftHemi, { opacity: 1, duration: 0.8 }, 0.5);
+        }
+        const bgCanvas = document.getElementById('research-bg-canvas');
         if (bgCanvas) {
-            initResearchBG();
-            import('../components/researchBackground.js').then(m => m.bindResearchMouse());
+            bgCanvas.style.opacity = 0;
+            tl.to(bgCanvas, { opacity: 1, duration: 0.8 }, 0.5);
         }
-        updateResearchCards(0);
-        window.dispatchEvent(new Event('resize'));
-    }, null, 0.8);
 
-    tl.fromTo('#research-cards-container', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out' }, 1.0);
-    tl.fromTo('.research-card', { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power2.out' }, 1.1);
+        tl.call(() => {
+            if (bgCanvas) {
+                initResearchBG();
+                import('../components/researchBackground.js').then(m => m.bindResearchMouse());
+            }
+            updateResearchCards(0);
+            window.dispatchEvent(new Event('resize'));
+        }, null, 0.8);
 
-    if (worksUI) {
-        tl.call(() => { worksUI.style.display = 'none'; }, null, 0.5);
-    }
+        tl.fromTo('#research-cards-container', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out' }, 1.0);
+        tl.fromTo('.research-card', { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power2.out' }, 1.1);
+
+        if (worksUI) {
+            tl.call(() => { worksUI.style.display = 'none'; }, null, 0.5);
+        }
+    }, 2400); // 1500ms wait + 400ms animation + 500ms to read WAVES before freezing
 }
 
 // === RESEARCH → HERO ===
@@ -416,13 +464,18 @@ export function initiateResearchToHero() {
         torusMesh.scale.set(2.5, 2.5, 2.5);
     }, null, 0.5);
 
-    // Show hero
+    // Show hero and audio toggle
     tl.call(() => {
         const heroEl = document.getElementById('ui-hero');
         if (heroEl) {
             heroEl.style.display = 'block';
             heroEl.style.pointerEvents = 'auto';
             gsap.to('#ui-hero', { opacity: 1, duration: 0.8 });
+        }
+        const audioToggle = document.getElementById('audio-toggle');
+        if (audioToggle) {
+            audioToggle.style.pointerEvents = 'auto';
+            gsap.to(audioToggle, { opacity: 1, duration: 0.8 });
         }
     }, null, 0.8);
 }

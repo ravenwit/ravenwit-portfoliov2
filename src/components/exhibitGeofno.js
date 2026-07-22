@@ -1,18 +1,16 @@
-// --- GeoFNO Dual Torus Comparison Exhibit ---
-// Loads two 256x256 pressure field binary files and displays them
-// on two side-by-side torus meshes with playback controls.
-
-import * as THREE from 'three';
 import { STATE } from '../state.js';
-import { geofnoScene, geofnoCamera, geofnoRenderer, geofnoControls, initGeofnoRenderer, clearGeofnoRenderer } from '../core/scene.js';
+import * as THREE from 'three';
+import { geofnoScene, initGeofnoRenderer, clearGeofnoRenderer } from '../core/scene.js';
 import { createTorusPressureMaterial } from './torusPressureShader.js';
 
-const FRAME_SIZE = 16384; // 128 * 128
-const TORUS_R = 1.5;
-const TORUS_r = 0.5;
-const TORUS_SEGMENTS_RADIAL = 64;
-const TORUS_SEGMENTS_TUBULAR = 64;
+// --- GeoFNO Torus Exhibit ---
+const TORUS_R = 1.0;
+const TORUS_r = 0.4;
+const TORUS_SEGMENTS_TUBULAR = 128;
+const TORUS_SEGMENTS_RADIAL = 32;
 
+// Data config
+const FRAME_SIZE = 128 * 128; 
 let gtTexture, predTexture, errorTexture;
 let gtTorus, predTorus, errorTorus;
 let gtMaterial, predMaterial, errorMaterial;
@@ -24,12 +22,20 @@ export async function initGeofnoExhibit() {
     if (initialized) return;
     initialized = true;
 
+    // Initialize state
+    if (STATE.geofnoPlaying === undefined) STATE.geofnoPlaying = false;
+    if (STATE.geofnoFrame === undefined) STATE.geofnoFrame = 0;
+    if (STATE.geofnoSpeed === undefined) STATE.geofnoSpeed = 1.0;
+
     const container = document.getElementById('geofno-container');
     if (!container) return;
     container.style.display = 'block';
 
-    // Init renderer (now async — await OrbitControls import)
-    await initGeofnoRenderer(container);
+    // Create Modern Layout
+    const canvasTarget = createModernLayout(container);
+
+    // Init renderer using the inner target wrapper
+    await initGeofnoRenderer(canvasTarget);
 
     // Create textures
     const texOptions = {
@@ -42,10 +48,15 @@ export async function initGeofnoExhibit() {
     };
 
     gtTexture = new THREE.DataTexture(new Float32Array(FRAME_SIZE), 128, 128, THREE.RedFormat, THREE.FloatType);
+    Object.assign(gtTexture, texOptions);
     gtTexture.needsUpdate = true;
+    
     predTexture = new THREE.DataTexture(new Float32Array(FRAME_SIZE), 128, 128, THREE.RedFormat, THREE.FloatType);
+    Object.assign(predTexture, texOptions);
     predTexture.needsUpdate = true;
+    
     errorTexture = new THREE.DataTexture(new Float32Array(FRAME_SIZE), 128, 128, THREE.RedFormat, THREE.FloatType);
+    Object.assign(errorTexture, texOptions);
     errorTexture.needsUpdate = true;
 
     // Create materials
@@ -72,7 +83,7 @@ export async function initGeofnoExhibit() {
     // Error PIP: smaller torus below
     const errorGeo = new THREE.TorusGeometry(TORUS_R * 0.5, TORUS_r * 0.5, 64, 64);
     errorTorus = new THREE.Mesh(errorGeo, errorMaterial);
-    errorTorus.position.set(0, -2.8, 0);
+    errorTorus.position.set(0, -2.1, 0);
     geofnoScene.add(errorTorus);
 
     // Stars background
@@ -85,15 +96,6 @@ export async function initGeofnoExhibit() {
     const stars = new THREE.Points(starsGeo, starsMat);
     geofnoScene.add(stars);
 
-    // Create labels (HTML overlays)
-    createLabels(container);
-
-    // Create controls
-    createControls(container);
-
-    // Create loading overlay
-    createLoadingOverlay(container);
-
     // Start streaming data
     loadDataStreaming();
 
@@ -101,35 +103,228 @@ export async function initGeofnoExhibit() {
     updateFrame(0);
 }
 
-function createLabels(container) {
-    const labelsHTML = `
-        <div class="geofno-label gt-label">Ground Truth</div>
-        <div class="geofno-label pred-label">GeoFNO Prediction</div>
-        <div class="geofno-label error-label" style="bottom:60px; top:auto; left:50%; transform:translateX(-50%); font-size:10px; color:#ff4444;">Absolute Error</div>
-    `;
-    const div = document.createElement('div');
-    div.innerHTML = labelsHTML;
-    div.style.cssText = 'position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5;';
-    container.appendChild(div);
-}
+export function createModernLayout(container) {
+    container.innerHTML = `
+        <style>
+        .geofno-modern-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            height: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #fff;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @media (min-width: 768px) {
+            .geofno-modern-layout {
+                flex-direction: row;
+                gap: 40px;
+            }
+        }
 
-function createControls(container) {
-    const controlsHTML = `
-        <div id="geofno-controls">
-            <button id="geofno-play">▶</button>
-            <input type="range" id="geofno-slider" min="0" max="496" value="0">
-            <span id="geofno-frame-display">Frame 0 / 496</span>
-            <div class="geofno-speed-btns">
-                <button data-speed="0.5">0.5×</button>
-                <button data-speed="1" class="active">1×</button>
-                <button data-speed="2">2×</button>
-                <button data-speed="4">4×</button>
+        .geofno-text-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 500px;
+        }
+
+        .geofno-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin: 0 0 1rem 0;
+            line-height: 1.1;
+        }
+
+        .geofno-desc {
+            font-size: 1.1rem;
+            color: #8888aa;
+            line-height: 1.6;
+            margin: 0 0 2rem 0;
+        }
+
+        .geofno-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.2);
+            width: fit-content;
+            margin-bottom: 3rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .geofno-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .geofno-3d-wrapper {
+            flex: 1.5;
+            height: 100%;
+            max-height: 600px;
+            border-radius: 24px;
+            background: #050510;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .geofno-canvas-target {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .modern-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.05);
+            padding: 15px 25px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modern-play-btn {
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        .modern-play-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .modern-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+        .modern-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .modern-frame-display {
+            font-variant-numeric: tabular-nums;
+            font-size: 0.85rem;
+            color: #8888aa;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .modern-labels-top {
+            position: absolute;
+            top: 30px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-evenly;
+            pointer-events: none;
+        }
+
+        .modern-labels-error {
+            position: absolute;
+            top: 72%;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .modern-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+        }
+
+        #geofno-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5,5,16,0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border-radius: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        </style>
+        
+        <div class="geofno-modern-layout">
+            <div class="geofno-text-panel">
+                <h1 class="geofno-title">NOMAD Geo-FNO</h1>
+                <p class="geofno-desc">
+                    A fully data driven Scientific Machine Learning (SciML) pipeline designed to formally simulate and predict acoustic wave propagation on a closed toroidal manifold (T²) utilizing a Geometry-Aware Fourier Neural Operator.
+                </p>
+                <a href="https://github.com/ravenwit/NOMAD" target="_blank" class="geofno-link">
+                    View on GitHub ↗
+                </a>
+
+                <div class="modern-controls">
+                    <button id="geofno-play" class="modern-play-btn">▶</button>
+                    <input type="range" id="geofno-slider" class="modern-slider" min="0" max="496" value="0">
+                    <span id="geofno-frame-display" class="modern-frame-display">0 / 0</span>
+                </div>
+            </div>
+            
+            <div class="geofno-3d-wrapper">
+                <div id="geofno-canvas-target" class="geofno-canvas-target"></div>
+                <div class="modern-labels-top">
+                    <div class="modern-label">Ground Truth</div>
+                    <div class="modern-label">Prediction</div>
+                </div>
+                <div class="modern-labels-error">
+                    <div class="modern-label">Error</div>
+                </div>
             </div>
         </div>
     `;
-    container.insertAdjacentHTML('beforeend', controlsHTML);
 
-    // Wire controls
     sliderEl = document.getElementById('geofno-slider');
     playBtn = document.getElementById('geofno-play');
     frameDisplayEl = document.getElementById('geofno-frame-display');
@@ -145,29 +340,84 @@ function createControls(container) {
         STATE.geofnoPlaying = !STATE.geofnoPlaying;
         playBtn.textContent = STATE.geofnoPlaying ? '⏸' : '▶';
     });
-
-    document.querySelectorAll('.geofno-speed-btns button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.geofno-speed-btns button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            STATE.geofnoSpeed = parseFloat(btn.dataset.speed);
-        });
-    });
-}
-
-function createLoadingOverlay(container) {
+    
     loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'geofno-loading';
-    loadingOverlay.innerHTML = `
-        <p style="font-family:'JetBrains Mono'; color:#888; margin-bottom:12px;">Loading Simulation Data...</p>
-        <div class="geofno-progress-bar"><div id="gt-progress-fill"></div></div>
-        <p id="gt-label" style="font-family:'JetBrains Mono'; font-size:11px; color:#4466ff; margin:4px 0 8px;">GT: 0%</p>
-        <div class="geofno-progress-bar"><div id="pred-progress-fill"></div></div>
-        <p id="pred-label" style="font-family:'JetBrains Mono'; font-size:11px; color:#44ff66; margin:4px 0 8px;">Pred: 0%</p>
-    `;
-    container.appendChild(loadingOverlay);
-}
+    loadingOverlay.style.position = "absolute";
+    loadingOverlay.style.top = "0";
+    loadingOverlay.style.left = "0";
+    loadingOverlay.style.width = "100%";
+    loadingOverlay.style.height = "100%";
+    loadingOverlay.style.display = "flex";
+    loadingOverlay.style.flexDirection = "column";
+    loadingOverlay.style.alignItems = "center";
+    loadingOverlay.style.justifyContent = "center";
+    loadingOverlay.style.background = "radial-gradient(circle at center, rgba(30,30,50,0.9) 0%, rgba(5,5,16,0.95) 100%)";
+    loadingOverlay.style.zIndex = "10";
+    loadingOverlay.style.backdropFilter = "blur(12px)";
+    loadingOverlay.style.transition = "opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)";
 
+    loadingOverlay.innerHTML = `
+        <style>
+        .loading-ring {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 24px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .geofno-loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.02);
+        }
+        .geofno-loading-text {
+            color: #fff; 
+            font-size: 1.1rem; 
+            font-weight: 500; 
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .geofno-loading-bar-wrapper {
+            width: 240px; 
+            height: 6px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 3px; 
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        #geofno-loading-fill {
+            width: 0%; 
+            height: 100%; 
+            background: linear-gradient(90deg, #4A90E2, #50E3C2);
+            border-radius: 3px;
+            transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(80,227,194,0.5);
+        }
+        </style>
+        <div class="geofno-loading-container">
+            <div class="loading-ring"></div>
+            <div class="geofno-loading-text">Loading Manifold Topology</div>
+            <div class="geofno-loading-bar-wrapper">
+                <div id="geofno-loading-fill"></div>
+            </div>
+        </div>
+    `;
+    const wrapper = document.querySelector('.geofno-3d-wrapper');
+    if (wrapper) wrapper.appendChild(loadingOverlay);
+    
+    return document.getElementById('geofno-canvas-target');
+}
 async function loadDataStreaming() {
     // Skip if data already loaded (caching on re-entry)
     if (STATE.geofnoGtData && STATE.geofnoPredData) {
@@ -184,19 +434,22 @@ async function loadDataStreaming() {
     
     // Hide loading overlay
     if (loadingOverlay) loadingOverlay.style.display = 'none';
+
+    // Force initial frame render now that data is loaded
+    if (!STATE.geofnoPlaying) {
+        updateFrame(STATE.geofnoFrame || 0);
+    }
 }
 
 async function loadSingleStream(url, idx) {
     try {
         const response = await fetch(url);
-        // Bug fix: check HTTP status before proceeding
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText} for ${url}`);
         }
         if (!response.body) throw new Error("ReadableStream not supported");
 
         const contentLengthHeader = response.headers.get('Content-Length');
-        // Bug fix: compute totalFloats from actual file size, no hardcoded fallback
         const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
         if (!contentLength || isNaN(contentLength)) {
             throw new Error(`Missing or invalid Content-Length for ${url}`);
@@ -206,8 +459,7 @@ async function loadSingleStream(url, idx) {
         const reader = response.body.getReader();
         let loadedBytes = 0;
 
-        const progressFill = document.getElementById(idx === 0 ? 'gt-progress-fill' : 'pred-progress-fill');
-        const label = document.getElementById(idx === 0 ? 'gt-label' : 'pred-label');
+        const progressFill = document.getElementById('geofno-loading-fill');
 
         while (true) {
             const { done, value } = await reader.read();
@@ -218,24 +470,41 @@ async function loadSingleStream(url, idx) {
             loadedBytes += value.byteLength;
 
             const pct = Math.round((loadedBytes / contentLength) * 100);
-            if (progressFill) progressFill.style.width = pct + '%';
-            if (label) label.textContent = (idx === 0 ? 'GT: ' : 'Pred: ') + pct + '%';
-
-            // Store partial data so playback can begin before full load
-            if (idx === 0) STATE.geofnoGtData = buffer;
-            else STATE.geofnoPredData = buffer;
+            
+            // Just update the main single bar for whichever stream finishes last/updates most often
+            if (progressFill) {
+                progressFill.style.width = pct + '%';
+            }
         }
 
-        if (idx === 0) STATE.geofnoGtData = buffer;
-        else STATE.geofnoPredData = buffer;
+        if (idx === 0) {
+            STATE.geofnoGtData = buffer;
+        } else {
+            STATE.geofnoPredData = buffer;
+        }
+
+        // Dynamically compute total frames based on loaded buffer size
+        if (STATE.geofnoGtData && STATE.geofnoPredData) {
+            const minFloats = Math.min(STATE.geofnoGtData.length, STATE.geofnoPredData.length);
+            STATE.geofnoTotalFrames = Math.floor(minFloats / FRAME_SIZE);
+            if (sliderEl) {
+                sliderEl.max = Math.max(0, STATE.geofnoTotalFrames - 1);
+            }
+            if (frameDisplayEl) {
+                frameDisplayEl.textContent = `${STATE.geofnoFrame} / ${STATE.geofnoTotalFrames - 1}`;
+            }
+        }
 
     } catch (err) {
-        console.error(`Failed to load ${url}:`, err);
+        console.error("Geofno data stream error:", err);
     }
 }
-
 export function updateGeofnoFrame(dt) {
     if (!STATE.geofnoPlaying || !STATE.geofnoGtData || !STATE.geofnoPredData) return;
+
+    STATE.geofnoTotalFrames = Math.floor(STATE.geofnoGtData.length / FRAME_SIZE);
+    
+    if (STATE.geofnoTotalFrames <= 0) return;
 
     const advance = dt * 30 * STATE.geofnoSpeed;
     STATE.geofnoFrame = (STATE.geofnoFrame + advance) % STATE.geofnoTotalFrames;
@@ -290,8 +559,9 @@ function updateFrame(frame) {
     if (maxAbs > 0) predMaterial.uniforms.gain.value = 1.0 / maxAbs;
 
     // Update UI
+    const totalFrames = Math.floor(STATE.geofnoGtData.length / FRAME_SIZE);
     if (sliderEl) sliderEl.value = frame;
-    if (frameDisplayEl) frameDisplayEl.textContent = `Frame ${frame} / 496`;
+    if (frameDisplayEl) frameDisplayEl.textContent = `Frame ${frame} / ${totalFrames}`;
 }
 
 export function destroyGeofnoExhibit() {

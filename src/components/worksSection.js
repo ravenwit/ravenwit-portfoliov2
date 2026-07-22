@@ -64,52 +64,19 @@ export function showExhibit(index) {
     if (index === 0) {
         // Megh: uses works-exhibit-container (inside carousel)
         if (exhibitContainer) exhibitContainer.style.display = 'block';
-        // Re-enable carousel pointer events for Megh
         if (carousel) carousel.style.pointerEvents = 'auto';
     } else if (index === 1) {
-        // GeoFNO: uses geofno-container — add a transparent overlay to capture
-        // OrbitControls mouse events so they don't leak, but keep carousel
-        // arrows clickable by placing the overlay INSIDE the carousel but
-        // NOT covering the arrow buttons.
+        // GeoFNO: uses geofno-container (sibling, z-index 1)
         if (geofnoContainer) {
             geofnoContainer.style.display = 'block';
         }
-        // Instead of disabling carousel pointer-events entirely, add a
-        // transparent overlay div that sits under the arrow buttons.
-        // The overlay covers the center area for 3D interaction.
-        if (carousel) {
-            const overlay = document.createElement('div');
-            overlay.id = 'works-3d-overlay';
-            overlay.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                z-index: 10;
-                pointer-events: auto;
-            `;
-            carousel.appendChild(overlay);
-        }
+        if (carousel) carousel.style.pointerEvents = 'none'; // allow clicks to pass through to geofno-container
     } else if (index === 2) {
-        // Ising: uses ising-container — same overlay approach
+        // Ising: uses ising-container (sibling, z-index 1)
         if (isingContainer) {
             isingContainer.style.display = 'block';
         }
-        if (carousel) {
-            const overlay = document.createElement('div');
-            overlay.id = 'works-3d-overlay';
-            overlay.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                z-index: 10;
-                pointer-events: auto;
-            `;
-            carousel.appendChild(overlay);
-        }
+        if (carousel) carousel.style.pointerEvents = 'none'; // allow clicks to pass through to ising-container
     }
 
     // Init new

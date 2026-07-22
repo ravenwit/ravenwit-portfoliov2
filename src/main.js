@@ -221,6 +221,11 @@ async function init() {
         worksBackBtn.addEventListener('click', initiateWorksToHero);
     }
 
+    const researchBackBtn = document.getElementById('research-back');
+    if (researchBackBtn) {
+        researchBackBtn.addEventListener('click', initiateResearchToHero);
+    }
+
     // Show/hide timeline back button based on phase
     function updateTimelineBackBtn() {
         if (timelineBackBtn) {
