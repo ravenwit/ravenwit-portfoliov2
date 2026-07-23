@@ -8,5 +8,11 @@ export const STATE = {
     researchScrollY: 0, researchVelocity: 0,
     waveletScrollY: 0, waveletVelocity: 0,
     transitioning: false,
-    coordinateTime: 0, properTime: 0
+    coordinateTime: 0, properTime: 0,
+    // Magnetic Snapping state
+    snapTargets: [],
+    activeSnapIndex: -1,
+    isSnapped: false,
+    breakoutAccumulator: 0
 };
+

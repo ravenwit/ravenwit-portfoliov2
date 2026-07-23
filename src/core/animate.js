@@ -95,16 +95,25 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             // Timeline Scroll Hint (Specific Scroll Window)
             const hint = document.getElementById('timeline-scroll-hint');
             if (hint) {
-                // Adjust these numbers (between 0 and approx 8000) to define EXACTLY 
-                // when in the timeline scroll the text shows up and fades away.
                 const hintShowStart = 0;
-                const hintHideStart = 100;
+                const hintHideStart = 150;
 
                 if (STATE.scrollY >= hintShowStart && STATE.scrollY <= hintHideStart) {
                     hint.style.opacity = '1';
                 } else {
                     hint.style.opacity = '0';
                 }
+            }
+
+            // Sync HUD Progress Track Active Dot
+            if (STATE.activeSnapIndex >= 0) {
+                document.querySelectorAll('.track-dot').forEach((dot, idx) => {
+                    if (idx === STATE.activeSnapIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
             }
 
             // Horizontal Radar Map Translation is moved below where camPos is calculated.

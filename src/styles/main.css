@@ -412,7 +412,7 @@ canvas {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 20;
+    z-index: 100;
 }
 
 /* --- HUD CARDS --- */
@@ -435,6 +435,8 @@ canvas {
     background: rgba(0, 0, 0, 0.5);
     box-shadow: 0 0 10px #0ff;
     flex-shrink: 0;
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .node-connector {
@@ -443,6 +445,7 @@ canvas {
     background: linear-gradient(90deg, #0ff, transparent);
     flex-shrink: 0;
     transition: width 0.4s ease;
+    pointer-events: auto;
 }
 
 .hud-card {
@@ -458,6 +461,7 @@ canvas {
     position: relative;
     overflow: hidden;
     cursor: crosshair;
+    pointer-events: auto;
     transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1179,15 +1183,19 @@ canvas {
     left: 0;
     display: flex;
     align-items: center;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease;
     will-change: transform, opacity;
     z-index: 100;
 }
 
-.node-container:hover .skill-label {
+.node-container:hover .skill-label,
+.skill-label:hover,
+.skill-label.active {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .skill-line {
@@ -1272,6 +1280,107 @@ canvas {
     backdrop-filter: blur(4px);
     z-index: 30;
     pointer-events: none;
+}
+
+/* --- TIMELINE MILESTONE PROGRESS TRACK --- */
+.timeline-track-hud {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: rgba(5, 12, 22, 0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 243, 255, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 243, 255, 0.1);
+    z-index: 120;
+    pointer-events: auto;
+}
+
+.track-nav-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    color: #0ff;
+    font-family: 'Doto', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 1px;
+}
+
+.track-nav-btn:hover {
+    background: rgba(0, 255, 255, 0.2);
+    border-color: #0ff;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.track-dots-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.track-dot {
+    background: transparent;
+    border: none;
+    padding: 4px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.25s ease;
+}
+
+.track-dot .dot-num {
+    font-family: 'Doto', monospace;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.track-dot .dot-pip {
+    width: 8px;
+    height: 8px;
+    background: rgba(0, 255, 255, 0.4);
+    border: 1px solid rgba(0, 255, 255, 0.6);
+    border-radius: 50%;
+    transition: all 0.25s ease;
+}
+
+.track-dot:hover {
+    opacity: 1;
+}
+
+.track-dot:hover .dot-pip {
+    background: #0ff;
+    box-shadow: 0 0 8px #0ff;
+    transform: scale(1.25);
+}
+
+.track-dot.active {
+    opacity: 1;
+}
+
+.track-dot.active .dot-num {
+    color: #0ff;
+    font-weight: bold;
+    text-shadow: 0 0 6px #0ff;
+}
+
+.track-dot.active .dot-pip {
+    background: #ff0055;
+    border-color: #ff0055;
+    box-shadow: 0 0 10px #ff0055, 0 0 20px rgba(255, 0, 85, 0.6);
+    transform: scale(1.4);
 }
 
 .badge-title {
