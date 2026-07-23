@@ -305,17 +305,27 @@ async function init() {
             return bestU;
         };
 
-        CAREER_NODES.forEach(node => {
+        CAREER_NODES.forEach((node, index) => {
             const bestU = findUForZ(node.z);
             const marker = document.createElement('div');
             marker.className = 'radar-node';
             marker.style.top = `${bestU * 100}%`;
+            marker.setAttribute('title', `EVT-0${index + 1}: ${node.title} (${node.time_range ? node.time_range.start : node.date})`);
+            marker.addEventListener('click', (e) => {
+                e.stopPropagation();
+                jumpToMilestone(index);
+            });
             timelineNodesContainer.appendChild(marker);
 
             if(roundNodesContainer) {
                 const pt = cameraPath.getPointAt(bestU);
                 const roundMarker = document.createElement('div');
                 roundMarker.className = 'radar-round-marker';
+                roundMarker.setAttribute('title', `EVT-0${index + 1}: ${node.title} (${node.time_range ? node.time_range.start : node.date})`);
+                roundMarker.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    jumpToMilestone(index);
+                });
                 
                 const mapScale = 0.15;
                 roundMarker.style.left = `${pt.x * mapScale}px`;

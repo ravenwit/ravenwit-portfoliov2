@@ -66,8 +66,108 @@ export function initiateHeroToTimeline() {
     STATE.targetScrollY = 0;
     setScrollTargetY(0);
 
-    blackHoleZoom(torusMesh, torusMat, 'TIMELINE', () => {
-        // Restore timeline scene
+    STATE.phase = 'TRANSITION';
+    STATE.transitioning = true;
+
+    const overlay = document.getElementById('timeline-transition-overlay');
+    const heroEl = document.getElementById('ui-hero');
+    const audioToggle = document.getElementById('audio-toggle');
+
+    if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.opacity = 0;
+        overlay.style.pointerEvents = 'auto';
+    }
+
+    let isSkipped = false;
+    let keyHandler = null;
+    let clickHandler = null;
+
+    const cleanupListeners = () => {
+        if (keyHandler) window.removeEventListener('keydown', keyHandler);
+        if (clickHandler && overlay) overlay.removeEventListener('click', clickHandler);
+    };
+
+    const tl = gsap.timeline({
+        onComplete: () => {
+            cleanupListeners();
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.opacity = 0;
+                overlay.style.pointerEvents = 'none';
+            }
+            STATE.phase = 'TIMELINE';
+            STATE.transitioning = false;
+        }
+    });
+
+    const skipTransition = () => {
+        if (isSkipped) return;
+        isSkipped = true;
+        cleanupListeners();
+        // Fast-forward timeline to resolution phase
+        if (tl.time() < 4.5) {
+            tl.timeScale(4.0);
+        }
+    };
+
+    clickHandler = (e) => {
+        e.stopPropagation();
+        skipTransition();
+    };
+
+    keyHandler = (e) => {
+        if (STATE.transitioning) {
+            skipTransition();
+        }
+    };
+
+    // Attach skip listeners
+    if (overlay) overlay.addEventListener('click', clickHandler);
+    window.addEventListener('keydown', keyHandler);
+
+    // 1) Fade out hero UI & audio toggle
+    if (heroEl) {
+        tl.to(heroEl, { opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => heroEl.style.pointerEvents = 'none' }, 0);
+    }
+    if (audioToggle) {
+        tl.to(audioToggle, { opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => audioToggle.style.pointerEvents = 'none' }, 0);
+    }
+
+    // 2) Fade in transition overlay & reveal title + guide cards
+    if (overlay) {
+        tl.to(overlay, { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.0);
+        
+        // Staggered reveal of title, subtext cards & continue footer
+        const title = overlay.querySelector('.timeline-transition-title');
+        const badge = overlay.querySelector('.timeline-transition-badge');
+        const subtitle = overlay.querySelector('.timeline-transition-subtitle');
+        const cards = overlay.querySelectorAll('.guide-card');
+        const footer = overlay.querySelector('.timeline-guides-footer');
+        const fill = overlay.querySelector('.reading-progress-fill');
+
+        if (title) tl.fromTo(title, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.1);
+        if (badge) tl.fromTo(badge, { y: -10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.05);
+        if (subtitle) tl.fromTo(subtitle, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.25);
+        if (cards && cards.length > 0) {
+            tl.fromTo(cards, 
+                { y: 15, opacity: 0 }, 
+                { y: 0, opacity: 1, duration: 0.4, stagger: 0.1, ease: 'power2.out' }, 
+                0.3
+            );
+        }
+        if (footer) tl.fromTo(footer, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.6);
+        if (fill) tl.fromTo(fill, { width: '0%' }, { width: '100%', duration: 4.0, ease: 'none' }, 0.7);
+    }
+
+    // 3) Warp background 3D scene (torus stretch + optical flash)
+    tl.to(torusMat.uniforms.uStretch, { value: 18.0, duration: 1.2, ease: 'power2.in' }, 0.2);
+    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp + 10.0, duration: 0.8, ease: 'power2.in' }, 0.2);
+    tl.to('#optical-flash', { opacity: 0.7, duration: 0.5, ease: 'power2.in' }, 0.8);
+    tl.to('#optical-flash', { opacity: 0, duration: 0.4, ease: 'power2.out' }, 1.3);
+
+    // 4) Mid-way swap scene elements while overlay covers camera (at t=1.4s)
+    tl.call(() => {
         nodeGroup.visible = true;
         torusMat.visible = false;
         torusMat.uniforms.uOpacity.value = 0;
@@ -85,7 +185,7 @@ export function initiateHeroToTimeline() {
         camera.fov = 75;
         camera.updateProjectionMatrix();
 
-        // Show timeline UI — ensure display is set before GSAP opacity animation
+        // Prepare Timeline UI
         ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
             let el = document.getElementById(id);
             if (el) {
@@ -93,30 +193,39 @@ export function initiateHeroToTimeline() {
                 el.style.opacity = 0;
             }
         });
-        gsap.to('#hud, #timeline-scale-container, #radar-round-container', { 
-            opacity: 1, 
-            duration: 0.5,
-            onStart: () => {
-                ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
-                    let el = document.getElementById(id);
-                    if(el) el.style.pointerEvents = 'auto';
-                });
-            } 
-        });
 
-        // Ensure hobbies layer is visible
         const hobbiesLayer = document.getElementById('hobbies-ui-layer');
         if (hobbiesLayer) {
             hobbiesLayer.style.display = '';
             hobbiesLayer.style.opacity = 0;
             hobbiesLayer.style.pointerEvents = 'auto';
         }
-        gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5 });
         document.querySelectorAll('.node-container').forEach(el => {
             el.style.display = 'flex';
             el.style.pointerEvents = 'auto';
         });
-    });
+    }, null, 1.4);
+
+    // 5) Warp resolves & Overlay fades out seamlessly into timeline UI at t=4.7s
+    tl.to(torusMat.uniforms.uStretch, { value: 0, duration: 0.6, ease: 'power2.out' }, 4.7);
+    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp, duration: 0.6, ease: 'power2.out' }, 4.7);
+
+    if (overlay) {
+        tl.to(overlay, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, 4.7);
+    }
+
+    // 6) Timeline HUD & UI elements fade in at t=4.8s
+    tl.to('#hud, #timeline-scale-container, #radar-round-container, #hobbies-ui-layer', { 
+        opacity: 1, 
+        duration: 0.6,
+        ease: 'power2.out',
+        onStart: () => {
+            ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
+                let el = document.getElementById(id);
+                if(el) el.style.pointerEvents = 'auto';
+            });
+        } 
+    }, 4.8);
 }
 
 // === HERO → WORKS ===

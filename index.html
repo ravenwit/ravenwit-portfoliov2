@@ -242,6 +242,68 @@
     <!-- Timeline Back to Home button -->
     <button id="timeline-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(0,255,255,0.3); color:#0ff; padding:8px 16px; cursor:pointer; font-family:'Courier New', monospace; font-size:12px; backdrop-filter:blur(4px); opacity:0; pointer-events:none;">← Back to Home</button>
 
+    <!-- TIMELINE CINEMATIC TRANSITION OVERLAY -->
+    <div id="timeline-transition-overlay" class="timeline-cinematic-overlay">
+        <div class="timeline-transition-backdrop"></div>
+        <div class="timeline-transition-content">
+            <div class="timeline-transition-badge">
+                <span class="pulse-dot"></span>
+                <span>SYSTEM TRANSITION :: DESTINATION TIMELINE</span>
+            </div>
+            
+            <h1 class="timeline-transition-title">ENTERING TIMELINE</h1>
+            
+            <div class="timeline-transition-scan-bar">
+                <div class="scan-line-fill"></div>
+            </div>
+
+            <p class="timeline-transition-subtitle">NAVIGATION &amp; TRAVERSAL GUIDES</p>
+
+            <div class="timeline-guides-grid">
+                <div class="guide-card">
+                    <div class="guide-icon-badge">🖱️ SCROLL</div>
+                    <div class="guide-details">
+                        <span class="guide-title">SCROLL / TRACKPAD</span>
+                        <span class="guide-desc">Traverse forward &amp; backward through spacetime trajectory</span>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-icon-badge">⌨️ KEYS</div>
+                    <div class="guide-details">
+                        <span class="guide-title">ARROW KEYS [ ↑ / ↓ ]</span>
+                        <span class="guide-desc">Snap directly between career &amp; education milestones</span>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-icon-badge">🎯 RADAR</div>
+                    <div class="guide-details">
+                        <span class="guide-title">RADAR &amp; TRACK</span>
+                        <span class="guide-desc">Click radar nodes or progress dots for instant jump</span>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-icon-badge">🎛️ DIAL</div>
+                    <div class="guide-details">
+                        <span class="guide-title">TIMELINE DIAL</span>
+                        <span class="guide-desc">Drag player marker on vertical dial for smooth scrubbing</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-guides-footer">
+                <div class="reading-progress-track">
+                    <div class="reading-progress-fill"></div>
+                </div>
+                <button id="transition-continue-btn" class="transition-continue-btn">
+                    ENTER TIMELINE <span class="skip-hint">[ CLICK OR PRESS ANY KEY TO CONTINUE ]</span> ►
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- RESEARCH LOADING OVERLAY -->
     <div id="research-loading-overlay" style="display: none; position: fixed; inset: 0; background: #050505; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-family: 'JetBrains Mono', monospace; opacity: 0; transition: opacity 0.5s ease;">
         <div style="font-size: 18px; letter-spacing: 2px; color: #0ff; margin-bottom: 20px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; height: 24px;">
