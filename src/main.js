@@ -5,7 +5,7 @@ import { STATE } from './state.js';
 import { scene, camera, renderer, initRenderer, setupResize } from './core/scene.js';
 import { buildCameraPath } from './core/cameraPath.js';
 import { generateGeometry } from './core/geometryManager.js';
-import { createNodes, toggleCard, startTypingInterval, initProgressTrack } from './components/nodes.js';
+import { createNodes, toggleCard, startTypingInterval } from './components/nodes.js';
 
 import { startAnimationLoop } from './core/animate.js';
 import { initScroll, computeSnapTargets, jumpToMilestone } from './core/scroll.js';
@@ -99,7 +99,6 @@ async function init() {
 
     // --- 5. CREATE NODES (15%) ---
     const nodeGroup = createNodes(gridMat);
-    initProgressTrack();
     scene.add(nodeGroup);
     updateLoading('NODES_READY', 90);
 

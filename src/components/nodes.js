@@ -191,42 +191,5 @@ export function startTypingInterval() {
     }, 30);
 }
 
-// --- Initialize Timeline Progress Track ---
-export function initProgressTrack() {
-    const dotsContainer = document.getElementById('timeline-dots-container');
-    const prevBtn = document.getElementById('timeline-prev-btn');
-    const nextBtn = document.getElementById('timeline-next-btn');
 
-    if (dotsContainer && CAREER_NODES.length > 0) {
-        dotsContainer.innerHTML = '';
-        CAREER_NODES.forEach((node, i) => {
-            const dot = document.createElement('button');
-            dot.className = `track-dot ${i === 0 ? 'active' : ''}`;
-            dot.id = `track-dot-${i}`;
-            dot.setAttribute('title', `EVT-0${i + 1}: ${node.title} (${node.time_range ? node.time_range.start : node.date})`);
-            dot.innerHTML = `<span class="dot-num">0${i + 1}</span><span class="dot-pip"></span>`;
-            dot.addEventListener('click', (e) => {
-                e.stopPropagation();
-                jumpToMilestone(i);
-            });
-            dotsContainer.appendChild(dot);
-        });
-    }
-
-    if (prevBtn) {
-        prevBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const current = STATE.activeSnapIndex >= 0 ? STATE.activeSnapIndex : 0;
-            jumpToMilestone(current - 1);
-        });
-    }
-
-    if (nextBtn) {
-        nextBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const current = STATE.activeSnapIndex >= 0 ? STATE.activeSnapIndex : 0;
-            jumpToMilestone(current + 1);
-        });
-    }
-}
 

@@ -105,16 +105,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                 }
             }
 
-            // Sync HUD Progress Track Active Dot
-            if (STATE.activeSnapIndex >= 0) {
-                document.querySelectorAll('.track-dot').forEach((dot, idx) => {
-                    if (idx === STATE.activeSnapIndex) {
-                        dot.classList.add('active');
-                    } else {
-                        dot.classList.remove('active');
-                    }
-                });
-            }
+
 
             // Horizontal Radar Map Translation is moved below where camPos is calculated.
             const camPos = cameraPath.getPointAt(pathProgress);
