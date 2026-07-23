@@ -33,7 +33,7 @@ function blackHoleZoom(torusMesh, torusMat, targetPhase, onArrival) {
     // 1) Fade out hero UI and audio toggle
     const heroEl = document.getElementById('ui-hero');
     if (heroEl) {
-        tl.to(heroEl, { opacity: 0, duration: 0.3, ease: 'power2.out' }, 0);
+        tl.to(heroEl, { opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => heroEl.style.pointerEvents = 'none' }, 0);
     }
     const audioToggle = document.getElementById('audio-toggle');
     if (audioToggle) {
@@ -109,6 +109,7 @@ export function initiateHeroToTimeline() {
         if (hobbiesLayer) {
             hobbiesLayer.style.display = '';
             hobbiesLayer.style.opacity = 0;
+            hobbiesLayer.style.pointerEvents = 'auto';
         }
         gsap.to('#hobbies-ui-layer', { opacity: 1, duration: 0.5 });
         document.querySelectorAll('.node-container').forEach(el => {
@@ -181,7 +182,14 @@ export function initiateTimelineToHero() {
             });
         }
     });
-    gsap.to('#hobbies-ui-layer', { opacity: 0, duration: 0.4 });
+    const hobbiesLayer = document.getElementById('hobbies-ui-layer');
+    gsap.to('#hobbies-ui-layer', { 
+        opacity: 0, 
+        duration: 0.4,
+        onComplete: () => {
+            if (hobbiesLayer) hobbiesLayer.style.pointerEvents = 'none';
+        }
+    });
     document.querySelectorAll('.node-container').forEach(el => {
         el.style.display = 'none';
         el.style.pointerEvents = 'none';

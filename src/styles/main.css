@@ -1295,7 +1295,7 @@ canvas {
 #hobbies-ui-layer {
     opacity: 0;
     pointer-events: none;
-    z-index: 10;
+    z-index: 30;
 }
 
 #hobbies-viewport {
