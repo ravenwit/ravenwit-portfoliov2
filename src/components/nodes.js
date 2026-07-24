@@ -167,6 +167,31 @@ export function fadeSkillLabels() {
     });
 }
 
+// --- Collapse All Cards ---
+export function collapseAllCards() {
+    CAREER_NODES.forEach((_, index) => {
+        try {
+            const card = document.getElementById(`card-${index}`);
+            const btn = document.getElementById(`btn-${index}`);
+            const logC = document.getElementById(`logs-container-${index}`);
+
+            if (card && card.classList.contains('expanded')) {
+                card.classList.remove('expanded');
+                card.classList.add('minimized');
+                if (btn) btn.innerHTML = "[ + ]";
+                if (logC) logC.innerHTML = "";
+                if (typingState[index]) {
+                    typingState[index].isTyping = false;
+                    typingState[index].lineIndex = 0;
+                    typingState[index].charIndex = 0;
+                }
+            }
+        } catch (e) {
+            // Quiet fallback
+        }
+    });
+}
+
 // --- Start Typing Interval ---
 export function startTypingInterval() {
     setInterval(() => {

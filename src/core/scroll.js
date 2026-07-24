@@ -4,7 +4,7 @@
 
 import { STATE } from '../state.js';
 import { CAREER_NODES } from '../config.js';
-import { toggleCard, fadeSkillLabels } from '../components/nodes.js';
+import { toggleCard, fadeSkillLabels, collapseAllCards } from '../components/nodes.js';
 import gsap from 'gsap';
 
 // Momentum & Snap state
@@ -48,6 +48,9 @@ export function jumpToMilestone(index) {
     const clampedIdx = Math.max(0, Math.min(index, STATE.snapTargets.length - 1));
     const snapY = STATE.snapTargets[clampedIdx];
 
+    collapseAllCards();
+    fadeSkillLabels();
+
     STATE.activeSnapIndex = clampedIdx;
     STATE.isSnapped = true;
     STATE.breakoutAccumulator = 0;
@@ -70,6 +73,7 @@ export function initScroll() {
         if (STATE.phase === 'TIMELINE' && !STATE.transitioning) {
             if (Math.abs(rawDeltaY) > 5) {
                 fadeSkillLabels();
+                collapseAllCards();
             }
             if (STATE.isSnapped && STATE.activeSnapIndex >= 0) {
                 STATE.breakoutAccumulator += Math.abs(rawDeltaY);
