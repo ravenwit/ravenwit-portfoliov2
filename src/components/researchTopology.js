@@ -74,7 +74,16 @@ export function initResearchTopology() {
 
             vec3 evaluateMasterEquation(float u_norm, float v_norm, float T_val) {
                 float u = u_norm * 2.0 * PI;
-                float geomT = min(T_val, 4.0);
+                
+                float geomT;
+                float morphDuration = 23.5;
+                if (T_val <= morphDuration) {
+                    geomT = T_val * (4.0 / morphDuration);
+                } else if (T_val <= 94.0) {
+                    geomT = 4.0;
+                } else {
+                    geomT = max(0.0, 4.0 - (T_val - 94.0) * (4.0 / morphDuration));
+                }
                 
                 // Divide 4.0 scroll units into 2 main phases (Flatten, then Twist)
                 float phase = floor(geomT / 2.0);
@@ -85,41 +94,19 @@ export function initResearchTopology() {
                 if (geomT >= 4.0) rawLambda = 1.0;
                 float lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda); // smoothstep
 
-                // Kaizen Phase: Inflate as a non-orientable topology
-                float inflateLambda = 0.0;
-                if (T_val > 9.0) {
-                    float rawInflate = min((T_val - 9.0) / 2.0, 1.0);
-                    inflateLambda = rawInflate * rawInflate * (3.0 - 2.0 * rawInflate);
-                }
-
-                // Mug Phase: T_val > 11.2
-                float mugLambda = 0.0;
-                if (T_val > 11.2) {
-                    float rawMug = min((T_val - 11.2) / 1.3, 1.0);
-                    mugLambda = rawMug * rawMug * (3.0 - 2.0 * rawMug);
-                }
-
                 float f1, f2, tau;
                 float vmax = 2.0 * PI; // Vmax is locked to 2*PI permanently
                 float v = v_norm * vmax;
-                
-                // Deformation for Mug Body
-                float bowlMask = smoothstep(-0.2, 0.5, -cos(u));
-                float r_target = mix(1.0, 2.8, bowlMask * mugLambda);
-                float y_target = mix(sin(v), sign(sin(v)) * (1.0 - pow(abs(cos(v)), 10.0)) * 2.0, bowlMask * mugLambda);
                 
                 if (phase < 0.5) { // Phase 0 (0-2.0): Flatten the Tube to a Ribbon
                     f1 = (1.0 - lambda) * cos(v) + lambda * sin(v); 
                     f2 = sin(v); 
                     tau = 0.0;
                 } else { // Phase 1 (2.0-4.0): Perform the Half Twist
-                    f1 = mix(sin(v), cos(v), inflateLambda); // Inflates back to cos(v) between S=9 and S=11
+                    f1 = sin(v); 
                     f2 = sin(v); 
-                    tau = mix(0.5 * lambda, 0.0, mugLambda); // Untwist if making a mug
+                    tau = 0.5 * lambda; 
                 }
-
-                f1 *= r_target;
-                f2 = y_target;
 
                 float twistAngle = tau * u;
                 float x_prime = f1 * cos(twistAngle) - f2 * sin(twistAngle);
@@ -127,16 +114,6 @@ export function initResearchTopology() {
                 
                 float R = 3.0;
                 vec3 p = vec3((R + x_prime) * cos(u), z_prime, -(R + x_prime) * sin(u));
-                
-                // Form the Cup Hole via spatial depression of the top surface
-                vec2 cupCenter = vec2(-3.0, 0.0);
-                float distXZ = length(vec2(p.x, p.z) - cupCenter);
-                float currentOuter = max(2.4 * bowlMask * mugLambda, 0.001);
-                float currentInner = 2.0 * bowlMask * mugLambda;
-                float depression = smoothstep(currentOuter, currentInner, distXZ);
-                float topMask = smoothstep(-0.1, 0.2, sin(v));
-                
-                p.y -= depression * 3.5 * bowlMask * mugLambda * topMask;
                 
                 return p;
             }
@@ -200,7 +177,16 @@ export function initResearchTopology() {
 export function evaluateResearchParticleMath(u_norm, v_norm, T_val) {
     const R = 3.0;
     const u = u_norm * 2.0 * Math.PI;
-    const geomT = Math.min(T_val, 4.0);
+    
+    let geomT;
+    const morphDuration = 23.5;
+    if (T_val <= morphDuration) {
+        geomT = T_val * (4.0 / morphDuration);
+    } else if (T_val <= 94.0) {
+        geomT = 4.0;
+    } else {
+        geomT = Math.max(0.0, 4.0 - (T_val - 94.0) * (4.0 / morphDuration));
+    }
 
     let phase = Math.floor(geomT / 2.0);
     if (phase >= 2.0) phase = 1.0;
@@ -209,72 +195,25 @@ export function evaluateResearchParticleMath(u_norm, v_norm, T_val) {
     if (geomT >= 4.0) rawLambda = 1.0;
     const lambda = rawLambda * rawLambda * (3.0 - 2.0 * rawLambda);
 
-    let inflateLambda = 0.0;
-    if (T_val > 9.0) {
-        let rawInflate = Math.min((T_val - 9.0) / 2.0, 1.0);
-        inflateLambda = rawInflate * rawInflate * (3.0 - 2.0 * rawInflate);
-    }
-
-    let mugLambda = 0.0;
-    if (T_val > 11.2) {
-        let rawMug = Math.min((T_val - 11.2) / 1.3, 1.0);
-        mugLambda = rawMug * rawMug * (3.0 - 2.0 * rawMug);
-    }
-
     let f1, f2, tau;
     const vmax = 2.0 * Math.PI;
     const v = v_norm * vmax;
-
-    let bowlVal = -Math.cos(u);
-    let bowlMask = Math.max(0, Math.min(1, (bowlVal - (-0.2)) / (0.5 - (-0.2))));
-    bowlMask = bowlMask * bowlMask * (3.0 - 2.0 * bowlMask); // smoothstep
-
-    const r_target = 1.0 * (1.0 - bowlMask * mugLambda) + 2.8 * (bowlMask * mugLambda);
-    const signSinV = Math.sign(Math.sin(v));
-    const y_target = Math.sin(v) * (1.0 - bowlMask * mugLambda) + (signSinV * (1.0 - Math.pow(Math.abs(Math.cos(v)), 10.0)) * 2.0) * (bowlMask * mugLambda);
 
     if (phase === 0) {
         f1 = (1.0 - lambda) * Math.cos(v) + lambda * Math.sin(v);
         f2 = Math.sin(v);
         tau = 0.0;
     } else {
-        f1 = (1.0 - inflateLambda) * Math.sin(v) + inflateLambda * Math.cos(v);
+        f1 = Math.sin(v);
         f2 = Math.sin(v);
-        tau = (0.5 * lambda) * (1.0 - mugLambda);
+        tau = 0.5 * lambda;
     }
-
-    f1 *= r_target;
-    f2 = y_target;
 
     const twistAngle = tau * u;
     const x_prime = f1 * Math.cos(twistAngle) - f2 * Math.sin(twistAngle);
     const z_prime = f1 * Math.sin(twistAngle) + f2 * Math.cos(twistAngle);
 
     let p = new THREE.Vector3((R + x_prime) * Math.cos(u), z_prime, -(R + x_prime) * Math.sin(u));
-
-    const dx = p.x - (-3.0);
-    const dz = p.z - 0.0;
-    const distXZ = Math.sqrt(dx * dx + dz * dz);
-    const currentOuter = Math.max(2.4 * bowlMask * mugLambda, 0.001);
-    const currentInner = 2.0 * bowlMask * mugLambda;
-
-    let depression = 0.0;
-    if (distXZ <= currentInner) {
-        depression = 1.0;
-    } else if (distXZ < currentOuter) {
-        let t = (distXZ - currentOuter) / (currentInner - currentOuter);
-        depression = t * t * (3.0 - 2.0 * t);
-    }
-
-    let topMask = 0.0;
-    let sv = Math.sin(v);
-    if (sv >= 0.2) topMask = 1.0;
-    else if (sv > -0.1) {
-        let t = (sv - (-0.1)) / 0.3;
-        topMask = t * t * (3.0 - 2.0 * t);
-    }
-
-    p.y -= depression * 3.5 * bowlMask * mugLambda * topMask;
 
     return { pos: p };
 }

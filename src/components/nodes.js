@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { CONFIG, CAREER_NODES } from '../config.js';
+import { STATE } from '../state.js';
+import { jumpToMilestone } from '../core/scroll.js';
+
 
 // --- Glow Texture ---
 const glowTexture = (() => {
@@ -138,10 +141,55 @@ export function createNodes(gridMat) {
                 if (prompt) prompt.innerText = 'ERR click: ' + err.message;
             }
         });
+
+        // Attach click listener to individual satellite skill badges
+        if (node.skills) {
+            node.skills.forEach((_, si) => {
+                const skillEl = label.querySelector(`#skill-${index}-${si}`);
+                if (skillEl) {
+                    skillEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        skillEl.classList.toggle('active');
+                    });
+                }
+            });
+        }
+
         node.element = label;
     });
 
     return nodeGroup;
+}
+
+export function fadeSkillLabels() {
+    document.querySelectorAll('.skill-label.active').forEach(el => {
+        el.classList.remove('active');
+    });
+}
+
+// --- Collapse All Cards ---
+export function collapseAllCards() {
+    CAREER_NODES.forEach((_, index) => {
+        try {
+            const card = document.getElementById(`card-${index}`);
+            const btn = document.getElementById(`btn-${index}`);
+            const logC = document.getElementById(`logs-container-${index}`);
+
+            if (card && card.classList.contains('expanded')) {
+                card.classList.remove('expanded');
+                card.classList.add('minimized');
+                if (btn) btn.innerHTML = "[ + ]";
+                if (logC) logC.innerHTML = "";
+                if (typingState[index]) {
+                    typingState[index].isTyping = false;
+                    typingState[index].lineIndex = 0;
+                    typingState[index].charIndex = 0;
+                }
+            }
+        } catch (e) {
+            // Quiet fallback
+        }
+    });
 }
 
 // --- Start Typing Interval ---
@@ -167,3 +215,6 @@ export function startTypingInterval() {
         });
     }, 30);
 }
+
+
+

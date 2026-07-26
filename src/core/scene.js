@@ -30,6 +30,55 @@ export function initRenderer() {
     document.getElementById('canvas-container').appendChild(renderer.domElement);
 }
 
+// --- GeoFNO Works Renderer (Separate WebGL context) ---
+export const geofnoScene = new THREE.Scene();
+export const geofnoCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+geofnoCamera.position.set(0, 0, 6);
+
+export let geofnoRenderer = null;
+export let geofnoControls = null;
+
+export async function initGeofnoRenderer(container) {
+    geofnoRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    geofnoRenderer.setSize(container.clientWidth, container.clientHeight);
+    geofnoRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    
+    geofnoCamera.aspect = container.clientWidth / container.clientHeight;
+    geofnoCamera.position.z = geofnoCamera.aspect < 1.0 ? 10 : 6;
+    geofnoCamera.updateProjectionMatrix();
+
+    container.appendChild(geofnoRenderer.domElement);
+    
+    // Controls
+    const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+    geofnoControls = new OrbitControls(geofnoCamera, geofnoRenderer.domElement);
+    geofnoControls.enablePan = false;
+    geofnoControls.maxDistance = 12;
+    geofnoControls.minDistance = 3;
+    geofnoControls.autoRotate = false;
+    
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight1.position.set(10, 10, 10);
+    const dirLight2 = new THREE.DirectionalLight(0x4466ff, 0.5);
+    dirLight2.position.set(-5, -5, -5);
+    geofnoScene.add(ambientLight, dirLight1, dirLight2);
+    
+    return geofnoRenderer;
+}
+
+export function clearGeofnoRenderer() {
+    if (geofnoRenderer) {
+        geofnoRenderer.dispose();
+        geofnoRenderer = null;
+    }
+    if (geofnoControls) {
+        geofnoControls.dispose();
+        geofnoControls = null;
+    }
+}
+
 export function setupResize() {
     window.addEventListener('resize', () => {
         const w = window.innerWidth, h = window.innerHeight;
@@ -37,5 +86,18 @@ export function setupResize() {
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
         composer.setSize(w, h);
+        
+        // Update GeoFNO renderer if active
+        if (geofnoRenderer) {
+            const container = document.getElementById('geofno-container');
+            if (container && container.style.display !== 'none') {
+                const cw = container.clientWidth;
+                const ch = container.clientHeight;
+                geofnoCamera.aspect = cw / ch;
+                geofnoCamera.position.z = (cw / ch) < 1.0 ? 10 : 6;
+                geofnoCamera.updateProjectionMatrix();
+                geofnoRenderer.setSize(cw, ch);
+            }
+        }
     });
 }

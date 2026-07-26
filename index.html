@@ -2,6 +2,12 @@
 <html lang="en">
 
 <head>
+    <script>
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            fetch("http://localhost:5173/__log_error", { method: "POST", body: msg + " at " + lineNo + ":" + columnNo });
+            return false;
+        };
+    </script>
 
     <!-- <a href="https://iconscout.com/icons/cv" class="text-underline font-size-sm" target="_blank">Cv</a> by <a href="https://iconscout.com/contributors/kiran-shastry" class="text-underline font-size-sm" target="_blank">Kiran Shastry</a> -->
     <!-- <a href="https://iconscout.com/icons/resume" class="text-underline font-size-sm" target="_blank">resume</a> by <a href="https://iconscout.com/contributors/iconmarketpk" class="text-underline font-size-sm" target="_blank">IconMarket</a> -->
@@ -50,6 +56,7 @@
         window.addEventListener('resize', checkMobileFallback);
     </script>
     <link rel="stylesheet" href="/src/styles/main.css">
+    <link rel="stylesheet" href="/src/styles/works.css">
     <!-- Jersey 10 Charted Google Font for industrial aesthetic -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -79,6 +86,8 @@
             }
         };
     </script>
+    <!-- Orbitron and Space Grotesk Fonts for sleek futuristic titles -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
@@ -94,9 +103,14 @@
     <div id="hobbies-ui-layer" class="ui-layer">
         <!-- Timeline Badge -->
         <div id="timeline-badge">
-            <span class="badge-title">Timeline</span>
-            <span class="badge-subtitle">▸ SCROLL TO TRAVERSE</span>
+            <div class="badge-title-container">
+                <span class="badge-dot"></span>
+                <span class="badge-title">TIMELINE</span>
+            </div>
+            <span class="badge-subtitle"><span class="badge-accent">▸</span> CLICK ON RADAR NODES OR USE <span class="badge-key">[ ↓ / ↑ ]</span> TO TRAVERSE</span>
         </div>
+
+        <!-- Timeline Milestone Progress Track Removed - Replaced by Interactive Radar Nodes -->
         <div id="hobbies-viewport">
             <div id="triptych-container">
                 <div id="triptych">
@@ -138,15 +152,40 @@
 
 
 
-        <!-- Scroll Beacon -->
-        <div class="scroll-beacon">
-            <span class="scroll-beacon-text">SCROLL TO ENTER TIMELINE</span>
-            <div class="scroll-chevrons">
-                <span class="chevron"></span>
-                <span class="chevron"></span>
-                <span class="chevron"></span>
-            </div>
+        <!-- HERO HUD NAVIGATION DOCK -->
+        <div id="hero-nav-dock" class="hero-nav-dock">
+            <button id="hud-nav-timeline" class="hud-dock-btn timeline-dock-theme" aria-label="Enter Timeline">
+                <span class="hud-dock-icon">⌛</span>
+                <span class="hud-dock-text">TIMELINE</span>
+                <span class="hud-dock-key">[T]</span>
+            </button>
+            <div class="hud-dock-separator"></div>
+            <button id="hud-nav-works" class="hud-dock-btn works-dock-theme" aria-label="View Works Showcase">
+                <span class="hud-dock-icon">❖</span>
+                <span class="hud-dock-text">WORKS</span>
+                <span class="hud-dock-key">[W]</span>
+            </button>
         </div>
+    </div>
+
+    <!-- TIMELINE SCROLL HINT -->
+    <div id="timeline-scroll-hint" class="timeline-hint">
+        <span class="blink-text">SCROLL TO ADVANCE TIME</span>
+    </div>
+
+    <!-- SPATIAL ROUND RADAR -->
+    <div id="radar-round-container" class="radar-round-container">
+        <div class="radar-round-scan"></div>
+        <div id="radar-round-nodes" class="radar-round-nodes"></div>
+        <div class="radar-round-reticle"></div>
+        <div id="radar-round-player" class="radar-round-marker player-marker"></div>
+    </div>
+
+    <!-- TIMELINE VERTICAL DIAL -->
+    <div id="timeline-scale-container" class="timeline-scale-container">
+        <div class="radar-track timeline-track-override"></div>
+        <div id="timeline-nodes" class="radar-nodes timeline-nodes-override"></div>
+        <div id="timeline-player" class="radar-marker player-marker timeline-player-override"></div>
     </div>
 
     <div id="hud">
@@ -175,6 +214,123 @@
     </div>
 
 
+    <!-- WORKS PHASE UI -->
+    <div id="ui-works" class="ui-layer" style="display: none; opacity: 0;">
+        <!-- Carousel Navigation -->
+        <div id="works-carousel">
+            <button id="works-prev" class="carousel-arrow carousel-arrow-left">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span class="carousel-thumb" id="thumb-prev">☁️</span>
+            </button>
+            
+            <div id="works-exhibit-container" style="width:100%; height:100%;"></div>
+            
+            <button id="works-next" class="carousel-arrow carousel-arrow-right">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                <span class="carousel-thumb" id="thumb-next">⍟</span>
+            </button>
+        </div>
+        
+        <!-- GeoFNO 3D Container -->
+        <div id="geofno-container" style="position:absolute; top:0; left:0; width:100%; height:100%; display:none; z-index:1;"></div>
+        
+        <!-- Ising Container -->
+        <div id="ising-container" style="position:absolute; top:0; left:0; width:100%; height:100%; display:none; z-index:1;"></div>
+        
+        <!-- Back button -->
+        <button id="works-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:8px 16px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12px; backdrop-filter:blur(4px);">← Back to Home</button>
+        
+        <!-- View More Projects button (shown at last exhibit) -->
+        <button id="works-to-research" class="action-button" style="display:none; position:absolute; bottom:120px; left:50%; transform:translateX(-50%); z-index:25; background:#111; color:#fff; padding:12px 24px; border:none; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:14px;">View More Projects →</button>
+    </div>
+
+    <!-- Timeline Back to Home button -->
+    <button id="timeline-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(0,255,255,0.3); color:#0ff; padding:8px 16px; cursor:pointer; font-family:'Courier New', monospace; font-size:12px; backdrop-filter:blur(4px); opacity:0; pointer-events:none;">← Back to Home</button>
+
+    <!-- TIMELINE CINEMATIC TRANSITION OVERLAY -->
+    <div id="timeline-transition-overlay" class="timeline-cinematic-overlay">
+        <div class="timeline-transition-backdrop"></div>
+        <div class="timeline-transition-content">
+            <div class="timeline-transition-badge">
+                <span class="pulse-dot"></span>
+                <span>SYSTEM TRANSITION :: DESTINATION TIMELINE</span>
+            </div>
+            
+            <h1 class="timeline-transition-title">ENTERING TIMELINE</h1>
+            
+            <div class="timeline-transition-scan-bar">
+                <div class="scan-line-fill"></div>
+            </div>
+
+            <p class="timeline-transition-subtitle">NAVIGATION &amp; TRAVERSAL GUIDES</p>
+
+            <div class="timeline-guides-grid">
+                <div class="guide-card">
+                    <div class="guide-icon-badge">🖱️ SCROLL</div>
+                    <div class="guide-details">
+                        <span class="guide-title">SCROLL / TRACKPAD</span>
+                        <span class="guide-desc">Traverse forward &amp; backward through spacetime trajectory</span>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-icon-badge">⌨️ KEYS</div>
+                    <div class="guide-details">
+                        <span class="guide-title">ARROW KEYS [ ↑ / ↓ ]</span>
+                        <span class="guide-desc">Snap directly between career &amp; education milestones</span>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-icon-badge">🎯 RADAR</div>
+                    <div class="guide-details">
+                        <span class="guide-title">RADAR &amp; DIAL</span>
+                        <span class="guide-desc">Click radar nodes for instant milestone jump</span>
+                    </div>
+                </div>
+
+                <div class="guide-card">
+                    <div class="guide-icon-badge">🎛️ DIAL</div>
+                    <div class="guide-details">
+                        <span class="guide-title">TIMELINE DIAL</span>
+                        <span class="guide-desc">Drag player marker on vertical dial for smooth scrubbing</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-guides-footer">
+                <div class="reading-progress-track">
+                    <div class="reading-progress-fill"></div>
+                </div>
+                <button id="transition-continue-btn" class="transition-continue-btn">
+                    ENTER TIMELINE <span class="skip-hint">[ CLICK OR PRESS ANY KEY TO CONTINUE ]</span> ►
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESEARCH LOADING OVERLAY -->
+    <div id="research-loading-overlay" style="display: none; position: fixed; inset: 0; background: #050505; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-family: 'JetBrains Mono', monospace; opacity: 0; transition: opacity 0.5s ease;">
+        <div style="font-size: 18px; letter-spacing: 2px; color: #0ff; margin-bottom: 20px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; height: 24px;">
+            <span>INITIALIZING&nbsp;</span>
+            <div style="position: relative; height: 24px;">
+                <!-- Hidden placeholder forces the exact width of the longest word so it centers perfectly -->
+                <span style="visibility: hidden;">INTEGRATOR</span>
+                <span id="loading-word-topology" style="position: absolute; left: 0; top: 0; opacity: 1; transition: all 0.4s ease;">TOPOLOGY</span>
+                <span id="loading-word-waves" style="position: absolute; left: 0; top: 20px; opacity: 0; transition: all 0.4s ease;">INTEGRATOR</span>
+            </div>
+        </div>
+        <div style="width: 200px; height: 2px; background: rgba(0,255,255,0.2); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; height: 100%; width: 30%; background: #0ff; animation: loading-slide 1s infinite linear;"></div>
+        </div>
+        <style>
+            @keyframes loading-slide {
+                0% { left: -30%; }
+                100% { left: 100%; }
+            }
+        </style>
+    </div>
+
     <!-- RESEARCH PHASE UI -->
     <div id="ui-research" class="ui-layer" style="display: none; opacity: 0;">
         <div id="noise-overlay"></div>
@@ -191,18 +347,43 @@
             <div class="stat-col"><span class="stat-label">PARTICLE Ω</span><span id="hud-omega" class="stat-value">0.00
                     rad/s</span></div>
         </div>
+        <!-- Back button -->
+        <button id="research-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:8px 16px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12px; backdrop-filter:blur(4px);">← Back to Home</button>
+        <!-- Readme / Documentation button -->
+        <button id="research-readme-btn" class="readme-toggle-btn" aria-label="Read klein-gordon documentation">📄 klein-gordon</button>
+    </div>
+
+    <!-- README MODAL OVERLAY -->
+    <div id="readme-modal-overlay" class="readme-overlay-hidden">
+        <div class="readme-modal-backdrop"></div>
+        <div class="readme-modal-container">
+            <div class="readme-progress-track">
+                <div id="readme-progress-bar" class="readme-progress-fill"></div>
+            </div>
+            <div class="readme-modal-header">
+                <div class="readme-header-title-group">
+                    <span class="readme-badge">RESEARCH PAPER</span>
+                    <h2 class="readme-title">klein-gordon.md</h2>
+                    <span class="readme-meta-tag">12 MIN READ</span>
+                </div>
+                <button id="readme-close-btn" class="readme-close-btn" aria-label="Close Readme Overlay">✕</button>
+            </div>
+            <div id="readme-modal-body" class="readme-modal-body"></div>
+        </div>
     </div>
 
     <!-- AUDIO SOUND TOGGLE -->
     <button id="audio-toggle" class="audio-toggle-btn" aria-label="Toggle Sound">
         <!-- OFF ICON -->
-        <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <line x1="23" y1="9" x2="17" y2="15"></line>
             <line x1="17" y1="9" x2="23" y2="15"></line>
         </svg>
         <!-- ON ICON -->
-        <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+        <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
         </svg>

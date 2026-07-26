@@ -64,5 +64,370 @@
             "Statistical Mechanics"
         ],
         "link": "https://github.com/ravenwit/Inverse-Ising"
+    },
+    {
+        "id": "2023",
+        "title": "Personal Portfolio",
+        "desc": "Personal portfolio",
+        "tags": [
+            "HTML",
+            "CSS",
+            "node.js",
+            "Gatsby"
+        ],
+        "link": "https://github.com/ravenwit/ravenwit-portfolio"
+    },
+    {
+        "id": "2022",
+        "title": "SUST Protest",
+        "desc": "",
+        "tags": [
+            "Adobe Premiere Pro",
+            "Adobe After Effects",
+            "Windows Powerpoint",
+            "Canva"
+        ],
+        "link": "http://u.pc.cd/ck3italK"
+    },
+    {
+        "id": "2021",
+        "title": "Equation Design Proposal",
+        "desc": "",
+        "tags": [
+            "Adobe Premiere Pro",
+            "Canva"
+        ],
+        "link": "https://youtu.be/wdUlE38fz8I"
+    },
+    {
+        "id": "2020",
+        "title": "Deep Learning Practices",
+        "desc": "Learning deep learning from online specializations through hands-on projects.",
+        "tags": [
+            "Python",
+            "Tensorflow",
+            "Keras",
+            "Pandas"
+        ],
+        "link": "https://github.com/ravenwit/Learning-Neural-Network"
+    },
+    {
+        "id": "2020",
+        "title": "ResNet",
+        "desc": "Residual neural network implementation.",
+        "tags": [
+            "Python"
+        ],
+        "link": "https://github.com/ravenwit/Learning-Neural-Network/blob/master/ResNets.py"
+    },
+    {
+        "id": "2020",
+        "title": "Face Recognition",
+        "desc": "An inception network based [FaceNet](https://arxiv.org/pdf/1503.03832.pdf) implementation to recognize human faces.",
+        "tags": [
+            "Python",
+            "NumPy",
+            "SciPy",
+            "Pandas",
+            "Matplotlib",
+            "TensorFlow",
+            "Keras"
+        ],
+        "link": "https://github.com/ravenwit/Learning-Neural-Network/tree/master/Face%20Recognition"
+    },
+    {
+        "id": "2020",
+        "title": "Protest for Mahir",
+        "desc": "",
+        "tags": [
+            "Adobe Premiere Pro",
+            "Wondershare Filmora"
+        ],
+        "link": "http://u.pc.cd/7ifctalK"
+    },
+    {
+        "id": "2020",
+        "title": "Autonomous driving - Car detection",
+        "desc": "Implementation of the 'You Only Look Once' (YOLO) method via YAD2K package to detect cars on road for autonomous driving.",
+        "tags": [
+            "Python",
+            "NumPy",
+            "SciPy",
+            "Pandas",
+            "Matplotlib",
+            "TensorFlow",
+            "Keras",
+            "YAD2K"
+        ],
+        "link": "https://github.com/ravenwit/Learning-Neural-Network/tree/master/Autonomous%20Driving%20(Car%20Detection)"
+    },
+    {
+        "id": "2020",
+        "title": "Dinosaurus Island",
+        "desc": "Character-level recurrent neural network to generate new dinosaur names.",
+        "tags": [
+            "Python",
+            "NumPy"
+        ],
+        "link": "https://github.com/ravenwit/Learning-Neural-Network/blob/master/Character%20Model%20(RNN)/Dinosaurus%20Island.py"
+    },
+    {
+        "id": "2020",
+        "title": "Trigger Word Detection",
+        "desc": "A speech recognition project to detect trigger words using Pydub to process audio spectrograms.",
+        "tags": [
+            "Python",
+            "Pydub"
+        ],
+        "link": "https://github.com/ravenwit/Learning-Neural-Network/tree/master/Trigger%20Word%20Detection"
+    },
+    {
+        "id": "2020",
+        "title": "Writing like Shakespeare",
+        "desc": "A recurrent neural network model to generate Shakespearian poems using Long Short Term Memory cells.",
+        "tags": [
+            "Python",
+            "NumPy"
+        ],
+        "link": "https://github.com/ravenwit/Learning-Neural-Network/blob/master/Character%20Model%20(RNN)/shakespeare_utils.py"
+    },
+    {
+        "id": "2020",
+        "title": "Networking with GUI",
+        "desc": "Socket networking practices with graphing commands as messages.",
+        "tags": [
+            "Qt",
+            "C++"
+        ],
+        "link": "https://github.com/ravenwit/Programs/tree/master/C%2B%2B/Assignments/2/Coursework3/Coursework3"
+    },
+    {
+        "id": "2020",
+        "title": "Jazz Improvisation",
+        "desc": "LSTM model to generate Jazz music.",
+        "tags": [
+            "Python",
+            "NumPy",
+            "SciPy",
+            "Pandas",
+            "Matplotlib",
+            "TensorFlow",
+            "Keras"
+        ],
+        "link": "https://github.com/ravenwit/Learning-Neural-Network/tree/master/Jazz%20Improvisation%20(LSTM)"
+    },
+    {
+        "id": "2019",
+        "title": "Wigner Monte Carlo",
+        "desc": "Time dependent evaluation of probability density of a quantum system with Wigner Monte Carlo method based on the signed particle formulation of quantum mechanics. Translated from (C++) and modified on Prof. Dr. Jean Michel Sellier's [implementation](http://www.nano-archimedes.com/download.php/) of (ballistic) single-body Wigner Monte Carlo.",
+        "tags": [
+            "PyCharm",
+            "Python",
+            "NumPy",
+            "Matplotlib"
+        ],
+        "link": "https://github.com/ravenwit/Neutrino_Oscillation"
+    },
+    {
+        "id": "2019",
+        "title": "Data Structure Practices",
+        "desc": "A CRUD (Create, Read, Update, and Delete) model designed for a pre-existing linked list data structure with the capability to save on and load from disk.",
+        "tags": [
+            "Visual Studio",
+            "C++"
+        ],
+        "link": "https://github.com/ravenwit/Programs/tree/master/C%2B%2B/Assignments/1/Coursework2"
+    },
+    {
+        "id": "2019",
+        "title": "Electromagnetic Two Body Problem",
+        "desc": "Simulation of electromagnetic two body problem with Lienard-Wiechert relativistic potentials.",
+        "tags": [
+            "PyCharm",
+            "Python",
+            "NumPy",
+            "Matplotlib"
+        ],
+        "link": "https://github.com/ravenwit/Electromagnetic_Two_Body_Problem"
+    },
+    {
+        "id": "2019",
+        "title": "Data Structure with Networking",
+        "desc": "A comprehensive object-oriented CRUD model for a linked list data structure with proper hierarchy into groups/subgroups and searchable properties, as well as an additional option to communicate through a socket tunnel.",
+        "tags": [
+            "Visual Studio",
+            "C++"
+        ],
+        "link": "https://github.com/ravenwit/Programs/tree/master/C%2B%2B/Assignments/2/Coursework2"
+    },
+    {
+        "id": "2018",
+        "title": "Polynomial Equation Solver",
+        "desc": "Simple symbolic expression-based program to find all roots of a polynomial equation with an arbitrary degree.",
+        "tags": [
+            "Python",
+            "NumPy",
+            "SciPy",
+            "SymPy"
+        ],
+        "link": "https://github.com/ravenwit/Numerical/blob/master/Solve_Eq.py"
+    },
+    {
+        "id": "2018",
+        "title": "Inverse Matrix",
+        "desc": "Simple implementation of Faddeev\u2013LeVerrier algorithm to determine the characteristic polynomial of a matrix along with its inverse.",
+        "tags": [
+            "Python"
+        ],
+        "link": "https://github.com/ravenwit/Numerical/blob/master/Eigenvalue.py"
+    },
+    {
+        "id": "2018",
+        "title": "Runge Kutta Implementation",
+        "desc": "Differential equation solver with 4th, 6th and 12th order Runge Kutta methods.",
+        "tags": [
+            "Python",
+            "NumPy"
+        ],
+        "link": "https://github.com/ravenwit/Numerical/blob/master/RungeKutta.py"
+    },
+    {
+        "id": "2018",
+        "title": "Sturm Liouville",
+        "desc": "Numerical solver for general Sturm Liouville type equations that caters to both initial value and boundary value problems equipped with integrated support for Legendre and Bessel equations.",
+        "tags": [
+            "Python",
+            "NumPy",
+            "SymPy",
+            "Matplotlib"
+        ],
+        "link": "https://github.com/ravenwit/Numerical/blob/master/Sturm%20Liouville.py"
+    },
+    {
+        "id": "2018",
+        "title": "SLE Solver",
+        "desc": "Numerical solver for system of linear equations with Gaussian Elimination method.",
+        "tags": [
+            "Python",
+            "NumPy"
+        ],
+        "link": "https://github.com/ravenwit/Numerical/blob/master/Solve_LE.py"
+    },
+    {
+        "id": "2018",
+        "title": "Groundwater Dynamics",
+        "desc": "Simulation of groundwater dynamics with numerical relaxation methodologies.",
+        "tags": [
+            "Python",
+            "NumPy",
+            "Matplotlib"
+        ],
+        "link": "https://github.com/ravenwit/Numerical/blob/master/Ground%20Water%20Dynamics(Relaxation).py"
+    },
+    {
+        "id": "2018",
+        "title": "NLLSA",
+        "desc": "Non-linear least square approximation to estimate any curve into a polynomial.",
+        "tags": [
+            "Python",
+            "NumPy",
+            "Matplotlib",
+            "SciPy"
+        ],
+        "link": "https://github.com/ravenwit/Numerical/blob/master/NLLSA.py"
+    },
+    {
+        "id": "2017",
+        "title": "Latex template (Masters Thesis)",
+        "desc": "A LaTeX template designed for the students of the Department of Physics at Shahjalal University of Science and Technology, Bangladesh.",
+        "tags": [
+            "LaTeX",
+            "Overleaf"
+        ],
+        "link": "https://github.com/ravenwit/ms_thesis_template"
+    },
+    {
+        "id": "2017",
+        "title": "Dance OVC",
+        "desc": "",
+        "tags": [
+            "Adobe Premiere Pro"
+        ],
+        "link": "https://youtu.be/hKflHpr7kSM"
+    },
+    {
+        "id": "2016",
+        "title": "Base Converter",
+        "desc": "Number base converter capable of converting any given number from binary base to base 62.",
+        "tags": [
+            "C++"
+        ],
+        "link": "https://github.com/ravenwit/Programs/blob/master/C%2B%2B/Functions/base_converterv2.cpp"
+    },
+    {
+        "id": "2012",
+        "title": "Neutrino Photo Viewer",
+        "desc": "A simple photo viewer applicaction, born out of sheer boredom with the Windows Photo Viewer in Windows 7, and heavily influenced by the awesomeness of Picasa.",
+        "tags": [
+            "Visual Basic",
+            ".NET",
+            "Microsoft Visual Studio"
+        ],
+        "link": "https://github.com/ravenwit/Neutrino-Photo-Viewer"
+    },
+    {
+        "id": "2012",
+        "title": "Neutrino Email Sender",
+        "desc": "Basic email management application with inbox view.",
+        "tags": [
+            "Visual Basic",
+            ".NET",
+            "Microsoft Visual Studio"
+        ],
+        "link": "https://github.com/ravenwit/Neutrino-Email-Sender"
+    },
+    {
+        "id": "2012",
+        "title": "Neutrino Sequence Calculator",
+        "desc": "A calculator capable of computing the divergence of both finite and infinite sequences.",
+        "tags": [
+            "Visual Basic",
+            ".NET",
+            "Microsoft Visual Studio"
+        ],
+        "link": "https://github.com/ravenwit/Neutrino-Sequence-Calculator"
+    },
+    {
+        "id": "2012",
+        "title": "Neutrino Calculator",
+        "desc": "An advanced scientific calculator, especially made for complex analysis which also includes unit conversion and date calculation features. This project was submitted to Pran Frooto Viqarunnisa Noon 16th Science Festival-2012.",
+        "tags": [
+            "Visual Basic",
+            ".NET",
+            "Microsoft Visual Studio"
+        ],
+        "link": "https://github.com/ravenwit/Neutrino-Calculator"
+    },
+    {
+        "id": "2011",
+        "title": "Neutrino Web Browser",
+        "desc": "A personalized web browser designed for the purpose of software development practices.",
+        "tags": [
+            "Visual Basic",
+            ".NET",
+            "Microsoft Visual Studio"
+        ],
+        "link": "https://github.com/ravenwit/Neutrino-Web-Browser"
+    },
+    {
+        "id": "2011",
+        "title": "Neutrino Screen Capture",
+        "desc": "Bespoke screen capture application with basic features built for software development practices.",
+        "tags": [
+            "Visual Basic",
+            ".NET",
+            "Microsoft Visual Studio"
+        ],
+        "link": "https://github.com/ravenwit/Neutrino-Screen-Capture"
     }
 ]

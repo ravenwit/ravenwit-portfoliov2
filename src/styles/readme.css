@@ -1,0 +1,332 @@
+/* --- Readme Modal Overlay & klein-gordon button styles --- */
+
+.readme-toggle-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background: rgba(12, 12, 16, 0.85);
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    color: #00ffff;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(10px);
+    border-radius: 4px;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.12);
+}
+
+.readme-toggle-btn:hover {
+    background: rgba(0, 255, 255, 0.18);
+    border-color: #00ffff;
+    color: #ffffff;
+    box-shadow: 0 0 22px rgba(0, 255, 255, 0.4);
+    transform: translateY(-1px);
+}
+
+.readme-overlay-hidden {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#readme-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.readme-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(4, 4, 8, 0.88);
+    backdrop-filter: blur(14px);
+    z-index: 1;
+}
+
+.readme-modal-container {
+    position: relative;
+    z-index: 2;
+    width: min(940px, 92vw);
+    height: min(860px, 88vh);
+    background: rgba(10, 10, 14, 0.97);
+    border: 1px solid rgba(0, 255, 255, 0.35);
+    border-radius: 8px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 255, 255, 0.12);
+}
+
+.readme-progress-track {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    width: 100%;
+    position: relative;
+}
+
+.readme-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00ffff, #38bdf8, #818cf8);
+    transition: width 0.1s ease-out;
+}
+
+.readme-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: rgba(16, 16, 22, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.readme-header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.readme-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #00ffff;
+    background: rgba(0, 255, 255, 0.12);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+
+.readme-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.readme-meta-tag {
+    font-size: 11px;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+.readme-close-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #aaaaaa;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.readme-close-btn:hover {
+    background: rgba(255, 50, 50, 0.2);
+    border-color: #ff4444;
+    color: #ffffff;
+}
+
+.readme-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 36px 48px;
+    color: #e2e8f0;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+/* Custom Scrollbar for Readme Content */
+.readme-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+.readme-modal-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.4);
+}
+.readme-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 255, 0.3);
+    border-radius: 4px;
+}
+.readme-modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 255, 0.6);
+}
+
+/* Markdown Typography Styles */
+.readme-modal-body h1 {
+    font-family: 'Space Grotesk', 'JetBrains Mono', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    border-bottom: 2px solid rgba(0, 255, 255, 0.4);
+    padding-bottom: 12px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    letter-spacing: -0.3px;
+}
+
+.readme-modal-body h2 {
+    font-family: 'Space Grotesk', 'JetBrains Mono', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #00ffff;
+    margin-top: 36px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+    letter-spacing: -0.2px;
+}
+
+.readme-modal-body h3 {
+    font-family: 'Space Grotesk', 'JetBrains Mono', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+.readme-modal-body p {
+    margin-bottom: 18px;
+}
+
+.readme-modal-body ul, .readme-modal-body ol {
+    margin-bottom: 20px;
+    padding-left: 28px;
+}
+
+.readme-modal-body li {
+    margin-bottom: 8px;
+}
+
+.readme-modal-body hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    margin: 32px 0;
+}
+
+.readme-modal-body blockquote {
+    border-left: 4px solid #00ffff;
+    background: rgba(0, 255, 255, 0.06);
+    margin: 20px 0;
+    padding: 12px 20px;
+    color: #cbd5e1;
+    border-radius: 0 4px 4px 0;
+}
+
+.readme-modal-body code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #38bdf8;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 13.5px;
+}
+
+.readme-modal-body pre {
+    background: #06060a;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    padding: 18px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 20px 0;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
+}
+
+.readme-modal-body pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: #f8fafc;
+}
+
+.readme-modal-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+}
+
+.readme-modal-body th, .readme-modal-body td {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 12px 16px;
+    text-align: left;
+}
+
+.readme-modal-body th {
+    background: rgba(0, 255, 255, 0.1);
+    color: #00ffff;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.readme-modal-body tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Math & Equation Visibility Rules */
+.math-display {
+    display: block;
+    margin: 22px 0;
+    padding: 14px 18px;
+    background: rgba(6, 8, 14, 0.7);
+    border: 1px solid rgba(0, 255, 255, 0.15);
+    border-radius: 6px;
+    text-align: center;
+    overflow-x: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.math-inline {
+    display: inline;
+    padding: 0 2px;
+}
+
+/* MathJax High-Contrast Styling */
+.readme-modal-body mjx-container,
+.readme-modal-body .MathJax {
+    color: #ffffff !important;
+    font-size: 108% !important;
+    outline: none !important;
+}
+
+.readme-modal-body mjx-container[jax="SVG"] svg {
+    fill: #ffffff !important;
+    stroke: #ffffff !important;
+    max-width: 100%;
+}
+
+.readme-modal-body .math-display mjx-container {
+    margin: 0.3em 0 !important;
+}
+
+@media (max-width: 768px) {
+    .readme-modal-body {
+        padding: 20px 24px;
+        font-size: 14px;
+    }
+    .readme-modal-container {
+        width: 96vw;
+        height: 90vh;
+    }
+}

@@ -1,5 +1,5 @@
 export const torusVertexShader = `
-    uniform float uTime; uniform float uNoiseTime; uniform float uTemperature; uniform float uStretch;
+    uniform float uTime; uniform float uNoiseTime; uniform float uTemperature; uniform float uStretch; uniform float uOpacity;
     attribute float aRandom; attribute vec3 aLatticePos; varying float vAlpha; varying vec3 vColor;
     vec3 getChaoticNoise(float time, float seed) {
         float t = time;
@@ -44,7 +44,7 @@ export const torusVertexShader = `
         float twinkle = sin(uTime * 1.5 + aRandom * 100.0) * 0.5 + 0.5;
         float baseAlpha = mix(0.8, 0.25 + twinkle * 0.3, disorder);
         
-        // ALPHA FADE ON STRETCH (CRITICAL FOR DISSOLVE EFFECT)
-        vAlpha = baseAlpha * (1.0 - smoothstep(0.0, 15.0, uStretch));
+        // ALPHA FADE ON STRETCH AND OPACITY (CRITICAL FOR DISSOLVE EFFECT)
+        vAlpha = baseAlpha * (1.0 - smoothstep(0.0, 15.0, uStretch)) * uOpacity;
     }
 `;
