@@ -1,4 +1,5 @@
 @import "terminal.css";
+@import "readme.css";
 
 body {
     margin: 0;
@@ -2612,4 +2613,88 @@ canvas {
     color: rgba(0, 255, 255, 0.7);
     margin-left: 6px;
     letter-spacing: 1px;
+}
+
+/* --- HERO HUD NAVIGATION DOCK (OPTION B) --- */
+.hero-nav-dock {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(8, 14, 28, 0.75);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(0, 255, 255, 0.22);
+    border-radius: 30px;
+    padding: 5px 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 255, 255, 0.06);
+    z-index: 100;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: auto;
+}
+
+.hud-dock-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 6px 13px;
+    color: #ffffff;
+    font-family: 'Space Grotesk', 'Orbitron', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    outline: none;
+}
+
+.timeline-dock-theme {
+    border-color: rgba(0, 255, 255, 0.28);
+    color: #00ffff;
+}
+
+.timeline-dock-theme:hover {
+    background: rgba(0, 255, 255, 0.14);
+    border-color: #00ffff;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+    transform: translateY(-1.5px);
+}
+
+.works-dock-theme {
+    border-color: rgba(255, 170, 0, 0.28);
+    color: #ffaa00;
+}
+
+.works-dock-theme:hover {
+    background: rgba(255, 170, 0, 0.14);
+    border-color: #ffaa00;
+    box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);
+    transform: translateY(-1.5px);
+}
+
+.hud-dock-separator {
+    width: 1px;
+    height: 18px;
+    background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.35), transparent);
+}
+
+.hud-dock-icon {
+    font-size: 11px;
+}
+
+.hud-dock-key {
+    font-family: 'JetBrains Mono', 'Doto', monospace;
+    font-size: 8px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 3px;
+    padding: 1px 5px;
+    opacity: 0.85;
+    color: #ffffff;
 }

@@ -152,14 +152,19 @@
 
 
 
-        <!-- Scroll Beacon -->
-        <div class="scroll-beacon">
-            <span class="scroll-beacon-text">SCROLL TO ENTER TIMELINE</span>
-            <div class="scroll-chevrons">
-                <span class="chevron"></span>
-                <span class="chevron"></span>
-                <span class="chevron"></span>
-            </div>
+        <!-- HERO HUD NAVIGATION DOCK -->
+        <div id="hero-nav-dock" class="hero-nav-dock">
+            <button id="hud-nav-timeline" class="hud-dock-btn timeline-dock-theme" aria-label="Enter Timeline">
+                <span class="hud-dock-icon">⌛</span>
+                <span class="hud-dock-text">TIMELINE</span>
+                <span class="hud-dock-key">[T]</span>
+            </button>
+            <div class="hud-dock-separator"></div>
+            <button id="hud-nav-works" class="hud-dock-btn works-dock-theme" aria-label="View Works Showcase">
+                <span class="hud-dock-icon">❖</span>
+                <span class="hud-dock-text">WORKS</span>
+                <span class="hud-dock-key">[W]</span>
+            </button>
         </div>
     </div>
 
@@ -310,9 +315,9 @@
             <span>INITIALIZING&nbsp;</span>
             <div style="position: relative; height: 24px;">
                 <!-- Hidden placeholder forces the exact width of the longest word so it centers perfectly -->
-                <span style="visibility: hidden;">TOPOLOGY</span>
+                <span style="visibility: hidden;">INTEGRATOR</span>
                 <span id="loading-word-topology" style="position: absolute; left: 0; top: 0; opacity: 1; transition: all 0.4s ease;">TOPOLOGY</span>
-                <span id="loading-word-waves" style="position: absolute; left: 0; top: 20px; opacity: 0; transition: all 0.4s ease;">WAVES</span>
+                <span id="loading-word-waves" style="position: absolute; left: 0; top: 20px; opacity: 0; transition: all 0.4s ease;">INTEGRATOR</span>
             </div>
         </div>
         <div style="width: 200px; height: 2px; background: rgba(0,255,255,0.2); position: relative; overflow: hidden;">
@@ -344,6 +349,27 @@
         </div>
         <!-- Back button -->
         <button id="research-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:8px 16px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12px; backdrop-filter:blur(4px);">← Back to Home</button>
+        <!-- Readme / Documentation button -->
+        <button id="research-readme-btn" class="readme-toggle-btn" aria-label="Read klein-gordon documentation">📄 klein-gordon</button>
+    </div>
+
+    <!-- README MODAL OVERLAY -->
+    <div id="readme-modal-overlay" class="readme-overlay-hidden">
+        <div class="readme-modal-backdrop"></div>
+        <div class="readme-modal-container">
+            <div class="readme-progress-track">
+                <div id="readme-progress-bar" class="readme-progress-fill"></div>
+            </div>
+            <div class="readme-modal-header">
+                <div class="readme-header-title-group">
+                    <span class="readme-badge">RESEARCH PAPER</span>
+                    <h2 class="readme-title">klein-gordon.md</h2>
+                    <span class="readme-meta-tag">12 MIN READ</span>
+                </div>
+                <button id="readme-close-btn" class="readme-close-btn" aria-label="Close Readme Overlay">✕</button>
+            </div>
+            <div id="readme-modal-body" class="readme-modal-body"></div>
+        </div>
     </div>
 
     <!-- AUDIO SOUND TOGGLE -->

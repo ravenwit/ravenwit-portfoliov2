@@ -18,6 +18,7 @@ import { initResearchCards } from './components/researchCards.js';
 import { terminal } from './components/terminal.js';
 import { createVortex } from './components/vortexSingularity.js';
 import { initWorksCarousel } from './components/worksSection.js';
+import { initReadmeOverlay } from './components/readmeOverlay.js';
 
 async function init() {
     const statusDisp = document.getElementById('status-display');
@@ -175,43 +176,58 @@ async function init() {
         };
     };
 
-    // --- 10. CREATE VORTEX SINGULARITIES (Navigation) ---
-    const timelineVortex = createVortex({
-        color: '#00ffff',
-        position: new THREE.Vector3(-12, -5, 40),
-        targetPhase: 'TIMELINE',
-        scene
-    });
+    // --- 10. HERO HUD NAVIGATION DOCK (Option B) ---
+    const hudTimelineBtn = document.getElementById('hud-nav-timeline');
+    const hudWorksBtn = document.getElementById('hud-nav-works');
+    const heroNavDock = document.getElementById('hero-nav-dock');
 
-    const worksVortex = createVortex({
-        color: '#ff8800',
-        position: new THREE.Vector3(12, -5, 40),
-        targetPhase: 'WORKS',
-        scene
-    });
+    if (hudTimelineBtn) {
+        hudTimelineBtn.addEventListener('click', () => {
+            if (STATE.phase === 'HERO' && !STATE.transitioning) {
+                initiateHeroToTimeline();
+            }
+        });
+    }
 
-    // Set camera reference for screen-space hit detection
-    timelineVortex.setCamera(camera);
-    worksVortex.setCamera(camera);
+    if (hudWorksBtn) {
+        hudWorksBtn.addEventListener('click', () => {
+            if (STATE.phase === 'HERO' && !STATE.transitioning) {
+                initiateHeroToWorks();
+            }
+        });
+    }
 
-    timelineVortex.onClick = () => initiateHeroToTimeline();
-    worksVortex.onClick = () => initiateHeroToWorks();
-
-    // Vortex click handler on global click
-    window.addEventListener('click', (event) => {
-        const mouse = new THREE.Vector2(
-            (event.clientX / window.innerWidth) * 2 - 1,
-            -(event.clientY / window.innerHeight) * 2 + 1
-        );
-        
+    // Keyboard Shortcuts: Pressing 'T' for Timeline, 'W' for Works
+    window.addEventListener('keydown', (event) => {
         if (STATE.phase === 'HERO' && !STATE.transitioning) {
-            timelineVortex.handleClick(mouse);
-            worksVortex.handleClick(mouse);
+            if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+            const key = event.key.toLowerCase();
+            if (key === 't') {
+                initiateHeroToTimeline();
+            } else if (key === 'w') {
+                initiateHeroToWorks();
+            }
         }
     });
 
-    // --- 11. INIT WORKS CAROUSEL ---
+    // Phase visibility sync for HUD dock
+    function updateHeroDockVisibility() {
+        if (heroNavDock) {
+            if (STATE.phase === 'HERO' && !STATE.transitioning) {
+                heroNavDock.style.opacity = '1';
+                heroNavDock.style.pointerEvents = 'auto';
+            } else {
+                heroNavDock.style.opacity = '0';
+                heroNavDock.style.pointerEvents = 'none';
+            }
+        }
+    }
+    setInterval(updateHeroDockVisibility, 150);
+
+    // --- 11. INIT WORKS CAROUSEL & README OVERLAY ---
     initWorksCarousel();
+    initReadmeOverlay();
 
     // --- 12. WIRE BACK BUTTONS ---
     const timelineBackBtn = document.getElementById('timeline-back');

@@ -115,8 +115,8 @@ export function initScroll() {
     }
 
     window.addEventListener('wheel', (e) => {
-        // If scrolling inside an expanded card or card-logs container, allow natural DOM scroll
-        if (e.target.closest('.card-logs') || e.target.closest('.hud-card.expanded')) {
+        // If scrolling inside an expanded card, card-logs container, or readme modal, allow natural DOM scroll
+        if (e.target.closest('.card-logs') || e.target.closest('.hud-card.expanded') || e.target.closest('#readme-modal-overlay')) {
             return;
         }
 
@@ -139,7 +139,7 @@ export function initScroll() {
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
-        if (e.target.closest('.card-logs') || e.target.closest('.hud-card.expanded')) {
+        if (e.target.closest('.card-logs') || e.target.closest('.hud-card.expanded') || e.target.closest('#readme-modal-overlay')) {
             return;
         }
         e.preventDefault();

@@ -463,7 +463,7 @@ export function initiateWorksToResearch() {
             topoWord.style.opacity = '0';
             wavesWord.style.top = '0px';
             wavesWord.style.opacity = '1';
-        }, 1500); // 500ms fade-in + 1000ms reading time for TOPOLOGY
+        }, 2500); // 2500ms reading time for TOPOLOGY
     }
 
     // 2. WAIT FOR BROWSER TO PAINT LOADER BEFORE FREEZING WITH SHADER COMPILE
@@ -532,7 +532,7 @@ export function initiateWorksToResearch() {
         if (worksUI) {
             tl.call(() => { worksUI.style.display = 'none'; }, null, 0.5);
         }
-    }, 2400); // 1500ms wait + 400ms animation + 500ms to read WAVES before freezing
+    }, 4800); // 2500ms TOPOLOGY + 2300ms INTEGRATOR display time
 }
 
 // === RESEARCH → HERO ===
