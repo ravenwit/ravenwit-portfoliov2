@@ -183,18 +183,47 @@ export function initMeghExhibit() {
     right: 5%;
     top: 0%;
     transform: translateY(-50%);
-    width: 220px;
-    height: 280px;
-    border-radius: 32px;
-    background: linear-gradient(135deg, rgba(74, 158, 255, 0.08), rgba(139, 92, 246, 0.08));
-    border: 1px solid rgba(74, 158, 255, 0.2);
+    width: 230px;
+    height: 330px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(74, 158, 255, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     animation: megh-vault-glow 4s ease-in-out infinite, megh-fadeInUp 1s ease-out 1.5s both;
-    box-shadow: 0 0 80px rgba(74, 158, 255, 0.1), inset 0 0 60px rgba(74, 158, 255, 0.03);
+    box-shadow: 0 0 80px rgba(74, 158, 255, 0.12), inset 0 0 60px rgba(74, 158, 255, 0.04);
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+#megh-exhibit .vault-cta-btn {
+    margin-top: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: linear-gradient(135deg, #4a9eff, #8b5cf6);
+    color: #ffffff;
+    text-decoration: none;
+    font-family: 'Space Grotesk', 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(74, 158, 255, 0.4);
+    transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#megh-exhibit .vault-cta-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 22px rgba(139, 92, 246, 0.6);
+    border-color: #ffffff;
 }
 
 @keyframes megh-vault-glow {
@@ -368,12 +397,11 @@ export function initMeghExhibit() {
             <div class="vault-bar">
                 <div class="vault-bar-fill"></div>
             </div>
+            <a href="https://megh-vault.vercel.app" target="_blank" class="vault-cta-btn" aria-label="Launch Megh Cloud Vault">
+                <span>Visit Megh →</span>
+            </a>
         </div>
     </div>
-    
-    <a href="https://megh-vault.vercel.app" target="_blank" style="margin-top:14px; display:inline-flex; align-items:center; gap:8px; padding:10px 22px; background:linear-gradient(135deg, #4a9eff, #8b5cf6); color:#fff; text-decoration:none; font-family:'JetBrains Mono', monospace; font-weight:bold; font-size:0.85rem; border:none; border-radius:8px; cursor:pointer; box-shadow:0 4px 15px rgba(74, 158, 255, 0.4); z-index:10; position:relative; margin-bottom: 24px;">
-        Visit Megh →
-    </a>
 </div>
     `;
 }
