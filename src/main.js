@@ -10,7 +10,7 @@ import { createNodes, toggleCard, startTypingInterval } from './components/nodes
 import { startAnimationLoop } from './core/animate.js';
 import { initScroll, computeSnapTargets, jumpToMilestone } from './core/scroll.js';
 
-import { setTransitionDeps, initiateHeroToTimeline, initiateHeroToWorks, initiateTimelineToHero, initiateWorksToHero, initiateResearchToHero } from './core/transitions.js';
+import { setTransitionDeps, initiateHeroToTimeline, initiateHeroToWorks, initiateTimelineToHero, initiateWorksToHero, initiateResearchToHero, navigateToSector, syncDockUI } from './core/transitions.js';
 import { CAREER_NODES } from './config.js';
 import { initHobbies } from './components/hobbies.js';
 import { initResearchTopology } from './components/researchTopology.js';
@@ -165,6 +165,7 @@ async function init() {
 
     initHobbies();
     initResearchCards();
+    import('./components/playgroundSection.js').then(m => m.initPlayground());
 
     // Attach Telemetry for terminal `htop` command
     terminal.telemetryCallback = () => {
@@ -176,54 +177,51 @@ async function init() {
         };
     };
 
-    // --- 10. HERO HUD NAVIGATION DOCK (Option B) ---
-    const hudTimelineBtn = document.getElementById('hud-nav-timeline');
-    const hudWorksBtn = document.getElementById('hud-nav-works');
-    const heroNavDock = document.getElementById('hero-nav-dock');
+    // --- 10. PERSISTENT GLOBAL COMMAND DOCK (Awwwards 3D Architecture) ---
+    const navHeroBtn = document.getElementById('nav-btn-hero');
+    const navTimelineBtn = document.getElementById('nav-btn-timeline');
+    const navWorksBtn = document.getElementById('nav-btn-works');
+    const navArchiveBtn = document.getElementById('nav-btn-archive');
+    const navPlaygroundBtn = document.getElementById('nav-btn-playground');
+    const navTerminalBtn = document.getElementById('nav-btn-terminal');
 
-    if (hudTimelineBtn) {
-        hudTimelineBtn.addEventListener('click', () => {
-            if (STATE.phase === 'HERO' && !STATE.transitioning) {
-                initiateHeroToTimeline();
-            }
-        });
-    }
+    if (navHeroBtn) navHeroBtn.addEventListener('click', () => navigateToSector('HERO'));
+    if (navTimelineBtn) navTimelineBtn.addEventListener('click', () => navigateToSector('TIMELINE'));
+    if (navWorksBtn) navWorksBtn.addEventListener('click', () => navigateToSector('WORKS'));
+    if (navArchiveBtn) navArchiveBtn.addEventListener('click', () => navigateToSector('RESEARCH'));
+    if (navPlaygroundBtn) navPlaygroundBtn.addEventListener('click', () => navigateToSector('PLAYGROUND'));
+    if (navTerminalBtn) navTerminalBtn.addEventListener('click', () => {
+        if (terminal && terminal.toggle) terminal.toggle();
+    });
 
-    if (hudWorksBtn) {
-        hudWorksBtn.addEventListener('click', () => {
-            if (STATE.phase === 'HERO' && !STATE.transitioning) {
-                initiateHeroToWorks();
-            }
-        });
-    }
-
-    // Keyboard Shortcuts: Pressing 'T' for Timeline, 'W' for Works
+    // Global Keyboard Hotkeys: H, T, W, A, P, ~ (CLI)
     window.addEventListener('keydown', (event) => {
-        if (STATE.phase === 'HERO' && !STATE.transitioning) {
-            if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+        if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+        if (STATE.transitioning) return;
 
-            const key = event.key.toLowerCase();
-            if (key === 't') {
-                initiateHeroToTimeline();
-            } else if (key === 'w') {
-                initiateHeroToWorks();
-            }
+        const key = event.key.toLowerCase();
+        if (key === 'h') {
+            navigateToSector('HERO');
+        } else if (key === 't') {
+            navigateToSector('TIMELINE');
+        } else if (key === 'w') {
+            navigateToSector('WORKS');
+        } else if (key === 'a') {
+            navigateToSector('RESEARCH');
+        } else if (key === 'p') {
+            navigateToSector('PLAYGROUND');
+        } else if (event.key === '`' || event.key === '~') {
+            event.preventDefault();
+            if (terminal && terminal.toggle) terminal.toggle();
         }
     });
 
-    // Phase visibility sync for HUD dock
-    function updateHeroDockVisibility() {
-        if (heroNavDock) {
-            if (STATE.phase === 'HERO' && !STATE.transitioning) {
-                heroNavDock.style.opacity = '1';
-                heroNavDock.style.pointerEvents = 'auto';
-            } else {
-                heroNavDock.style.opacity = '0';
-                heroNavDock.style.pointerEvents = 'none';
-            }
+    // Sync dock UI periodically or on state updates
+    setInterval(() => {
+        if (STATE.phase !== 'LOADING' && STATE.phase !== 'TRANSITION') {
+            syncDockUI(STATE.phase);
         }
-    }
-    setInterval(updateHeroDockVisibility, 150);
+    }, 200);
 
     // --- 11. INIT WORKS CAROUSEL & README OVERLAY ---
     initWorksCarousel();

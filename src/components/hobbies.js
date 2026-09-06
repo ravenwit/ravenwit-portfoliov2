@@ -171,8 +171,26 @@ export function initHobbies() {
         });
 
     const triptychContainer = document.getElementById('triptych-container');
+    const collapseBtn = document.getElementById('triptych-collapse-btn');
+    const pillBtn = document.getElementById('triptych-pill');
+
+    if (collapseBtn && triptychContainer) {
+        collapseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            triptychContainer.classList.add('collapsed');
+        });
+    }
+
+    if (pillBtn && triptychContainer) {
+        pillBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            triptychContainer.classList.remove('collapsed');
+        });
+    }
+
     if (triptychContainer) {
         triptychContainer.addEventListener('mousemove', (e) => {
+            if (triptychContainer.classList.contains('collapsed')) return;
             const rect = triptychContainer.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
             const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
@@ -184,6 +202,7 @@ export function initHobbies() {
         });
 
         triptychContainer.addEventListener('mouseleave', () => {
+            if (triptychContainer.classList.contains('collapsed')) return;
             triptychContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
             triptychContainer.style.transform = `rotateX(0deg) rotateY(0deg)`;
         });
@@ -194,6 +213,7 @@ export function updateHobbies(year) {
     const matrixAreasEl = document.getElementById('matrix-areas');
     const matrixToolsEl = document.getElementById('matrix-tools');
     const matrixCatEl = document.getElementById('matrix-categories');
+    const pillStats = document.getElementById('pill-stats-count');
 
     if (!matrixAreasEl || !allAreas.length) return;
 
@@ -249,6 +269,13 @@ export function updateHobbies(year) {
             }
         }
     });
+
+    if (pillStats) {
+        const aCount = Object.keys(activeAreas).length;
+        const cCount = Object.keys(activeCategories).length;
+        const tCount = Object.keys(activeTools).length;
+        pillStats.innerText = `${aCount} AREAS · ${cCount} TECH · ${tCount} TOOLS`;
+    }
 }
 
 function spawnItem(itemDef, cellIndex, gridState, trackingDict, matrixEl, dim) {

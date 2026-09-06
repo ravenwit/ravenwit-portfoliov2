@@ -1,3 +1,21 @@
+// --- Pillar 03: Quantum Archive (Dual-Hemisphere Catalog) ---
+import { researchMouse } from './researchBackground.js';
+
+let allResearchData = [];
+let activeCategory = 'ALL';
+let searchQuery = '';
+
+function classifyCategory(item) {
+    const text = `${item.title} ${(item.tags || []).join(' ')} ${item.desc || ''}`.toLowerCase();
+    if (text.includes('machine learning') || text.includes('inference') || text.includes('ising') || text.includes('neural') || text.includes('deep learning')) {
+        return 'ML';
+    }
+    if (text.includes('quantum') || text.includes('relativistic') || text.includes('orbit') || text.includes('particle') || text.includes('pmns') || text.includes('electromagnetic') || text.includes('waste') || text.includes('conformal') || text.includes('field')) {
+        return 'THEORY';
+    }
+    return 'COMPUTATION';
+}
+
 export async function initResearchCards() {
     const container = document.getElementById('research-cards-container');
     if (!container) return;
@@ -5,96 +23,159 @@ export async function initResearchCards() {
     try {
         const res = await fetch('/data/research.json');
         if (!res.ok) throw new Error("Failed to fetch research cards data");
-        const researchData = await res.json();
+        allResearchData = await res.json();
 
-        researchData.forEach((data, i) => {
-            const numStr = (i + 1).toString().padStart(2, '0');
-
-            let headerHTML = `<div class="res-card-header">${data.id}</div>`;
-            if (data.link) {
-                headerHTML += `
-                    <a href="${data.link}" target="_blank" class="res-card-link" aria-label="View Project">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
-                        </svg>
-                    </a>
-                `;
-            }
-
-            let collabHTML = '';
-            if (data.collaborators && data.collaborators.length > 0) {
-                collabHTML = `<div class="res-card-collab">with ${data.collaborators.join(', ')}</div>`;
-            }
-
-            container.innerHTML += `
-                <div class="research-card" id="res-card-${i}">
-                    <div class="editorial-number">${numStr}</div>
-                    <div class="res-card-content">
-                        ${headerHTML}
-                        <div class="res-card-title">${data.title}</div>
-                        ${collabHTML}
-                        <div class="res-card-body">${data.desc}</div>
-                        <div class="res-card-tags">${data.tags.map(t => `<span class="res-tag">${t}</span>`).join('')}</div>
-                    </div>
-                </div>
-            `;
+        // Assign computed category
+        allResearchData.forEach(item => {
+            item.category = classifyCategory(item);
         });
 
-        // Trigger MathJax typeset on the newly appended dynamic research text
-        if (window.MathJax) {
-            MathJax.typesetPromise([container]).catch((err) => console.log('MathJax typeset failed: ' + err.message));
+        const countBadge = document.getElementById('archive-total-count');
+        if (countBadge) {
+            countBadge.textContent = `${allResearchData.length} ENTRIES`;
         }
+
+        renderArchiveCatalog();
+        setupArchiveListeners();
 
     } catch (e) {
         console.error("Failed to load research.json:", e);
     }
 }
 
-export function updateResearchCards(currentScroll) {
-    const cards = document.querySelectorAll('.research-card');
-    cards.forEach((card, i) => {
-        // Space them further apart in the scroll range
-        const triggerPoint = 1.5 + i * 2.5;
-        // Divide the scroll difference to physically slow down the card's movement
-        const diff = (currentScroll - triggerPoint) * 0.4;
+function renderArchiveCatalog() {
+    const container = document.getElementById('research-cards-container');
+    if (!container) return;
 
-        const isEven = i % 2 === 0;
-        card.style.width = isEven ? '80%' : '65%';
-        card.style.left = isEven ? '0' : 'auto';
-        card.style.right = isEven ? 'auto' : '0';
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = allResearchData.filter(item => {
+        const matchesCategory = (activeCategory === 'ALL' || item.category === activeCategory);
+        if (!matchesCategory) return false;
+        if (!query) return true;
 
-        const baseTilt = isEven ? -2 : 3;
-
-        if (diff < 0) {
-            // IN THE MESSY DECK
-            const stackDepth = Math.abs(diff);
-            const clampedDepth = Math.min(stackDepth, 3);
-
-            const yOffset = 250 + (clampedDepth * 40);
-            const zOffset = -100 * clampedDepth;
-
-            const xOffset = isEven ? -(clampedDepth * 20) : (clampedDepth * 20);
-            const rotateZ = baseTilt + (isEven ? -clampedDepth * 2 : clampedDepth * 2);
-
-            card.style.transform = `translate3d(${xOffset}px, calc(-50% + ${yOffset}px), ${zOffset}px) rotateZ(${rotateZ}deg)`;
-            card.style.opacity = 1.0 - (clampedDepth * 0.05);
-            card.style.zIndex = 10 - Math.floor(stackDepth);
-            card.style.pointerEvents = 'auto';
-
-        } else if (diff < 1.0) {
-            // ACTIVE TO PAST (Floating up with parallax)
-            const yOffset = -300 * diff;
-            const xOffset = isEven ? -10 * diff : 15 * diff;
-            const opacity = 1.0 - diff;
-
-            card.style.transform = `translate3d(${xOffset}px, calc(-50% + ${yOffset}px), 0px) rotateZ(${baseTilt}deg)`;
-            card.style.opacity = opacity;
-            card.style.zIndex = 10;
-            card.style.pointerEvents = 'auto';
-        } else {
-            // ARCHIVED
-            card.style.opacity = 0;
-            card.style.pointerEvents = 'none';
-        }
+        const hay = `${item.title} ${item.id} ${(item.tags || []).join(' ')} ${(item.collaborators || []).join(' ')} ${item.desc || ''}`.toLowerCase();
+        return hay.includes(query);
     });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="archive-empty-state">
+                <span class="empty-icon">∅</span>
+                <span class="empty-text">NO MATCHING QUANTUM ARCHIVE RECORDS FOUND</span>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filtered.map((data, i) => {
+        const numStr = (i + 1).toString().padStart(2, '0');
+        const hasDoi = data.link && data.link.includes('doi.org');
+        const linkLabel = hasDoi ? 'DOI ↗' : 'CODE ↗';
+
+        return `
+            <div class="archive-row" id="archive-row-${i}" data-category="${data.category}">
+                <div class="archive-row-header">
+                    <div class="archive-row-left">
+                        <span class="archive-row-idx">${numStr}</span>
+                        <span class="archive-row-year">${data.id}</span>
+                        <h3 class="archive-row-title">${data.title}</h3>
+                    </div>
+                    <div class="archive-row-actions">
+                        ${data.link ? `<a href="${data.link}" target="_blank" rel="noopener noreferrer" class="archive-action-link" aria-label="Open external resource">${linkLabel}</a>` : ''}
+                        <button class="archive-abstract-btn" aria-expanded="false" data-idx="${i}">
+                            <span class="abstract-btn-icon">+</span>
+                            <span>ABSTRACT</span>
+                        </button>
+                    </div>
+                </div>
+
+                ${data.collaborators && data.collaborators.length > 0 ? `
+                    <div class="archive-row-collab">
+                        <span class="collab-label">COLLABORATION //</span>
+                        <span>${data.collaborators.join(', ')}</span>
+                    </div>
+                ` : ''}
+
+                <div class="archive-row-tags">
+                    <span class="archive-cat-badge ${data.category.toLowerCase()}">${data.category}</span>
+                    ${(data.tags || []).map(t => `<span class="archive-tag">${t}</span>`).join('')}
+                </div>
+
+                <div class="archive-abstract-drawer" id="archive-drawer-${i}" style="display: none;">
+                    <div class="archive-abstract-content">${data.desc}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Wire abstract expansion buttons
+    container.querySelectorAll('.archive-abstract-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = btn.dataset.idx;
+            const drawer = document.getElementById(`archive-drawer-${idx}`);
+            const icon = btn.querySelector('.abstract-btn-icon');
+            if (!drawer) return;
+
+            const isExpanded = drawer.style.display !== 'none';
+            if (isExpanded) {
+                drawer.style.display = 'none';
+                btn.classList.remove('active');
+                if (icon) icon.textContent = '+';
+                btn.setAttribute('aria-expanded', 'false');
+            } else {
+                drawer.style.display = 'block';
+                btn.classList.add('active');
+                if (icon) icon.textContent = '−';
+                btn.setAttribute('aria-expanded', 'true');
+
+                // Typeset math inside the opened drawer
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([drawer]).catch(() => {});
+                }
+            }
+        });
+    });
+
+    // Wire sensory wave disturbance on hover
+    container.querySelectorAll('.archive-row').forEach(row => {
+        row.addEventListener('mouseenter', () => {
+            researchMouse.x = window.innerWidth * 0.35;
+            researchMouse.y = window.innerHeight * 0.45;
+            researchMouse.vx = 5.0;
+            researchMouse.vy = 5.0;
+        });
+    });
+}
+
+function setupArchiveListeners() {
+    // Category Filter Pills
+    const pills = document.querySelectorAll('.archive-pill');
+    pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            pills.forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            activeCategory = pill.dataset.cat || 'ALL';
+            renderArchiveCatalog();
+        });
+    });
+
+    // Search Input with Debounce
+    const searchInput = document.getElementById('archive-search-input');
+    let searchDebounce = null;
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(() => {
+                searchQuery = e.target.value;
+                renderArchiveCatalog();
+            }, 120);
+        });
+    }
+}
+
+// Preserve export compatibility with existing transitions and animate.js
+export function updateResearchCards(currentScroll) {
+    // Left-hemisphere particle phase and wave velocity are driven in animate.js.
+    // Right hemisphere uses smooth native container scroll.
 }

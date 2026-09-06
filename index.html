@@ -113,8 +113,23 @@
         <!-- Timeline Milestone Progress Track Removed - Replaced by Interactive Radar Nodes -->
         <div id="hobbies-viewport">
             <div id="triptych-container">
+                <!-- Collapsed HUD Pill -->
+                <button id="triptych-pill" class="triptych-hud-pill" aria-label="Expand Arsenal Matrix">
+                    <span class="pill-dot"></span>
+                    <span class="pill-label">ARSENAL</span>
+                    <span class="pill-separator">::</span>
+                    <span id="pill-stats-count" class="pill-stats">AREAS · TECH · TOOLS</span>
+                    <span class="pill-action">[+] EXPAND</span>
+                </button>
+
                 <div id="triptych">
-                    <div class="triptych-master-title">INTERESTS / TOYS</div>
+                    <div class="triptych-header-bar">
+                        <div class="triptych-master-title">INTERESTS / TOYS</div>
+                        <button id="triptych-collapse-btn" class="triptych-collapse-btn" aria-label="Collapse Arsenal Matrix">
+                            <span class="collapse-icon">−</span>
+                            <span class="collapse-text">COLLAPSE</span>
+                        </button>
+                    </div>
                     <div class="matrix-wrapper" id="wrapper-areas">
                         <div class="bracket left"></div>
                         <div class="bracket right"></div>
@@ -139,34 +154,66 @@
 
     <div id="ui-hero" class="ui-layer">
         <div id="liquid-name-container"
-            style="position: absolute; width: clamp(300px, 40vw, 600px); height: clamp(72px, 9.6vw, 144px); top: 22vh; left: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: auto; cursor: crosshair;">
+            style="position: absolute; width: clamp(300px, 40vw, 600px); height: clamp(72px, 9.6vw, 144px); top: 20vh; left: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: auto; cursor: crosshair;">
             <canvas id="liquidNameCanvas" width="500" height="120"
                 style="width:100%; height:100%; pointer-events: auto;" aria-label="Interactive liquid name animation"
                 role="img"></canvas>
+            <div class="hero-dadaist-badge">
+                <span class="badge-crosshair">+</span>
+                <span class="badge-role">PHYSICS · ML · COMPUTATION</span>
+                <span class="badge-sep">::</span>
+                <span class="badge-coord">[KERR METRIC &Omega;]</span>
+                <span class="badge-crosshair">+</span>
+            </div>
         </div>
         <div id="fourier-container"
             style="position: absolute; width: clamp(300px, 45vh, 700px); height: clamp(300px, 45vh, 700px); top: 50vh; left: 50%; transform: translate(-50%, -50%); z-index: 5;">
             <canvas id="fourierCanvas" width="600" height="600" style="width:100%; height:100%; border-radius: 50%;"
                 aria-label="Fourier series orbital animation" role="img"></canvas>
         </div>
+    </div>
 
-
-
-        <!-- HERO HUD NAVIGATION DOCK -->
-        <div id="hero-nav-dock" class="hero-nav-dock">
-            <button id="hud-nav-timeline" class="hud-dock-btn timeline-dock-theme" aria-label="Enter Timeline">
-                <span class="hud-dock-icon">⌛</span>
-                <span class="hud-dock-text">TIMELINE</span>
-                <span class="hud-dock-key">[T]</span>
+    <!-- GLOBAL PERSISTENT BOTTOM COMMAND DOCK -->
+    <nav id="global-nav-dock" class="global-nav-dock" aria-label="Spacetime Navigation Dock">
+        <div class="dock-telemetry-strip">
+            <span class="dock-telemetry-tag">RAVENWIT-OS v3.0</span>
+            <span class="dock-telemetry-sep">//</span>
+            <span class="dock-telemetry-sector">SECTOR: <strong id="dock-active-sector-id">00 ORIGIN</strong></span>
+        </div>
+        <div class="dock-buttons-container">
+            <button id="nav-btn-hero" class="dock-btn hero-dock-theme active" data-sector="HERO" aria-label="Go to Origin Hub">
+                <span class="dock-pip"></span>
+                <span class="dock-text">ORIGIN</span>
+                <span class="dock-key">[H]</span>
             </button>
-            <div class="hud-dock-separator"></div>
-            <button id="hud-nav-works" class="hud-dock-btn works-dock-theme" aria-label="View Works Showcase">
-                <span class="hud-dock-icon">❖</span>
-                <span class="hud-dock-text">WORKS</span>
-                <span class="hud-dock-key">[W]</span>
+            <button id="nav-btn-timeline" class="dock-btn timeline-dock-theme" data-sector="TIMELINE" aria-label="Enter Spacetime Timeline">
+                <span class="dock-pip"></span>
+                <span class="dock-text">TIMELINE</span>
+                <span class="dock-key">[T]</span>
+            </button>
+            <button id="nav-btn-works" class="dock-btn works-dock-theme" data-sector="WORKS" aria-label="View Flagship Highlights">
+                <span class="dock-pip"></span>
+                <span class="dock-text">HIGHLIGHTS</span>
+                <span class="dock-key">[W]</span>
+            </button>
+            <button id="nav-btn-archive" class="dock-btn archive-dock-theme" data-sector="RESEARCH" aria-label="Open Quantum Archive">
+                <span class="dock-pip"></span>
+                <span class="dock-text">ARCHIVE</span>
+                <span class="dock-key">[A]</span>
+            </button>
+            <button id="nav-btn-playground" class="dock-btn playground-dock-theme" data-sector="PLAYGROUND" aria-label="Open Simulation Playground">
+                <span class="dock-pip"></span>
+                <span class="dock-text">PLAYGROUND</span>
+                <span class="dock-key">[P]</span>
+            </button>
+            <div class="dock-separator"></div>
+            <button id="nav-btn-terminal" class="dock-btn terminal-dock-theme" aria-label="Toggle Terminal CLI">
+                <span class="dock-icon">$_</span>
+                <span class="dock-text">CLI</span>
+                <span class="dock-key">[~]</span>
             </button>
         </div>
-    </div>
+    </nav>
 
     <!-- TIMELINE SCROLL HINT -->
     <div id="timeline-scroll-hint" class="timeline-hint">
@@ -216,18 +263,50 @@
 
     <!-- WORKS PHASE UI -->
     <div id="ui-works" class="ui-layer" style="display: none; opacity: 0;">
-        <!-- Carousel Navigation -->
+        <!-- Works Carousel Stage -->
         <div id="works-carousel">
-            <button id="works-prev" class="carousel-arrow carousel-arrow-left">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                <span class="carousel-thumb" id="thumb-prev">☁️</span>
+            <div id="works-exhibit-container" style="width:100%; height:100%;"></div>
+        </div>
+
+        <!-- Vertical Telemetry Ladder Navigation (Right Rail) -->
+        <div id="works-ladder-nav" class="works-ladder-nav" aria-label="Simulation Stage Navigation">
+            <div class="ladder-header">
+                <span class="ladder-crosshair">+</span>
+                <span class="ladder-label">STAGE</span>
+            </div>
+            
+            <button id="works-ladder-prev" class="ladder-arrow-btn" aria-label="Previous Exhibit">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
             </button>
             
-            <div id="works-exhibit-container" style="width:100%; height:100%;"></div>
-            
-            <button id="works-next" class="carousel-arrow carousel-arrow-right">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                <span class="carousel-thumb" id="thumb-next">⍟</span>
+            <div class="ladder-track">
+                <div class="ladder-node active" data-index="0" id="ladder-node-0" title="Exhibit 01: Megh Acoustic Synthesis">
+                    <span class="ladder-pip"></span>
+                    <div class="ladder-info">
+                        <span class="ladder-num">01</span>
+                        <span class="ladder-title">MEGH</span>
+                    </div>
+                </div>
+                <div class="ladder-connector"></div>
+                <div class="ladder-node" data-index="1" id="ladder-node-1" title="Exhibit 02: Geo-FNO Atmospheric Operator">
+                    <span class="ladder-pip"></span>
+                    <div class="ladder-info">
+                        <span class="ladder-num">02</span>
+                        <span class="ladder-title">GEO-FNO</span>
+                    </div>
+                </div>
+                <div class="ladder-connector"></div>
+                <div class="ladder-node" data-index="2" id="ladder-node-2" title="Exhibit 03: Ising Thermodynamic Lattice">
+                    <span class="ladder-pip"></span>
+                    <div class="ladder-info">
+                        <span class="ladder-num">03</span>
+                        <span class="ladder-title">ISING</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="works-ladder-next" class="ladder-arrow-btn" aria-label="Next Exhibit">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
         </div>
         
@@ -247,64 +326,17 @@
     <!-- Timeline Back to Home button -->
     <button id="timeline-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(0,255,255,0.3); color:#0ff; padding:8px 16px; cursor:pointer; font-family:'Courier New', monospace; font-size:12px; backdrop-filter:blur(4px); opacity:0; pointer-events:none;">← Back to Home</button>
 
-    <!-- TIMELINE CINEMATIC TRANSITION OVERLAY -->
-    <div id="timeline-transition-overlay" class="timeline-cinematic-overlay">
-        <div class="timeline-transition-backdrop"></div>
-        <div class="timeline-transition-content">
-            <div class="timeline-transition-badge">
+    <!-- TIMELINE CINEMATIC DOPPLER WARP HUD -->
+    <div id="timeline-transition-overlay" class="timeline-cinematic-overlay" style="display:none; opacity:0; pointer-events:none;">
+        <div class="timeline-hud-warp">
+            <div class="warp-speed-reticle"></div>
+            <div class="warp-telemetry-badge">
                 <span class="pulse-dot"></span>
-                <span>SYSTEM TRANSITION :: DESTINATION TIMELINE</span>
+                <span>SPACETIME TRAJECTORY // VECTOR LOCKED</span>
             </div>
-            
-            <h1 class="timeline-transition-title">ENTERING TIMELINE</h1>
-            
-            <div class="timeline-transition-scan-bar">
-                <div class="scan-line-fill"></div>
-            </div>
-
-            <p class="timeline-transition-subtitle">NAVIGATION &amp; TRAVERSAL GUIDES</p>
-
-            <div class="timeline-guides-grid">
-                <div class="guide-card">
-                    <div class="guide-icon-badge">🖱️ SCROLL</div>
-                    <div class="guide-details">
-                        <span class="guide-title">SCROLL / TRACKPAD</span>
-                        <span class="guide-desc">Traverse forward &amp; backward through spacetime trajectory</span>
-                    </div>
-                </div>
-
-                <div class="guide-card">
-                    <div class="guide-icon-badge">⌨️ KEYS</div>
-                    <div class="guide-details">
-                        <span class="guide-title">ARROW KEYS [ ↑ / ↓ ]</span>
-                        <span class="guide-desc">Snap directly between career &amp; education milestones</span>
-                    </div>
-                </div>
-
-                <div class="guide-card">
-                    <div class="guide-icon-badge">🎯 RADAR</div>
-                    <div class="guide-details">
-                        <span class="guide-title">RADAR &amp; DIAL</span>
-                        <span class="guide-desc">Click radar nodes for instant milestone jump</span>
-                    </div>
-                </div>
-
-                <div class="guide-card">
-                    <div class="guide-icon-badge">🎛️ DIAL</div>
-                    <div class="guide-details">
-                        <span class="guide-title">TIMELINE DIAL</span>
-                        <span class="guide-desc">Drag player marker on vertical dial for smooth scrubbing</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="timeline-guides-footer">
-                <div class="reading-progress-track">
-                    <div class="reading-progress-fill"></div>
-                </div>
-                <button id="transition-continue-btn" class="transition-continue-btn">
-                    ENTER TIMELINE <span class="skip-hint">[ CLICK OR PRESS ANY KEY TO CONTINUE ]</span> ►
-                </button>
+            <div class="warp-telemetry-dest">
+                <span class="warp-telemetry-year">2011.00</span>
+                <span class="warp-telemetry-title">MILESTONE 01 // HIGHER SECONDARY</span>
             </div>
         </div>
     </div>
@@ -336,8 +368,35 @@
         <div id="noise-overlay"></div>
         <canvas id="research-bg-canvas" aria-label="Research phase background animation" role="img"></canvas>
         <div id="left-hemi"></div>
-        <div id="right-hemi">
-            <div id="research-cards-container"></div>
+        <div id="right-hemi" class="archive-right-hemi">
+            <div class="archive-catalog-panel">
+                <div class="archive-header">
+                    <div class="archive-title-group">
+                        <span class="archive-sector-tag">[03 // ARCHIVE]</span>
+                        <h2 class="archive-headline">QUANTUM ARCHIVE</h2>
+                    </div>
+                    <span id="archive-total-count" class="archive-count-badge">38 ENTRIES</span>
+                </div>
+
+                <!-- Archive Search & Filter Toolbar -->
+                <div class="archive-toolbar">
+                    <div class="archive-search-box">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input id="archive-search-input" type="text" placeholder="SEARCH TITLES, TAGS, MATH..." aria-label="Search Quantum Archive" />
+                    </div>
+                    <div class="archive-filter-pills">
+                        <button class="archive-pill active" data-cat="ALL">ALL (38)</button>
+                        <button class="archive-pill" data-cat="THEORY">THEORY</button>
+                        <button class="archive-pill" data-cat="ML">ML / AI</button>
+                        <button class="archive-pill" data-cat="COMPUTATION">DEV & COMP</button>
+                    </div>
+                </div>
+
+                <!-- Scrollable Catalog List -->
+                <div id="archive-catalog-scroll" class="archive-catalog-scroll">
+                    <div id="research-cards-container" class="archive-cards-list"></div>
+                </div>
+            </div>
         </div>
         <div id="research-hud-overlay">
             <div class="stat-col"><span class="stat-label">TOPOLOGY PHASE</span><span id="hud-phase"
@@ -351,6 +410,57 @@
         <button id="research-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:8px 16px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12px; backdrop-filter:blur(4px);">← Back to Home</button>
         <!-- Readme / Documentation button -->
         <button id="research-readme-btn" class="readme-toggle-btn" aria-label="Read klein-gordon documentation">📄 klein-gordon</button>
+    </div>
+
+    <!-- PLAYGROUND PHASE UI (PILLAR 04) -->
+    <div id="ui-playground" class="ui-layer" style="display: none; opacity: 0;">
+        <div class="playground-panel">
+            <div class="playground-header">
+                <div class="playground-title-group">
+                    <div class="playground-badge-strip">
+                        <span class="pulse-dot"></span>
+                        <span class="playground-sector-tag">SECTOR 04 // SIMULATION LAB</span>
+                    </div>
+                    <h2 class="playground-headline">PHYSICS PLAYGROUND</h2>
+                    <p class="playground-subtag">INTERACTIVE COMPUTATIONAL RUNTIMES // STANDALONE EXPERIMENTS</p>
+                </div>
+                <div class="playground-filter-bar">
+                    <button class="playground-filter-btn active" data-category="ALL">ALL (14)</button>
+                    <button class="playground-filter-btn" data-category="QUANTUM & QFT">QUANTUM & QFT</button>
+                    <button class="playground-filter-btn" data-category="TOPOLOGY">TOPOLOGY</button>
+                    <button class="playground-filter-btn" data-category="COMPLEX ANALYSIS">COMPLEX ANALYSIS</button>
+                    <button class="playground-filter-btn" data-category="FLOW & HARMONICS">FLOW & HARMONICS</button>
+                </div>
+            </div>
+
+            <!-- Bento Lab Grid -->
+            <div id="playground-bento-grid" class="playground-bento-grid"></div>
+        </div>
+
+        <!-- In-Page Laboratory Sandbox Modal -->
+        <div id="playground-modal" class="playground-modal">
+            <div class="playground-modal-bar">
+                <div class="modal-title-wrap">
+                    <span class="pulse-dot"></span>
+                    <span id="playground-modal-title" class="modal-sim-title">Simulation Runtime</span>
+                </div>
+                <div class="modal-actions">
+                    <button id="playground-modal-reload" class="modal-btn" title="Reload simulation">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        <span>RELOAD</span>
+                    </button>
+                    <button id="playground-modal-fullscreen" class="modal-btn" title="Toggle fullscreen">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    </button>
+                    <button id="playground-modal-close" class="modal-btn modal-btn-close" title="Close simulation (ESC)">
+                        <span>✕ ESC</span>
+                    </button>
+                </div>
+            </div>
+            <div class="playground-iframe-container">
+                <iframe id="playground-iframe" src="about:blank" sandbox="allow-scripts allow-same-origin allow-pointer-lock" title="Simulation Sandbox"></iframe>
+            </div>
+        </div>
     </div>
 
     <!-- README MODAL OVERLAY -->

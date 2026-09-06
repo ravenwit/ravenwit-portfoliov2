@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import gsap from 'gsap';
-import { setScrollTargetY } from './scroll.js';
+import { setScrollTargetY, jumpToMilestone } from './scroll.js';
 import { CONFIG } from '../config.js';
 import { STATE } from '../state.js';
 import { camera } from '../core/scene.js';
@@ -54,7 +54,7 @@ function blackHoleZoom(torusMesh, torusMat, targetPhase, onArrival) {
     tl.to(torusMat.uniforms.uOpacity, { value: 0.3, duration: 0.4 }, 1.2);
 }
 
-// === HERO → TIMELINE ===
+// === HERO → TIMELINE (1.0s Cinematic Doppler Warp) ===
 export function initiateHeroToTimeline() {
     if (STATE.phase !== 'HERO' || STATE.transitioning) return;
     if (!transitionDeps) return;
@@ -75,149 +75,86 @@ export function initiateHeroToTimeline() {
 
     if (overlay) {
         overlay.style.display = 'flex';
-        overlay.style.opacity = 0;
-        overlay.style.pointerEvents = 'auto';
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
     }
-
-    let isSkipped = false;
-    let keyHandler = null;
-    let clickHandler = null;
-
-    const cleanupListeners = () => {
-        if (keyHandler) window.removeEventListener('keydown', keyHandler);
-        if (clickHandler && overlay) overlay.removeEventListener('click', clickHandler);
-    };
 
     const tl = gsap.timeline({
         onComplete: () => {
-            cleanupListeners();
             if (overlay) {
                 overlay.style.display = 'none';
-                overlay.style.opacity = 0;
-                overlay.style.pointerEvents = 'none';
+                overlay.style.opacity = '0';
             }
             STATE.phase = 'TIMELINE';
             STATE.transitioning = false;
+            syncDockUI('TIMELINE');
+            // Dock dead-center at milestone 0
+            jumpToMilestone(0, 0.4);
         }
     });
 
-    const skipTransition = () => {
-        if (isSkipped) return;
-        isSkipped = true;
-        cleanupListeners();
-        // Fast-forward timeline to resolution phase
-        if (tl.time() < 4.5) {
-            tl.timeScale(4.0);
-        }
-    };
-
-    clickHandler = (e) => {
-        e.stopPropagation();
-        skipTransition();
-    };
-
-    keyHandler = (e) => {
-        if (STATE.transitioning) {
-            skipTransition();
-        }
-    };
-
-    // Attach skip listeners
-    if (overlay) overlay.addEventListener('click', clickHandler);
-    window.addEventListener('keydown', keyHandler);
-
     // 1) Fade out hero UI & audio toggle
     if (heroEl) {
-        tl.to(heroEl, { opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => heroEl.style.pointerEvents = 'none' }, 0);
+        tl.to(heroEl, { opacity: 0, duration: 0.25, ease: 'power2.out', onComplete: () => heroEl.style.pointerEvents = 'none' }, 0);
     }
     if (audioToggle) {
-        tl.to(audioToggle, { opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => audioToggle.style.pointerEvents = 'none' }, 0);
+        tl.to(audioToggle, { opacity: 0, duration: 0.25, ease: 'power2.out', onComplete: () => audioToggle.style.pointerEvents = 'none' }, 0);
     }
 
-    // 2) Fade in transition overlay & reveal title + guide cards
+    // 2) Warp background 3D scene (torus stretch + optical flash)
+    tl.to(torusMat.uniforms.uStretch, { value: 18.0, duration: 0.65, ease: 'power2.in' }, 0.1);
+    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp + 10.0, duration: 0.5, ease: 'power2.in' }, 0.1);
+    tl.to('#optical-flash', { opacity: 0.85, duration: 0.35, ease: 'power2.in' }, 0.45);
+    tl.to('#optical-flash', { opacity: 0, duration: 0.35, ease: 'power2.out' }, 0.8);
+
+    // 3) Show brief HUD Doppler reticle flash
     if (overlay) {
-        tl.to(overlay, { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.0);
-        
-        // Staggered reveal of title, subtext cards & continue footer
-        const title = overlay.querySelector('.timeline-transition-title');
-        const badge = overlay.querySelector('.timeline-transition-badge');
-        const subtitle = overlay.querySelector('.timeline-transition-subtitle');
-        const cards = overlay.querySelectorAll('.guide-card');
-        const footer = overlay.querySelector('.timeline-guides-footer');
-        const fill = overlay.querySelector('.reading-progress-fill');
-
-        if (title) tl.fromTo(title, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.1);
-        if (badge) tl.fromTo(badge, { y: -10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.05);
-        if (subtitle) tl.fromTo(subtitle, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.25);
-        if (cards && cards.length > 0) {
-            tl.fromTo(cards, 
-                { y: 15, opacity: 0 }, 
-                { y: 0, opacity: 1, duration: 0.4, stagger: 0.1, ease: 'power2.out' }, 
-                0.3
-            );
-        }
-        if (footer) tl.fromTo(footer, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.6);
-        if (fill) tl.fromTo(fill, { width: '0%' }, { width: '100%', duration: 4.0, ease: 'none' }, 0.7);
+        tl.to(overlay, { opacity: 1, duration: 0.3, ease: 'power2.out' }, 0.25);
+        tl.to(overlay, { opacity: 0, duration: 0.3, ease: 'power2.in' }, 0.75);
     }
 
-    // 3) Warp background 3D scene (torus stretch + optical flash)
-    tl.to(torusMat.uniforms.uStretch, { value: 18.0, duration: 1.2, ease: 'power2.in' }, 0.2);
-    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp + 10.0, duration: 0.8, ease: 'power2.in' }, 0.2);
-    tl.to('#optical-flash', { opacity: 0.7, duration: 0.5, ease: 'power2.in' }, 0.8);
-    tl.to('#optical-flash', { opacity: 0, duration: 0.4, ease: 'power2.out' }, 1.3);
-
-    // 4) Mid-way swap scene elements while overlay covers camera (at t=1.4s)
+    // 4) Mid-way swap scene elements while optical flash covers camera (at t=0.6s)
     tl.call(() => {
         nodeGroup.visible = true;
         torusMat.visible = false;
-        torusMat.uniforms.uOpacity.value = 0;
         gridMat.visible = true;
-        gridMat.uniforms.uOpacity.value = 1;
         starsMat.visible = true;
-        starsMat.uniforms.uOpacity.value = 1;
-        torusMesh.scale.set(1, 1, 1);
 
-        // Camera to path start
-        const startPos = cameraPath.getPointAt(0);
-        const lookPos = cameraPath.getPointAt(0.01);
-        camera.position.copy(startPos);
-        camera.lookAt(lookPos);
-        camera.fov = 75;
-        camera.updateProjectionMatrix();
-
-        // Prepare Timeline UI
         ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
             let el = document.getElementById(id);
             if (el) {
                 el.style.display = '';
-                el.style.opacity = 0;
+                el.style.opacity = '0';
             }
         });
 
         const hobbiesLayer = document.getElementById('hobbies-ui-layer');
         if (hobbiesLayer) {
             hobbiesLayer.style.display = '';
-            hobbiesLayer.style.opacity = 0;
+            hobbiesLayer.style.opacity = '0';
             hobbiesLayer.style.pointerEvents = 'auto';
         }
         document.querySelectorAll('.node-container').forEach(el => {
             el.style.display = 'flex';
             el.style.pointerEvents = 'auto';
         });
-    }, null, 1.4);
 
-    // 5) Warp resolves & Overlay fades out seamlessly into timeline UI at t=4.7s
-    tl.to(torusMat.uniforms.uStretch, { value: 0, duration: 0.6, ease: 'power2.out' }, 4.7);
-    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp, duration: 0.6, ease: 'power2.out' }, 4.7);
+        const scrollHint = document.getElementById('timeline-scroll-hint');
+        if (scrollHint) {
+            scrollHint.style.opacity = '1';
+            scrollHint.style.display = 'block';
+            scrollHint.style.pointerEvents = 'auto';
+        }
+    }, null, 0.6);
 
-    if (overlay) {
-        tl.to(overlay, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, 4.7);
-    }
+    // 5) Warp resolves at t=0.95s
+    tl.to(torusMat.uniforms.uStretch, { value: 0, duration: 0.3, ease: 'power2.out' }, 0.95);
+    tl.to(torusMat.uniforms.uTemperature, { value: CONFIG.minTemp, duration: 0.3, ease: 'power2.out' }, 0.95);
 
-    // 6) Timeline HUD & UI elements fade in at t=4.8s
+    // 6) Timeline HUD & UI elements fade in at t=0.95s
     tl.to('#hud, #timeline-scale-container, #radar-round-container, #hobbies-ui-layer', { 
         opacity: 1, 
-        duration: 0.6,
+        duration: 0.35,
         ease: 'power2.out',
         onStart: () => {
             ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
@@ -225,7 +162,7 @@ export function initiateHeroToTimeline() {
                 if(el) el.style.pointerEvents = 'auto';
             });
         } 
-    }, 4.8);
+    }, 0.95);
 }
 
 // === HERO → WORKS ===
@@ -236,6 +173,7 @@ export function initiateHeroToWorks() {
     const { torusMesh, torusMat, researchMesh } = transitionDeps;
 
     blackHoleZoom(torusMesh, torusMat, 'WORKS', () => {
+        syncDockUI('WORKS');
         // Hide timeline geometry
         if (transitionDeps.nodeGroup) transitionDeps.nodeGroup.visible = false;
         if (transitionDeps.gridMat) transitionDeps.gridMat.visible = false;
@@ -313,6 +251,7 @@ export function initiateTimelineToHero() {
         onComplete: () => {
             STATE.phase = 'HERO';
             STATE.transitioning = false;
+            syncDockUI('HERO');
         }
     });
 
@@ -380,6 +319,7 @@ export function initiateWorksToHero() {
         onComplete: () => {
             STATE.phase = 'HERO';
             STATE.transitioning = false;
+            syncDockUI('HERO');
         }
     });
 
@@ -415,124 +355,7 @@ export function initiateWorksToHero() {
 
 // === WORKS → RESEARCH ===
 export function initiateWorksToResearch() {
-    if (STATE.phase !== 'WORKS' || STATE.transitioning) return;
-    if (!transitionDeps) return;
-
-    STATE.phase = 'TRANSITION';
-    STATE.transitioning = true;
-
-    const { torusMesh, torusMat, researchMesh } = transitionDeps;
-
-    STATE.researchScrollY = 0;
-    STATE.researchVelocity = 0;
-
-    const worksUI = document.getElementById('ui-works');
-    if (worksUI) gsap.to(worksUI, { opacity: 0, duration: 0.3 });
-
-    // Destroy current exhibit
-    import('../components/worksSection.js').then(mod => {
-        if (mod.destroyCurrentExhibit) mod.destroyCurrentExhibit();
-    });
-
-    const geofnoContainer = document.getElementById('geofno-container');
-    if (geofnoContainer) geofnoContainer.style.display = 'none';
-    const isingContainer = document.getElementById('ising-container');
-    if (isingContainer) isingContainer.style.display = 'none';
-
-    // 1. SHOW FULLSCREEN LOADER FIRST
-    const loader = document.getElementById('research-loading-overlay');
-    const topoWord = document.getElementById('loading-word-topology');
-    const wavesWord = document.getElementById('loading-word-waves');
-    if (loader) {
-        if (topoWord) {
-            topoWord.style.top = '0px';
-            topoWord.style.opacity = '1';
-        }
-        if (wavesWord) {
-            wavesWord.style.top = '20px';
-            wavesWord.style.opacity = '0';
-        }
-        loader.style.display = 'flex';
-        loader.offsetHeight; // Force reflow
-        loader.style.opacity = '1';
-    }
-
-    if (topoWord && wavesWord) {
-        setTimeout(() => {
-            topoWord.style.top = '-20px';
-            topoWord.style.opacity = '0';
-            wavesWord.style.top = '0px';
-            wavesWord.style.opacity = '1';
-        }, 2500); // 2500ms reading time for TOPOLOGY
-    }
-
-    // 2. WAIT FOR BROWSER TO PAINT LOADER BEFORE FREEZING WITH SHADER COMPILE
-    setTimeout(() => {
-        const tl = gsap.timeline({
-            onComplete: () => {
-                STATE.phase = 'RESEARCH';
-                STATE.transitioning = false;
-                if (loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => loader.style.display = 'none', 500);
-                }
-            }
-        });
-
-        tl.call(() => {
-            // Mount research
-            researchMesh.visible = true;
-            researchLights.visible = true;
-            researchMesh.scale.set(0.001, 0.001, 0.001);
-            researchMesh.position.set(0, 0, 0);
-
-            // Hide torus
-            torusMat.visible = false;
-
-            // Camera to research position
-            camera.position.set(8, 6, 8);
-            camera.lookAt(0, 0, 0);
-            camera.fov = 45;
-            camera.updateProjectionMatrix();
-        }, null, 0.2);
-
-        // Grow research mesh
-        tl.to(researchMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: 'expo.out' }, 0.3);
-
-        // Show research UI
-        const researchUI = document.getElementById('ui-research');
-        if (researchUI) {
-            researchUI.style.display = 'block';
-            researchUI.style.opacity = 0;
-            tl.to(researchUI, { opacity: 1, duration: 0.8 }, 0.5);
-        }
-        const leftHemi = document.getElementById('left-hemi');
-        if (leftHemi) {
-            leftHemi.style.opacity = 0;
-            tl.to(leftHemi, { opacity: 1, duration: 0.8 }, 0.5);
-        }
-        const bgCanvas = document.getElementById('research-bg-canvas');
-        if (bgCanvas) {
-            bgCanvas.style.opacity = 0;
-            tl.to(bgCanvas, { opacity: 1, duration: 0.8 }, 0.5);
-        }
-
-        tl.call(() => {
-            if (bgCanvas) {
-                initResearchBG();
-                import('../components/researchBackground.js').then(m => m.bindResearchMouse());
-            }
-            updateResearchCards(0);
-            window.dispatchEvent(new Event('resize'));
-        }, null, 0.8);
-
-        tl.fromTo('#research-cards-container', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out' }, 1.0);
-        tl.fromTo('.research-card', { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power2.out' }, 1.1);
-
-        if (worksUI) {
-            tl.call(() => { worksUI.style.display = 'none'; }, null, 0.5);
-        }
-    }, 4800); // 2500ms TOPOLOGY + 2300ms INTEGRATOR display time
+    navigateToSector('RESEARCH');
 }
 
 // === RESEARCH → HERO ===
@@ -561,6 +384,7 @@ export function initiateResearchToHero() {
 
             STATE.phase = 'HERO';
             STATE.transitioning = false;
+            syncDockUI('HERO');
         }
     });
 
@@ -595,4 +419,263 @@ export function initiateResearchToHero() {
             gsap.to(audioToggle, { opacity: 1, duration: 0.8 });
         }
     }, null, 0.8);
+}
+
+// === UNIFIED GLOBAL SECTOR ROUTER ===
+
+export function syncDockUI(phase) {
+    const sectorMap = {
+        'HERO': '00 ORIGIN',
+        'TIMELINE': '01 TIMELINE',
+        'WORKS': '02 HIGHLIGHTS',
+        'RESEARCH': '03 ARCHIVE',
+        'PLAYGROUND': '04 PLAYGROUND'
+    };
+    const sectorEl = document.getElementById('dock-active-sector-id');
+    if (sectorEl && sectorMap[phase]) {
+        sectorEl.textContent = sectorMap[phase];
+    }
+    const buttons = document.querySelectorAll('.global-nav-dock .dock-btn[data-sector]');
+    buttons.forEach(btn => {
+        if (btn.dataset.sector === phase) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+function unmountSector(phase, deps) {
+    if (!deps) return;
+    const { torusMat, gridMat, starsMat, nodeGroup, researchMesh } = deps;
+
+    if (phase === 'HERO') {
+        const heroEl = document.getElementById('ui-hero');
+        if (heroEl) {
+            heroEl.style.opacity = '0';
+            heroEl.style.pointerEvents = 'none';
+            setTimeout(() => { if (STATE.phase !== 'HERO') heroEl.style.display = 'none'; }, 300);
+        }
+        const audioToggle = document.getElementById('audio-toggle');
+        if (audioToggle) {
+            audioToggle.style.opacity = '0';
+            audioToggle.style.pointerEvents = 'none';
+        }
+    } else if (phase === 'TIMELINE') {
+        ['hud', 'timeline-scale-container', 'radar-round-container', 'hobbies-ui-layer'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.opacity = '0';
+                el.style.pointerEvents = 'none';
+            }
+        });
+        document.querySelectorAll('.node-container').forEach(el => {
+            el.style.display = 'none';
+            el.style.pointerEvents = 'none';
+        });
+        const scrollHint = document.getElementById('timeline-scroll-hint');
+        if (scrollHint) {
+            scrollHint.style.opacity = '0';
+            scrollHint.style.pointerEvents = 'none';
+        }
+        if (nodeGroup) nodeGroup.visible = false;
+        if (gridMat) gridMat.visible = false;
+        if (starsMat) starsMat.visible = false;
+    } else if (phase === 'WORKS') {
+        const worksUI = document.getElementById('ui-works');
+        if (worksUI) {
+            worksUI.style.opacity = '0';
+            setTimeout(() => { if (STATE.phase !== 'WORKS') worksUI.style.display = 'none'; }, 300);
+        }
+        import('../components/worksSection.js').then(mod => {
+            if (mod.destroyCurrentExhibit) mod.destroyCurrentExhibit();
+        });
+        const geofnoContainer = document.getElementById('geofno-container');
+        if (geofnoContainer) geofnoContainer.style.display = 'none';
+        const isingContainer = document.getElementById('ising-container');
+        if (isingContainer) isingContainer.style.display = 'none';
+    } else if (phase === 'RESEARCH') {
+        const researchUI = document.getElementById('ui-research');
+        if (researchUI) {
+            researchUI.style.opacity = '0';
+            setTimeout(() => { if (STATE.phase !== 'RESEARCH') researchUI.style.display = 'none'; }, 300);
+        }
+        if (researchMesh) researchMesh.visible = false;
+        if (researchLights) researchLights.visible = false;
+        const bgCanvas = document.getElementById('research-bg-canvas');
+        if (bgCanvas) bgCanvas.style.opacity = '0';
+    } else if (phase === 'PLAYGROUND') {
+        const pgUI = document.getElementById('ui-playground');
+        if (pgUI) {
+            pgUI.style.opacity = '0';
+            setTimeout(() => { if (STATE.phase !== 'PLAYGROUND') pgUI.style.display = 'none'; }, 300);
+        }
+        const modal = document.getElementById('playground-modal');
+        if (modal) {
+            modal.classList.remove('active');
+            const iframe = document.getElementById('playground-iframe');
+            if (iframe) iframe.src = 'about:blank';
+        }
+    }
+}
+
+function mountSector(targetPhase, deps) {
+    if (!deps) return;
+    const { torusMesh, torusMat, gridMat, starsMat, nodeGroup, researchMesh } = deps;
+
+    if (targetPhase === 'HERO') {
+        camera.position.set(0, 0, 50);
+        camera.lookAt(0, 0, 0);
+        camera.fov = 75;
+        camera.updateProjectionMatrix();
+
+        if (torusMat) {
+            torusMat.visible = true;
+            torusMat.uniforms.uOpacity.value = 1;
+            torusMat.uniforms.uStretch.value = 0;
+            torusMesh.scale.set(2.5, 2.5, 2.5);
+        }
+        const heroEl = document.getElementById('ui-hero');
+        if (heroEl) {
+            heroEl.style.display = 'block';
+            heroEl.style.opacity = '1';
+            heroEl.style.pointerEvents = 'auto';
+        }
+        const audioToggle = document.getElementById('audio-toggle');
+        if (audioToggle) {
+            audioToggle.style.opacity = '1';
+            audioToggle.style.pointerEvents = 'auto';
+        }
+    } else if (targetPhase === 'TIMELINE') {
+        if (torusMat) torusMat.visible = false;
+        if (nodeGroup) nodeGroup.visible = true;
+        if (gridMat) {
+            gridMat.visible = true;
+            gridMat.uniforms.uOpacity.value = 1;
+        }
+        if (starsMat) {
+            starsMat.visible = true;
+            starsMat.uniforms.uOpacity.value = 1;
+        }
+
+        ['hud', 'timeline-scale-container', 'radar-round-container', 'hobbies-ui-layer'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.display = '';
+                el.style.opacity = '1';
+                el.style.pointerEvents = 'auto';
+            }
+        });
+        document.querySelectorAll('.node-container').forEach(el => {
+            el.style.display = 'flex';
+            el.style.pointerEvents = 'auto';
+        });
+        const scrollHint = document.getElementById('timeline-scroll-hint');
+        if (scrollHint) {
+            scrollHint.style.opacity = '1';
+            scrollHint.style.display = 'block';
+            scrollHint.style.pointerEvents = 'auto';
+        }
+        jumpToMilestone(STATE.activeSnapIndex >= 0 ? STATE.activeSnapIndex : 0, 0.4);
+    } else if (targetPhase === 'WORKS') {
+        if (torusMat) torusMat.visible = false;
+        camera.position.set(0, 2, 8);
+        camera.lookAt(0, 0, 0);
+        camera.fov = 45;
+        camera.updateProjectionMatrix();
+
+        const worksUI = document.getElementById('ui-works');
+        if (worksUI) {
+            worksUI.style.display = 'block';
+            worksUI.style.opacity = '1';
+        }
+        import('../components/worksSection.js').then(mod => {
+            if (mod.showExhibit) mod.showExhibit(STATE.worksExhibitIndex >= 0 ? STATE.worksExhibitIndex : 0);
+        });
+    } else if (targetPhase === 'RESEARCH') {
+        if (torusMat) torusMat.visible = false;
+        camera.position.set(8, 6, 8);
+        camera.lookAt(0, 0, 0);
+        camera.fov = 45;
+        camera.updateProjectionMatrix();
+
+        if (researchMesh) {
+            researchMesh.visible = true;
+            researchMesh.scale.set(1, 1, 1);
+            researchMesh.position.set(0, 0, 0);
+        }
+        if (researchLights) researchLights.visible = true;
+
+        const researchUI = document.getElementById('ui-research');
+        if (researchUI) {
+            researchUI.style.display = 'block';
+            researchUI.style.opacity = '1';
+        }
+        const leftHemi = document.getElementById('left-hemi');
+        if (leftHemi) leftHemi.style.opacity = '1';
+
+        const bgCanvas = document.getElementById('research-bg-canvas');
+        if (bgCanvas) {
+            bgCanvas.style.opacity = '1';
+            initResearchBG();
+            import('../components/researchBackground.js').then(m => m.bindResearchMouse());
+        }
+        updateResearchCards(0);
+        window.dispatchEvent(new Event('resize'));
+    } else if (targetPhase === 'PLAYGROUND') {
+        camera.position.set(0, 0, 45);
+        camera.lookAt(0, 0, 0);
+        camera.fov = 60;
+        camera.updateProjectionMatrix();
+
+        if (torusMat) {
+            torusMat.visible = true;
+            torusMat.uniforms.uOpacity.value = 0.25;
+            torusMat.uniforms.uStretch.value = 0;
+            torusMesh.scale.set(2.0, 2.0, 2.0);
+        }
+
+        const pgUI = document.getElementById('ui-playground');
+        if (pgUI) {
+            pgUI.style.display = 'block';
+            pgUI.style.opacity = '1';
+        }
+        import('../components/playgroundSection.js').then(mod => {
+            if (mod.initPlayground) mod.initPlayground();
+        });
+    }
+}
+
+export function navigateToSector(targetSector) {
+    if (STATE.phase === targetSector || STATE.transitioning || STATE.phase === 'LOADING') return;
+
+    // Special cinematic Doppler warp for HERO -> TIMELINE
+    if (STATE.phase === 'HERO' && targetSector === 'TIMELINE') {
+        initiateHeroToTimeline();
+        return;
+    }
+
+    if (!transitionDeps) return;
+
+    STATE.transitioning = true;
+    const prevPhase = STATE.phase;
+    STATE.phase = 'TRANSITION';
+
+    // Unmount previous phase
+    unmountSector(prevPhase, transitionDeps);
+
+    // Quick optical flash
+    const flash = document.getElementById('optical-flash');
+    if (flash) {
+        gsap.to(flash, { opacity: 0.75, duration: 0.2, ease: 'power2.in', yoyo: true, repeat: 1, onComplete: () => {
+            flash.style.opacity = '0';
+        }});
+    }
+
+    setTimeout(() => {
+        mountSector(targetSector, transitionDeps);
+        STATE.phase = targetSector;
+        STATE.transitioning = false;
+        syncDockUI(targetSector);
+    }, 280);
 }

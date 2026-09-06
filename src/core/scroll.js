@@ -43,7 +43,11 @@ export function computeSnapTargets(cameraPath) {
     });
 }
 
-export function jumpToMilestone(index) {
+let lastJumpTime = 0;
+let wheelAccumulator = 0;
+let wheelResetTimeout = null;
+
+export function jumpToMilestone(index, duration = 0.65) {
     if (!STATE.snapTargets || STATE.snapTargets.length === 0) return;
     const clampedIdx = Math.max(0, Math.min(index, STATE.snapTargets.length - 1));
     const snapY = STATE.snapTargets[clampedIdx];
@@ -54,13 +58,24 @@ export function jumpToMilestone(index) {
     STATE.activeSnapIndex = clampedIdx;
     STATE.isSnapped = true;
     STATE.breakoutAccumulator = 0;
+    lastJumpTime = Date.now();
 
+    const scrollHint = document.getElementById('timeline-scroll-hint');
+    if (scrollHint) {
+        scrollHint.style.opacity = '0';
+        scrollHint.style.pointerEvents = 'none';
+    }
+
+    gsap.killTweensOf(STATE);
     gsap.to({ y: targetY }, {
         y: snapY,
-        duration: 0.8,
-        ease: 'power2.out',
+        duration: duration,
+        ease: 'power2.inOut',
         onUpdate: function () {
             targetY = this.targets()[0].y;
+        },
+        onComplete: function () {
+            targetY = snapY;
         }
     });
 }
@@ -71,42 +86,24 @@ export function initScroll() {
         if (STATE.transitioning) return;
 
         if (STATE.phase === 'TIMELINE' && !STATE.transitioning) {
-            if (Math.abs(rawDeltaY) > 5) {
-                fadeSkillLabels();
-                collapseAllCards();
+            const now = Date.now();
+            if (now - lastJumpTime < 420) {
+                return;
             }
-            if (STATE.isSnapped && STATE.activeSnapIndex >= 0) {
-                STATE.breakoutAccumulator += Math.abs(rawDeltaY);
 
-                if (STATE.breakoutAccumulator > BREAKOUT_THRESHOLD) {
-                    // Release snap lock
-                    STATE.isSnapped = false;
-                    STATE.breakoutAccumulator = 0;
-                    targetY += Math.sign(rawDeltaY) * 60;
-                } else {
-                    // Soft spring tether back to snap target
-                    const snapY = STATE.snapTargets[STATE.activeSnapIndex];
-                    targetY = snapY + (Math.sign(rawDeltaY) * (STATE.breakoutAccumulator * 0.4));
-                    return;
-                }
-            } else {
-                // Accumulate target
-                targetY += rawDeltaY * WHEEL_SCALE;
-                targetY = Math.max(0, Math.min(targetY, MAX_SCROLL));
+            wheelAccumulator += rawDeltaY;
 
-                // Check for magnetic capture
-                if (STATE.snapTargets && STATE.snapTargets.length > 0) {
-                    for (let i = 0; i < STATE.snapTargets.length; i++) {
-                        const snapY = STATE.snapTargets[i];
-                        if (Math.abs(targetY - snapY) < SNAP_RADIUS) {
-                            STATE.isSnapped = true;
-                            STATE.activeSnapIndex = i;
-                            STATE.breakoutAccumulator = 0;
-                            targetY = snapY;
-                            break;
-                        }
-                    }
-                }
+            clearTimeout(wheelResetTimeout);
+            wheelResetTimeout = setTimeout(() => {
+                wheelAccumulator = 0;
+            }, 180);
+
+            const SCROLL_THRESHOLD = 20;
+            if (Math.abs(wheelAccumulator) >= SCROLL_THRESHOLD) {
+                const direction = wheelAccumulator > 0 ? 1 : -1;
+                wheelAccumulator = 0;
+                const currentIdx = STATE.activeSnapIndex >= 0 ? STATE.activeSnapIndex : 0;
+                jumpToMilestone(currentIdx + direction);
             }
         } else if (STATE.phase === 'RESEARCH' && !STATE.transitioning) {
             const impulse = Math.sign(deltaY) * Math.min(Math.abs(deltaY), 200);
@@ -155,13 +152,15 @@ export function initScroll() {
     // Keyboard Shortcuts for Timeline Navigation
     window.addEventListener('keydown', (e) => {
         if (STATE.phase !== 'TIMELINE' || STATE.transitioning) return;
+        if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
         const activeIdx = STATE.activeSnapIndex >= 0 ? STATE.activeSnapIndex : 0;
+        const key = e.key.toLowerCase();
 
-        if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === 'ArrowRight') {
+        if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === 'ArrowRight' || key === 'j') {
             e.preventDefault();
             jumpToMilestone(activeIdx + 1);
-        } else if (e.key === 'ArrowUp' || e.key === 'PageUp' || e.key === 'ArrowLeft') {
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp' || e.key === 'ArrowLeft' || key === 'k') {
             e.preventDefault();
             jumpToMilestone(activeIdx - 1);
         } else if (e.key === 'Home') {
@@ -208,6 +207,19 @@ export function initScroll() {
                     currentJoystickOffset = gsap.getProperty('#timeline-player', 'y');
                 }
             });
+
+            if (STATE.snapTargets && STATE.snapTargets.length > 0) {
+                let nearestIdx = 0;
+                let minDist = Infinity;
+                STATE.snapTargets.forEach((target, i) => {
+                    const dist = Math.abs(targetY - target);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearestIdx = i;
+                    }
+                });
+                jumpToMilestone(nearestIdx, 0.5);
+            }
         }
     });
 }

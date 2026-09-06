@@ -15,22 +15,48 @@ const EXHIBITS = [
     { id: 'ising', name: 'Ising Model', thumbnail: '⬡', init: initIsingExhibit, destroy: destroyIsingExhibit },
 ];
 
-let prevBtn, nextBtn, thumbPrev, thumbNext, toResearchBtn;
+let prevBtn, nextBtn, ladderPrevBtn, ladderNextBtn, thumbPrev, thumbNext, toResearchBtn;
 
 export function initWorksCarousel() {
     prevBtn = document.getElementById('works-prev');
     nextBtn = document.getElementById('works-next');
+    ladderPrevBtn = document.getElementById('works-ladder-prev');
+    ladderNextBtn = document.getElementById('works-ladder-next');
     thumbPrev = document.getElementById('thumb-prev');
     thumbNext = document.getElementById('thumb-next');
     toResearchBtn = document.getElementById('works-to-research');
 
     if (prevBtn) prevBtn.addEventListener('click', prevExhibit);
     if (nextBtn) nextBtn.addEventListener('click', nextExhibit);
-    if (toResearchBtn) toResearchBtn.addEventListener('click', () => {
-        // Import and call transition
-        import('../core/transitions.js').then(mod => {
-            if (mod.initiateWorksToResearch) mod.initiateWorksToResearch();
+    if (ladderPrevBtn) ladderPrevBtn.addEventListener('click', prevExhibit);
+    if (ladderNextBtn) ladderNextBtn.addEventListener('click', nextExhibit);
+
+    // Ladder direct node selection
+    document.querySelectorAll('.ladder-node').forEach(node => {
+        node.addEventListener('click', () => {
+            const idx = parseInt(node.dataset.index, 10);
+            if (!isNaN(idx)) showExhibit(idx);
         });
+    });
+
+    if (toResearchBtn) toResearchBtn.addEventListener('click', () => {
+        import('../core/transitions.js').then(mod => {
+            if (mod.navigateToSector) mod.navigateToSector('RESEARCH');
+        });
+    });
+
+    // Keyboard navigation within WORKS phase
+    window.addEventListener('keydown', (e) => {
+        if (STATE.phase !== 'WORKS' || STATE.transitioning) return;
+        if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prevExhibit();
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            nextExhibit();
+        }
     });
 }
 
@@ -105,7 +131,20 @@ export function prevExhibit() {
 }
 
 function updateCarouselUI() {
-    // Update thumbnails
+    // Update ladder active classes
+    document.querySelectorAll('.ladder-node').forEach((node, i) => {
+        if (i === currentExhibitIndex) {
+            node.classList.add('active');
+        } else {
+            node.classList.remove('active');
+        }
+    });
+
+    // Disable/enable ladder buttons
+    if (ladderPrevBtn) ladderPrevBtn.disabled = currentExhibitIndex <= 0;
+    if (ladderNextBtn) ladderNextBtn.disabled = currentExhibitIndex >= EXHIBITS.length - 1;
+
+    // Update thumbnails (fallback for bottom arrows)
     if (thumbPrev) {
         if (currentExhibitIndex > 0) {
             thumbPrev.textContent = EXHIBITS[currentExhibitIndex - 1].thumbnail;

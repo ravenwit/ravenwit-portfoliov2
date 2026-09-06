@@ -37,64 +37,152 @@
     pointer-events: auto;
 }
 
-.carousel-arrow {
-    position: absolute;
-    bottom: 40px;
-    top: auto;
-    transform: none;
-    z-index: 9999;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-    width: 60px;
-    height: 60px;
+/* --- VERTICAL TELEMETRY LADDER (RIGHT RAIL) --- */
+.works-ladder-nav {
+    position: fixed;
+    right: 28px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(8, 14, 28, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 170, 0, 0.28);
+    border-radius: 24px;
+    padding: 14px 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 170, 0, 0.1);
+    user-select: none;
+    pointer-events: auto;
+}
+
+.ladder-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    color: rgba(255, 170, 0, 0.85);
+    padding-bottom: 4px;
+}
+
+.ladder-crosshair {
+    color: #ffaa00;
+    font-weight: bold;
+}
+
+.ladder-arrow-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 170, 0, 0.3);
+    color: #ffaa00;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
-    backdrop-filter: blur(8px);
-    transition: all 0.3s ease;
-    pointer-events: auto !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.carousel-arrow:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.5);
+.ladder-arrow-btn:hover:not(:disabled) {
+    background: rgba(255, 170, 0, 0.2);
+    border-color: #ffaa00;
+    box-shadow: 0 0 12px rgba(255, 170, 0, 0.5);
     transform: scale(1.1);
 }
 
-.carousel-arrow:disabled {
-    opacity: 0.3;
+.ladder-arrow-btn:disabled {
+    opacity: 0.25;
     cursor: not-allowed;
-    transform: scale(1);
 }
 
-.carousel-arrow-left {
-    left: 20px;
+.ladder-track {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
 }
 
-.carousel-arrow-right {
-    right: 20px;
+.ladder-node {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: 1px solid transparent;
 }
 
-.carousel-thumb {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 24px;
-    opacity: 0.7;
-    transition: opacity 0.3s;
-    pointer-events: none;
+.ladder-node:hover {
+    background: rgba(255, 170, 0, 0.08);
+    border-color: rgba(255, 170, 0, 0.25);
 }
 
-.carousel-arrow-left .carousel-thumb {
-    right: -40px;
+.ladder-node.active {
+    background: rgba(255, 170, 0, 0.16);
+    border-color: rgba(255, 170, 0, 0.6);
+    box-shadow: 0 0 16px rgba(255, 170, 0, 0.3);
 }
 
-.carousel-arrow-right .carousel-thumb {
-    left: -40px;
+.ladder-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.25s ease;
+}
+
+.ladder-node.active .ladder-pip {
+    background: #ffaa00;
+    border-color: #ffffff;
+    box-shadow: 0 0 10px #ffaa00;
+    transform: scale(1.3);
+}
+
+.ladder-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.ladder-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 1px;
+}
+
+.ladder-node.active .ladder-num {
+    color: #ffaa00;
+}
+
+.ladder-title {
+    font-family: 'Space Grotesk', 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+}
+
+.ladder-node.active .ladder-title {
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
+}
+
+.ladder-connector {
+    width: 2px;
+    height: 12px;
+    background: rgba(255, 170, 0, 0.25);
+    margin: 2px 0;
 }
 
 /* GeoFNO Controls */
