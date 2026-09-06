@@ -60,7 +60,7 @@
     },
     {
         "id": "2024",
-        "category": "ML_AI",
+        "category": "COMPUTATIONAL",
         "title": "Statistical Inference of Ising Model Hamiltonian Parameters",
         "desc": "Reconstruct the exact generative Hamiltonian couplings and external fields from observed empirical microstates by maximizing the thermodynamic logarithmic likelihood function.",
         "tags": [
@@ -249,7 +249,7 @@
     },
     {
         "id": "2019",
-        "category": "COMPUTATIONAL",
+        "category": "DEVOPS",
         "title": "Data Structure Practices",
         "desc": "A CRUD (Create, Read, Update, and Delete) model designed for a pre-existing linked list data structure with the capability to save on and load from disk.",
         "tags": [
@@ -398,7 +398,7 @@
     },
     {
         "id": "2012",
-        "category": "COMPUTATIONAL",
+        "category": "DEVOPS",
         "title": "Neutrino Photo Viewer",
         "desc": "A simple photo viewer applicaction, born out of sheer boredom with the Windows Photo Viewer in Windows 7, and heavily influenced by the awesomeness of Picasa.",
         "tags": [
@@ -410,7 +410,7 @@
     },
     {
         "id": "2012",
-        "category": "COMPUTATIONAL",
+        "category": "DEVOPS",
         "title": "Neutrino Email Sender",
         "desc": "Basic email management application with inbox view.",
         "tags": [
@@ -422,7 +422,7 @@
     },
     {
         "id": "2012",
-        "category": "COMPUTATIONAL",
+        "category": "DEVOPS",
         "title": "Neutrino Sequence Calculator",
         "desc": "A calculator capable of computing the divergence of both finite and infinite sequences.",
         "tags": [
@@ -434,7 +434,7 @@
     },
     {
         "id": "2012",
-        "category": "COMPUTATIONAL",
+        "category": "DEVOPS",
         "title": "Neutrino Calculator",
         "desc": "An advanced scientific calculator, especially made for complex analysis which also includes unit conversion and date calculation features. This project was submitted to Pran Frooto Viqarunnisa Noon 16th Science Festival-2012.",
         "tags": [
@@ -446,7 +446,7 @@
     },
     {
         "id": "2011",
-        "category": "COMPUTATIONAL",
+        "category": "DEVOPS",
         "title": "Neutrino Web Browser",
         "desc": "A personalized web browser designed for the purpose of software development practices.",
         "tags": [
@@ -458,7 +458,7 @@
     },
     {
         "id": "2011",
-        "category": "COMPUTATIONAL",
+        "category": "DEVOPS",
         "title": "Neutrino Screen Capture",
         "desc": "Bespoke screen capture application with basic features built for software development practices.",
         "tags": [

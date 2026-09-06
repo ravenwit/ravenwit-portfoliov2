@@ -31,13 +31,14 @@ function classifyCategory(item) {
         text.includes('resnet') || text.includes('face') || text.includes('yolo') || 
         text.includes('rnn') || text.includes('lstm') || text.includes('trigger word') || 
         text.includes('speech recognition') || text.includes('tensorflow') || text.includes('keras') || 
-        text.includes('statistical inference') || text.includes('jazz improvisation')) {
+        text.includes('jazz improvisation')) {
         return 'ML_AI';
     }
 
-    // 3. DEVOPS: Networking sockets, deployment, portfolios, servers
+    // 3. DEVOPS: Networking sockets, deployment, portfolios, servers, desktop utilities
     if (text.includes('devops') || text.includes('docker') || text.includes('socket') || 
-        text.includes('networking') || text.includes('gatsby') || text.includes('portfolio')) {
+        text.includes('networking') || text.includes('gatsby') || text.includes('portfolio') ||
+        text.includes('neutrino') || text.includes('data structure practices')) {
         return 'DEVOPS';
     }
 
