@@ -35,6 +35,8 @@ export function initMeghExhibit() {
     position: absolute;
     top: 0;
     left: 0;
+    padding-bottom: 88px;
+    box-sizing: border-box;
     border-radius: 8px; /* Assuming works-exhibit-container might need it */
 }
 
@@ -44,25 +46,25 @@ export function initMeghExhibit() {
     letter-spacing: 3px;
     color: var(--accent-blue);
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
     text-align: center;
-    margin-top: 1rem;
+    margin-top: 0;
 }
 
 #megh-exhibit .section-title {
-    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    font-size: clamp(1.75rem, 3.2vw, 2.5rem);
     font-weight: 800;
     letter-spacing: -1px;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     line-height: 1.1;
     text-align: center;
 }
 
 #megh-exhibit .section-subtitle {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
     max-width: 600px;
-    margin: 0 auto 1.5rem auto;
+    margin: 0 auto 1rem auto;
     text-align: center;
 }
 
@@ -70,7 +72,7 @@ export function initMeghExhibit() {
     position: relative;
     width: 100%;
     max-width: 900px;
-    height: clamp(260px, 36vh, 360px);
+    height: clamp(340px, 42vh, 390px);
     margin: 0 auto;
     perspective: 1200px;
 }
@@ -181,8 +183,7 @@ export function initMeghExhibit() {
 #megh-exhibit .vault-center {
     position: absolute;
     right: 5%;
-    top: 0%;
-    transform: translateY(-50%);
+    top: 25px;
     width: 230px;
     height: 330px;
     border-radius: 28px;

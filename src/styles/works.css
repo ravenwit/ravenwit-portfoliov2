@@ -347,7 +347,8 @@
     
     #megh-exhibit {
         flex-direction: column !important;
-        padding: 20px !important;
+        padding: 20px 20px 88px 20px !important;
+        box-sizing: border-box;
     }
     
     .megh-info {
