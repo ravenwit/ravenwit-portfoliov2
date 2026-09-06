@@ -117,8 +117,12 @@ export function initiateHeroToTimeline() {
     tl.call(() => {
         nodeGroup.visible = true;
         torusMat.visible = false;
+        torusMat.uniforms.uOpacity.value = 0;
         gridMat.visible = true;
+        gridMat.uniforms.uOpacity.value = 1;
         starsMat.visible = true;
+        starsMat.uniforms.uOpacity.value = 1;
+        torusMesh.scale.set(1, 1, 1);
 
         ['hud', 'timeline-scale-container', 'radar-round-container'].forEach(id => {
             let el = document.getElementById(id);
