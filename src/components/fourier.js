@@ -1,19 +1,41 @@
+import { STATE } from '../state.js';
+
 export function initFourier(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    let width, height;
+    let width = 0, height = 0;
 
     function resize() {
-        width = canvas.parentElement.clientWidth || 600;
-        height = canvas.parentElement.clientHeight || 600;
-        // High DPI support
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
+        const parent = canvas.parentElement;
+        if (!parent) return;
+        const rect = parent.getBoundingClientRect();
+        const newWidth = Math.round(rect.width);
+        const newHeight = Math.round(rect.height);
+
+        // Guard: Do not resize while container is collapsed or hidden
+        if (newWidth <= 0 || newHeight <= 0) return;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        if (width === newWidth && height === newHeight && canvas.width === Math.round(newWidth * dpr)) {
+            return;
+        }
+
+        width = newWidth;
+        height = newHeight;
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.scale(dpr, dpr);
     }
+
     window.addEventListener('resize', resize);
+    if (canvas.parentElement && typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(() => {
+            resize();
+        });
+        ro.observe(canvas.parentElement);
+    }
     resize();
 
     function lerp(p0, p1, t) { return { x: (1 - t) * p0.x + t * p1.x, y: (1 - t) * p0.y + t * p1.y }; }
@@ -121,10 +143,32 @@ export function initFourier(canvasId) {
 
     function render() {
         requestAnimationFrame(render);
+
+        // Lifecycle check: suspend rendering when out of HERO to avoid detached context drift
+        if (STATE && STATE.phase !== 'HERO' && !STATE.transitioning) {
+            return;
+        }
+
+        const parent = canvas.parentElement;
+        if (!parent || parent.clientWidth <= 0 || parent.clientHeight <= 0) {
+            return;
+        }
+
+        // Keep canvas buffer precisely synchronized with container layout
+        const curW = Math.round(parent.clientWidth);
+        const curH = Math.round(parent.clientHeight);
+        if (width !== curW || height !== curH) {
+            resize();
+        }
+
+        if (width <= 0 || height <= 0) return;
+
         ctx.clearRect(0, 0, width, height);
 
-        let vx = width / 2;
-        let vy = height / 2;
+        const cx = width / 2;
+        const cy = height / 2;
+        let vx = cx;
+        let vy = cy;
 
         for (let i = 0; i < config.activeEpicycles; i++) {
             const circle = fourierSeries[i];
@@ -154,7 +198,8 @@ export function initFourier(canvasId) {
             }
         }
 
-        pathTrace.unshift({ x: vx, y: vy });
+        // Store displacement relative to current centroid (100% immune to translations / resizes)
+        pathTrace.unshift({ dx: vx - cx, dy: vy - cy });
         if (pathTrace.length > discretePoints.length) {
             pathTrace.pop();
         }
@@ -165,9 +210,9 @@ export function initFourier(canvasId) {
             ctx.shadowBlur = 10;
             ctx.shadowColor = "#4369EE";
             ctx.beginPath();
-            ctx.moveTo(pathTrace[0].x, pathTrace[0].y);
+            ctx.moveTo(cx + pathTrace[0].dx, cy + pathTrace[0].dy);
             for (let i = 1; i < pathTrace.length; i++) {
-                ctx.lineTo(pathTrace[i].x, pathTrace[i].y);
+                ctx.lineTo(cx + pathTrace[i].dx, cy + pathTrace[i].dy);
             }
             ctx.stroke();
             ctx.shadowBlur = 0;

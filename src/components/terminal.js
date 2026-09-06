@@ -27,7 +27,6 @@ export class TerminalController {
         this.vfs = {
             "root": {
                 "home": {
-                    "resume.pdf": "/Shakir_Ahmed_Resume.pdf",
                     "cv.pdf": "/Shakir_Ahmed_CV.pdf"
                 },
                 "bin": {
@@ -609,7 +608,7 @@ PID USER      PRI  NI  VIRT   RES   SHR S CPU% MEM%   TIME+  Command
             return msgs[Math.floor(Math.random() * msgs.length)];
         }
         const file = args[0];
-        if (file === 'resume.pdf' || file === 'cv.pdf') {
+        if (file === 'cv.pdf') {
             return 'Trust me, you do not want to get overwhelmed with binary data.';
         }
         const target = this.resolvePath(file);
