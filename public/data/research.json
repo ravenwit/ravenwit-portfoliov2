@@ -1,6 +1,7 @@
 [
     {
         "id": "2016",
+        "category": "THEORY",
         "title": "Radioactive Waste Disposal",
         "desc": "We evaluate the feasibility of nuclear waste disposal via solar impact versus asteroid belt storage. The required $\\Delta v$ to reach the asteroid belt $(6.274 \\text{ km/s})$ is lower than the requirements for direct solar impact $(29.8 \\text{ km/s})$ or a Jupiter swing-by $(7.174 \\text{ km/s})$. Furthermore, the calculated collision frequency in the asteroid belt is negligible $(3.49 \\times 10^{17} \\text{ years} / \\text{km}^2)$. Due to these lower orbital energy requirements and minimal collision risk, we conclude that asteroid belt storage presents a safer and more viable disposal method.",
         "tags": [
@@ -16,6 +17,7 @@
     },
     {
         "id": "2018",
+        "category": "THEORY",
         "title": "Relativistic Dynamics of Electromagnetic Two Body Problem",
         "desc": "The electromagnetic interaction of two classical point charges is investigated with special relativistic rigor. Numerical integration of their equations of motion yields anomalous, unphysical solutions. We discuss the mathematical origins of these discrepancies and outline the analytical considerations necessary to recover physically allowable trajectories.",
         "tags": [
@@ -30,6 +32,7 @@
     },
     {
         "id": "(2019) Continuing...",
+        "category": "THEORY",
         "title": "Neutrino Oscillation",
         "desc": "Wigner Monte Carlo simulation of neutrino flavor state superpositions propagating through space, tracking the phase shift governed by the PMNS matrix.",
         "tags": [
@@ -45,6 +48,7 @@
     },
     {
         "id": "2018",
+        "category": "COMPUTATIONAL",
         "title": "Ising Model Simulation",
         "desc": "Simulation of spontaneous symmetry breaking in a 2D simple square grid, with periodic boundary conditions, using the Metropolis-Hastings algorithm with the functionality to calculate different observables like magnetization, specific heat and susceptibility at different temperatures. \\ \\ Currently planning to extend the simulation to different lattice structures with advanced algorithms (e.g., Wolf-Cluster algorithm) having the objective to understand __criticality__ with conformal map.",
         "tags": [
@@ -56,6 +60,7 @@
     },
     {
         "id": "2024",
+        "category": "ML_AI",
         "title": "Statistical Inference of Ising Model Hamiltonian Parameters",
         "desc": "Reconstruct the exact generative Hamiltonian couplings and external fields from observed empirical microstates by maximizing the thermodynamic logarithmic likelihood function.",
         "tags": [
@@ -67,6 +72,7 @@
     },
     {
         "id": "2023",
+        "category": "DEVOPS",
         "title": "Personal Portfolio",
         "desc": "Personal portfolio",
         "tags": [
@@ -79,6 +85,7 @@
     },
     {
         "id": "2022",
+        "category": "DESIGN",
         "title": "SUST Protest",
         "desc": "",
         "tags": [
@@ -91,6 +98,7 @@
     },
     {
         "id": "2021",
+        "category": "DESIGN",
         "title": "Equation Design Proposal",
         "desc": "",
         "tags": [
@@ -101,6 +109,7 @@
     },
     {
         "id": "2020",
+        "category": "ML_AI",
         "title": "Deep Learning Practices",
         "desc": "Learning deep learning from online specializations through hands-on projects.",
         "tags": [
@@ -113,6 +122,7 @@
     },
     {
         "id": "2020",
+        "category": "ML_AI",
         "title": "ResNet",
         "desc": "Residual neural network implementation.",
         "tags": [
@@ -122,6 +132,7 @@
     },
     {
         "id": "2020",
+        "category": "ML_AI",
         "title": "Face Recognition",
         "desc": "An inception network based [FaceNet](https://arxiv.org/pdf/1503.03832.pdf) implementation to recognize human faces.",
         "tags": [
@@ -137,6 +148,7 @@
     },
     {
         "id": "2020",
+        "category": "DESIGN",
         "title": "Protest for Mahir",
         "desc": "",
         "tags": [
@@ -147,6 +159,7 @@
     },
     {
         "id": "2020",
+        "category": "ML_AI",
         "title": "Autonomous driving - Car detection",
         "desc": "Implementation of the 'You Only Look Once' (YOLO) method via YAD2K package to detect cars on road for autonomous driving.",
         "tags": [
@@ -163,6 +176,7 @@
     },
     {
         "id": "2020",
+        "category": "ML_AI",
         "title": "Dinosaurus Island",
         "desc": "Character-level recurrent neural network to generate new dinosaur names.",
         "tags": [
@@ -173,6 +187,7 @@
     },
     {
         "id": "2020",
+        "category": "ML_AI",
         "title": "Trigger Word Detection",
         "desc": "A speech recognition project to detect trigger words using Pydub to process audio spectrograms.",
         "tags": [
@@ -183,6 +198,7 @@
     },
     {
         "id": "2020",
+        "category": "ML_AI",
         "title": "Writing like Shakespeare",
         "desc": "A recurrent neural network model to generate Shakespearian poems using Long Short Term Memory cells.",
         "tags": [
@@ -193,6 +209,7 @@
     },
     {
         "id": "2020",
+        "category": "DEVOPS",
         "title": "Networking with GUI",
         "desc": "Socket networking practices with graphing commands as messages.",
         "tags": [
@@ -203,6 +220,7 @@
     },
     {
         "id": "2020",
+        "category": "ML_AI",
         "title": "Jazz Improvisation",
         "desc": "LSTM model to generate Jazz music.",
         "tags": [
@@ -218,6 +236,7 @@
     },
     {
         "id": "2019",
+        "category": "COMPUTATIONAL",
         "title": "Wigner Monte Carlo",
         "desc": "Time dependent evaluation of probability density of a quantum system with Wigner Monte Carlo method based on the signed particle formulation of quantum mechanics. Translated from (C++) and modified on Prof. Dr. Jean Michel Sellier's [implementation](http://www.nano-archimedes.com/download.php/) of (ballistic) single-body Wigner Monte Carlo.",
         "tags": [
@@ -230,6 +249,7 @@
     },
     {
         "id": "2019",
+        "category": "COMPUTATIONAL",
         "title": "Data Structure Practices",
         "desc": "A CRUD (Create, Read, Update, and Delete) model designed for a pre-existing linked list data structure with the capability to save on and load from disk.",
         "tags": [
@@ -240,6 +260,7 @@
     },
     {
         "id": "2019",
+        "category": "COMPUTATIONAL",
         "title": "Electromagnetic Two Body Problem",
         "desc": "Simulation of electromagnetic two body problem with Lienard-Wiechert relativistic potentials.",
         "tags": [
@@ -252,6 +273,7 @@
     },
     {
         "id": "2019",
+        "category": "DEVOPS",
         "title": "Data Structure with Networking",
         "desc": "A comprehensive object-oriented CRUD model for a linked list data structure with proper hierarchy into groups/subgroups and searchable properties, as well as an additional option to communicate through a socket tunnel.",
         "tags": [
@@ -262,6 +284,7 @@
     },
     {
         "id": "2018",
+        "category": "COMPUTATIONAL",
         "title": "Polynomial Equation Solver",
         "desc": "Simple symbolic expression-based program to find all roots of a polynomial equation with an arbitrary degree.",
         "tags": [
@@ -274,8 +297,9 @@
     },
     {
         "id": "2018",
+        "category": "COMPUTATIONAL",
         "title": "Inverse Matrix",
-        "desc": "Simple implementation of Faddeev\u2013LeVerrier algorithm to determine the characteristic polynomial of a matrix along with its inverse.",
+        "desc": "Simple implementation of Faddeev–LeVerrier algorithm to determine the characteristic polynomial of a matrix along with its inverse.",
         "tags": [
             "Python"
         ],
@@ -283,6 +307,7 @@
     },
     {
         "id": "2018",
+        "category": "COMPUTATIONAL",
         "title": "Runge Kutta Implementation",
         "desc": "Differential equation solver with 4th, 6th and 12th order Runge Kutta methods.",
         "tags": [
@@ -293,6 +318,7 @@
     },
     {
         "id": "2018",
+        "category": "COMPUTATIONAL",
         "title": "Sturm Liouville",
         "desc": "Numerical solver for general Sturm Liouville type equations that caters to both initial value and boundary value problems equipped with integrated support for Legendre and Bessel equations.",
         "tags": [
@@ -305,6 +331,7 @@
     },
     {
         "id": "2018",
+        "category": "COMPUTATIONAL",
         "title": "SLE Solver",
         "desc": "Numerical solver for system of linear equations with Gaussian Elimination method.",
         "tags": [
@@ -315,6 +342,7 @@
     },
     {
         "id": "2018",
+        "category": "COMPUTATIONAL",
         "title": "Groundwater Dynamics",
         "desc": "Simulation of groundwater dynamics with numerical relaxation methodologies.",
         "tags": [
@@ -326,6 +354,7 @@
     },
     {
         "id": "2018",
+        "category": "COMPUTATIONAL",
         "title": "NLLSA",
         "desc": "Non-linear least square approximation to estimate any curve into a polynomial.",
         "tags": [
@@ -338,6 +367,7 @@
     },
     {
         "id": "2017",
+        "category": "DESIGN",
         "title": "Latex template (Masters Thesis)",
         "desc": "A LaTeX template designed for the students of the Department of Physics at Shahjalal University of Science and Technology, Bangladesh.",
         "tags": [
@@ -348,6 +378,7 @@
     },
     {
         "id": "2017",
+        "category": "DESIGN",
         "title": "Dance OVC",
         "desc": "",
         "tags": [
@@ -357,6 +388,7 @@
     },
     {
         "id": "2016",
+        "category": "COMPUTATIONAL",
         "title": "Base Converter",
         "desc": "Number base converter capable of converting any given number from binary base to base 62.",
         "tags": [
@@ -366,6 +398,7 @@
     },
     {
         "id": "2012",
+        "category": "COMPUTATIONAL",
         "title": "Neutrino Photo Viewer",
         "desc": "A simple photo viewer applicaction, born out of sheer boredom with the Windows Photo Viewer in Windows 7, and heavily influenced by the awesomeness of Picasa.",
         "tags": [
@@ -377,6 +410,7 @@
     },
     {
         "id": "2012",
+        "category": "COMPUTATIONAL",
         "title": "Neutrino Email Sender",
         "desc": "Basic email management application with inbox view.",
         "tags": [
@@ -388,6 +422,7 @@
     },
     {
         "id": "2012",
+        "category": "COMPUTATIONAL",
         "title": "Neutrino Sequence Calculator",
         "desc": "A calculator capable of computing the divergence of both finite and infinite sequences.",
         "tags": [
@@ -399,6 +434,7 @@
     },
     {
         "id": "2012",
+        "category": "COMPUTATIONAL",
         "title": "Neutrino Calculator",
         "desc": "An advanced scientific calculator, especially made for complex analysis which also includes unit conversion and date calculation features. This project was submitted to Pran Frooto Viqarunnisa Noon 16th Science Festival-2012.",
         "tags": [
@@ -410,6 +446,7 @@
     },
     {
         "id": "2011",
+        "category": "COMPUTATIONAL",
         "title": "Neutrino Web Browser",
         "desc": "A personalized web browser designed for the purpose of software development practices.",
         "tags": [
@@ -421,6 +458,7 @@
     },
     {
         "id": "2011",
+        "category": "COMPUTATIONAL",
         "title": "Neutrino Screen Capture",
         "desc": "Bespoke screen capture application with basic features built for software development practices.",
         "tags": [

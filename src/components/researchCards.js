@@ -5,15 +5,68 @@ let allResearchData = [];
 let activeCategory = 'ALL';
 let searchQuery = '';
 
+export const CATEGORY_DISPLAY_MAP = {
+    'ALL': 'ALL',
+    'THEORY': 'THEORY',
+    'COMPUTATIONAL': 'COMPUTATIONAL',
+    'DEVOPS': 'DEVOPS',
+    'ML_AI': 'ML & AI',
+    'DESIGN': 'DESIGN'
+};
+
 function classifyCategory(item) {
+    if (item.category) return item.category.toUpperCase();
+
     const text = `${item.title} ${(item.tags || []).join(' ')} ${item.desc || ''}`.toLowerCase();
-    if (text.includes('machine learning') || text.includes('inference') || text.includes('ising') || text.includes('neural') || text.includes('deep learning')) {
-        return 'ML';
+
+    // 1. DESIGN: Video editing, graphic design, LaTeX formatting
+    if (text.includes('premiere') || text.includes('after effects') || text.includes('canva') || 
+        text.includes('filmora') || text.includes('latex') || text.includes('proposal') || 
+        text.includes('protest') || text.includes('dance ovc')) {
+        return 'DESIGN';
     }
-    if (text.includes('quantum') || text.includes('relativistic') || text.includes('orbit') || text.includes('particle') || text.includes('pmns') || text.includes('electromagnetic') || text.includes('waste') || text.includes('conformal') || text.includes('field')) {
+
+    // 2. ML & AI: Neural networks, deep learning, inference, YOLO, RNN, LSTM
+    if (text.includes('machine learning') || text.includes('deep learning') || text.includes('neural') || 
+        text.includes('resnet') || text.includes('face') || text.includes('yolo') || 
+        text.includes('rnn') || text.includes('lstm') || text.includes('trigger word') || 
+        text.includes('speech recognition') || text.includes('tensorflow') || text.includes('keras') || 
+        text.includes('statistical inference') || text.includes('jazz improvisation')) {
+        return 'ML_AI';
+    }
+
+    // 3. DEVOPS: Networking sockets, deployment, portfolios, servers
+    if (text.includes('devops') || text.includes('docker') || text.includes('socket') || 
+        text.includes('networking') || text.includes('gatsby') || text.includes('portfolio')) {
+        return 'DEVOPS';
+    }
+
+    // 4. THEORY: Analytical physics, PMNS, relativity, quantum theory, orbital mechanics
+    if (text.includes('radioactive') || text.includes('relativistic dynamics') || 
+        text.includes('neutrino oscillation') || text.includes('pmns') || text.includes('feynman')) {
         return 'THEORY';
     }
-    return 'COMPUTATION';
+
+    // 5. COMPUTATIONAL: Numerical simulation, algorithms, calculators, solvers
+    return 'COMPUTATIONAL';
+}
+
+function updatePillCounts() {
+    const counts = { ALL: allResearchData.length, THEORY: 0, COMPUTATIONAL: 0, DEVOPS: 0, ML_AI: 0, DESIGN: 0 };
+    allResearchData.forEach(item => {
+        if (counts[item.category] !== undefined) {
+            counts[item.category]++;
+        }
+    });
+
+    const pills = document.querySelectorAll('.archive-pill');
+    pills.forEach(pill => {
+        const cat = pill.dataset.cat;
+        const label = CATEGORY_DISPLAY_MAP[cat] || cat;
+        if (counts[cat] !== undefined) {
+            pill.textContent = `${label} (${counts[cat]})`;
+        }
+    });
 }
 
 export async function initResearchCards() {
@@ -35,6 +88,7 @@ export async function initResearchCards() {
             countBadge.textContent = `${allResearchData.length} ENTRIES`;
         }
 
+        updatePillCounts();
         renderArchiveCatalog();
         setupArchiveListeners();
 
@@ -97,7 +151,7 @@ function renderArchiveCatalog() {
                 ` : ''}
 
                 <div class="archive-row-tags">
-                    <span class="archive-cat-badge ${data.category.toLowerCase()}">${data.category}</span>
+                    <span class="archive-cat-badge ${(data.category || '').toLowerCase().replace(/[^a-z0-9]/g, '_')}">${CATEGORY_DISPLAY_MAP[data.category] || data.category}</span>
                     ${(data.tags || []).map(t => `<span class="archive-tag">${t}</span>`).join('')}
                 </div>
 
