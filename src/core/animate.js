@@ -414,12 +414,11 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                 quantumLine.style.pointerEvents = qOpacity > 0.5 ? 'auto' : 'none';
             }
 
-            // Pan Camera Centering Mechanics matching original HTML CSS transform rules
-            let panProgress = 0;
-            if (STATE.researchScrollY > 95.0) panProgress = Math.min(1.0, STATE.researchScrollY - 95.0);
-            let easedPan = panProgress * panProgress * (3.0 - 2.0 * panProgress);
-                const leftHemi = document.getElementById('left-hemi');
-            if (leftHemi) leftHemi.style.transform = `translateX(${easedPan * 25}vw)`;
+            // Left hemisphere is firmly docked in dual-hemisphere layout
+            const leftHemi = document.getElementById('left-hemi');
+            if (leftHemi && leftHemi.style.transform !== 'none') {
+                leftHemi.style.transform = 'none';
+            }
         }
         else if (STATE.phase === 'WORKS' && !STATE.transitioning) {
             // WORKS phase: Update GeoFNO playback if active

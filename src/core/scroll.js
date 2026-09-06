@@ -111,9 +111,11 @@ export function initScroll() {
         }
     }
 
+    const NATIVE_SCROLL_SELECTORS = '.card-logs, .hud-card.expanded, #readme-modal-overlay, .archive-catalog-panel, #archive-catalog-scroll, .playground-panel, #playground-bento-grid, #playground-modal, .playground-iframe-container, #terminal-overlay';
+
     window.addEventListener('wheel', (e) => {
-        // If scrolling inside an expanded card, card-logs container, or readme modal, allow natural DOM scroll
-        if (e.target.closest('.card-logs') || e.target.closest('.hud-card.expanded') || e.target.closest('#readme-modal-overlay')) {
+        // If scrolling inside any scrollable overlay or panel, allow natural DOM scroll
+        if (e.target.closest(NATIVE_SCROLL_SELECTORS)) {
             return;
         }
 
@@ -136,7 +138,7 @@ export function initScroll() {
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
-        if (e.target.closest('.card-logs') || e.target.closest('.hud-card.expanded') || e.target.closest('#readme-modal-overlay')) {
+        if (e.target.closest(NATIVE_SCROLL_SELECTORS)) {
             return;
         }
         e.preventDefault();

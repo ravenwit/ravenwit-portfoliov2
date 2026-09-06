@@ -359,3 +359,20 @@
 .carousel-arrow-right:hover .arrow-icon {
     transform: translateX(4px);
 }
+
+@media (max-width: 768px) {
+    .works-ladder-nav {
+        right: 8px;
+        padding: 8px 4px;
+        border-radius: 16px;
+    }
+    .ladder-header {
+        display: none;
+    }
+    .ladder-info {
+        display: none;
+    }
+    .ladder-node {
+        padding: 6px;
+    }
+}

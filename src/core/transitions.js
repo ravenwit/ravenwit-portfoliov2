@@ -547,6 +547,9 @@ function mountSector(targetPhase, deps) {
             audioToggle.style.pointerEvents = 'auto';
         }
     } else if (targetPhase === 'TIMELINE') {
+        camera.fov = 75;
+        camera.updateProjectionMatrix();
+
         if (torusMat) torusMat.visible = false;
         if (nodeGroup) nodeGroup.visible = true;
         if (gridMat) {

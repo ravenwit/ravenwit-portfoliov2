@@ -243,6 +243,11 @@ async function init() {
         researchBackBtn.addEventListener('click', initiateResearchToHero);
     }
 
+    const playgroundBackBtn = document.getElementById('playground-back');
+    if (playgroundBackBtn) {
+        playgroundBackBtn.addEventListener('click', () => navigateToSector('HERO'));
+    }
+
     // Show/hide timeline back button based on phase
     function updateTimelineBackBtn() {
         if (timelineBackBtn) {
