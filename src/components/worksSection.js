@@ -112,6 +112,17 @@ export function showExhibit(index) {
     // Update UI
     updateCarouselUI();
 
+    // Live Dock Integration: sync dock telemetry with active exhibit
+    const EXHIBIT_TAGS = [
+        '02 HIGHLIGHTS // EXHIBIT 01: MEGH VAULT',
+        '02 HIGHLIGHTS // EXHIBIT 02: GEO-FNO TORUS',
+        '02 HIGHLIGHTS // EXHIBIT 03: ISING LATTICE'
+    ];
+    const sectorEl = document.getElementById('dock-active-sector-id');
+    if (sectorEl && EXHIBIT_TAGS[index]) {
+        sectorEl.textContent = EXHIBIT_TAGS[index];
+    }
+
     // Show/hide "View More Projects" button (shown only on last exhibit)
     if (toResearchBtn) {
         toResearchBtn.style.display = (index === EXHIBITS.length - 1) ? 'inline-block' : 'none';

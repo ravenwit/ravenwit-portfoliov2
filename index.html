@@ -460,6 +460,22 @@
             <div class="playground-iframe-container">
                 <iframe id="playground-iframe" src="about:blank" sandbox="allow-scripts allow-same-origin allow-pointer-lock" title="Simulation Sandbox"></iframe>
             </div>
+            <!-- Cyberdeck Telemetry Bridge to Dock -->
+            <div class="playground-modal-bridge">
+                <div class="bridge-col left">
+                    <span class="bridge-tag">[BUS::LINKED]</span>
+                    <span class="bridge-status"><span class="pulse-dot"></span> RUNTIME ACTIVE</span>
+                </div>
+                <div class="bridge-center-conduit">
+                    <div class="conduit-line"></div>
+                    <span class="conduit-pip">◈</span>
+                    <div class="conduit-line"></div>
+                </div>
+                <div class="bridge-col right">
+                    <span class="bridge-tag">ESC // CLOSE</span>
+                    <span class="bridge-pedestal">[PEDESTAL::04_DOCK]</span>
+                </div>
+            </div>
         </div>
         <!-- Back button -->
         <button id="playground-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:8px 16px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12px; backdrop-filter:blur(4px);">← Back to Home</button>

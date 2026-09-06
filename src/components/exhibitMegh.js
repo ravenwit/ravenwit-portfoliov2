@@ -46,23 +46,23 @@ export function initMeghExhibit() {
     font-weight: 600;
     margin-bottom: 0.5rem;
     text-align: center;
-    margin-top: 2rem;
+    margin-top: 1rem;
 }
 
 #megh-exhibit .section-title {
-    font-size: clamp(2rem, 4vw, 3rem);
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
     font-weight: 800;
     letter-spacing: -1px;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     line-height: 1.1;
     text-align: center;
 }
 
 #megh-exhibit .section-subtitle {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: var(--text-secondary);
     max-width: 600px;
-    margin: 0 auto 3rem auto;
+    margin: 0 auto 1.5rem auto;
     text-align: center;
 }
 
@@ -70,7 +70,7 @@ export function initMeghExhibit() {
     position: relative;
     width: 100%;
     max-width: 900px;
-    height: 400px; /* Reduced to fit better inside the viewport */
+    height: clamp(260px, 36vh, 360px);
     margin: 0 auto;
     perspective: 1200px;
 }
@@ -371,7 +371,7 @@ export function initMeghExhibit() {
         </div>
     </div>
     
-    <a href="https://megh-vault.vercel.app" target="_blank" style="margin-top:0px; display:inline-block; padding:10px 20px; background:linear-gradient(135deg, #4a9eff, #8b5cf6); color:#fff; text-decoration:none; font-family:'JetBrains Mono', monospace; font-weight:bold; font-size:0.9rem; border:none; border-radius:8px; cursor:pointer; box-shadow:0 4px 15px rgba(74, 158, 255, 0.4); z-index:10; position:relative; margin-bottom: 2rem;">
+    <a href="https://megh-vault.vercel.app" target="_blank" style="margin-top:14px; display:inline-flex; align-items:center; gap:8px; padding:10px 22px; background:linear-gradient(135deg, #4a9eff, #8b5cf6); color:#fff; text-decoration:none; font-family:'JetBrains Mono', monospace; font-weight:bold; font-size:0.85rem; border:none; border-radius:8px; cursor:pointer; box-shadow:0 4px 15px rgba(74, 158, 255, 0.4); z-index:10; position:relative; margin-bottom: 24px;">
         Visit Megh →
     </a>
 </div>

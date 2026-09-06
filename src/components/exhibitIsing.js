@@ -49,7 +49,7 @@ export function initIsingExhibit() {
         .ising-left-panel {
             position: absolute;
             left: 40px;
-            top: 50%;
+            top: calc(50% - 25px);
             transform: translateY(-50%);
             width: 400px;
             max-width: calc(100vw - 80px);
@@ -68,7 +68,7 @@ export function initIsingExhibit() {
         .ising-right-panel {
             position: absolute;
             right: 40px;
-            top: 50%;
+            top: calc(50% - 25px);
             transform: translateY(-50%);
             z-index: 10;
             pointer-events: auto;
@@ -146,7 +146,7 @@ export function initIsingExhibit() {
         
         @media (max-width: 900px) {
             .ising-left-panel { top: 20px; left: 20px; transform: none; width: calc(100% - 40px); }
-            .ising-right-panel { top: auto; bottom: 80px; right: 20px; transform: none; width: calc(100% - 40px); flex-direction: row; flex-wrap: wrap; }
+            .ising-right-panel { top: auto; bottom: 20px; right: 20px; transform: none; width: calc(100% - 40px); flex-direction: row; flex-wrap: wrap; }
             .telemetry-card { flex: 1; min-width: 150px; }
         }
         </style>

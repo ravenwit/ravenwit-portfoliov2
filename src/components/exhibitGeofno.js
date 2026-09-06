@@ -112,12 +112,13 @@ export function createModernLayout(container) {
             gap: 20px;
             width: 100%;
             height: 100%;
-            padding: 40px;
+            padding: 24px 40px 16px 40px;
             box-sizing: border-box;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             color: #fff;
             align-items: center;
             justify-content: center;
+            transform: translateY(-25px);
         }
         
         @media (min-width: 768px) {

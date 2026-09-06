@@ -223,6 +223,12 @@ export function openSimulationModal(fileUrl, title) {
     if (titleEl) titleEl.textContent = title;
     iframe.src = fileUrl;
     modal.classList.add('active');
+
+    // Live Dock Integration: sync dock telemetry with active simulation
+    const sectorEl = document.getElementById('dock-active-sector-id');
+    if (sectorEl) {
+        sectorEl.textContent = `04 PLAYGROUND // SIM: ${title.toUpperCase()}`;
+    }
 }
 
 export function closeSimulationModal() {
@@ -232,4 +238,10 @@ export function closeSimulationModal() {
 
     modal.classList.remove('active');
     if (iframe) iframe.src = 'about:blank';
+
+    // Revert dock telemetry
+    const sectorEl = document.getElementById('dock-active-sector-id');
+    if (sectorEl) {
+        sectorEl.textContent = '04 PLAYGROUND';
+    }
 }

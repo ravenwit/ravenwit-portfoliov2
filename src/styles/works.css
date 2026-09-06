@@ -1,7 +1,12 @@
 /* --- Works Section Styles --- */
 
-/* Works UI Layer — enable pointer events for interactivity */
+/* Works UI Layer — bounded within H_clear so all exhibits and buttons clear the dock */
 #ui-works {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 105px) !important;
     pointer-events: auto;
 }
 
@@ -41,7 +46,7 @@
 .works-ladder-nav {
     position: fixed;
     right: 28px;
-    top: 50%;
+    top: calc(50% - 25px);
     transform: translateY(-50%);
     z-index: 100;
     display: flex;
@@ -301,6 +306,7 @@
 
 /* Action Button (View More Projects) */
 .action-button {
+    bottom: 24px !important;
     transition: all 0.3s ease;
 }
 

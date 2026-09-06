@@ -424,10 +424,17 @@ export function initiateResearchToHero() {
 // === UNIFIED GLOBAL SECTOR ROUTER ===
 
 export function syncDockUI(phase) {
+    const EXHIBIT_TAGS = [
+        '02 HIGHLIGHTS // EXHIBIT 01: MEGH VAULT',
+        '02 HIGHLIGHTS // EXHIBIT 02: GEO-FNO TORUS',
+        '02 HIGHLIGHTS // EXHIBIT 03: ISING LATTICE'
+    ];
     const sectorMap = {
         'HERO': '00 ORIGIN',
         'TIMELINE': '01 TIMELINE',
-        'WORKS': '02 HIGHLIGHTS',
+        'WORKS': (STATE.worksExhibitIndex !== undefined && STATE.worksExhibitIndex >= 0 && EXHIBIT_TAGS[STATE.worksExhibitIndex])
+            ? EXHIBIT_TAGS[STATE.worksExhibitIndex]
+            : '02 HIGHLIGHTS // EXHIBIT 01: MEGH VAULT',
         'RESEARCH': '03 ARCHIVE',
         'PLAYGROUND': '04 PLAYGROUND'
     };
