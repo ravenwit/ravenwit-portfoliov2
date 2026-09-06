@@ -117,15 +117,21 @@ export const SIMULATION_EXPERIMENTS = [
 ];
 
 let activeCategory = 'ALL';
+let isPlaygroundInitialized = false;
 
 export function initPlayground() {
     renderPlaygroundGrid();
-    setupPlaygroundListeners();
+    if (!isPlaygroundInitialized) {
+        setupPlaygroundListeners();
+        isPlaygroundInitialized = true;
+    }
 }
 
 function renderPlaygroundGrid() {
     const gridEl = document.getElementById('playground-bento-grid');
     if (!gridEl) return;
+
+    gridEl.scrollTop = 0;
 
     const filtered = activeCategory === 'ALL' 
         ? SIMULATION_EXPERIMENTS 

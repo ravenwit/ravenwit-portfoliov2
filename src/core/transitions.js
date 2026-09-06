@@ -651,7 +651,7 @@ function mountSector(targetPhase, deps) {
 
         const pgUI = document.getElementById('ui-playground');
         if (pgUI) {
-            pgUI.style.display = 'block';
+            pgUI.style.display = 'flex';
             pgUI.style.opacity = '1';
         }
         import('../components/playgroundSection.js').then(mod => {

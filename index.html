@@ -409,20 +409,30 @@
     <div id="ui-playground" class="ui-layer" style="display: none; opacity: 0;">
         <div class="playground-panel">
             <div class="playground-header">
-                <div class="playground-title-group">
-                    <div class="playground-badge-strip">
-                        <span class="pulse-dot"></span>
-                        <span class="playground-sector-tag">SECTOR 04 // SIMULATION LAB</span>
+                <div class="playground-header-left">
+                    <button id="playground-back" class="playground-back-btn" aria-label="Return to Hero Hub">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        <span>HUB</span>
+                    </button>
+                    <div class="playground-header-divider"></div>
+                    <div class="playground-title-group">
+                        <div class="playground-badge-strip">
+                            <span class="pulse-dot"></span>
+                            <span class="playground-sector-tag">SECTOR 04 // SIMULATION LAB</span>
+                        </div>
+                        <h2 class="playground-headline">PHYSICS PLAYGROUND</h2>
+                        <p class="playground-subtag">INTERACTIVE COMPUTATIONAL RUNTIMES // STANDALONE EXPERIMENTS</p>
                     </div>
-                    <h2 class="playground-headline">PHYSICS PLAYGROUND</h2>
-                    <p class="playground-subtag">INTERACTIVE COMPUTATIONAL RUNTIMES // STANDALONE EXPERIMENTS</p>
                 </div>
                 <div class="playground-filter-bar">
                     <button class="playground-filter-btn active" data-category="ALL">ALL (14)</button>
-                    <button class="playground-filter-btn" data-category="QUANTUM & QFT">QUANTUM & QFT</button>
-                    <button class="playground-filter-btn" data-category="TOPOLOGY">TOPOLOGY</button>
-                    <button class="playground-filter-btn" data-category="COMPLEX ANALYSIS">COMPLEX ANALYSIS</button>
-                    <button class="playground-filter-btn" data-category="FLOW & HARMONICS">FLOW & HARMONICS</button>
+                    <button class="playground-filter-btn" data-category="QUANTUM & QFT">QUANTUM & QFT (4)</button>
+                    <button class="playground-filter-btn" data-category="TOPOLOGY">TOPOLOGY (4)</button>
+                    <button class="playground-filter-btn" data-category="COMPLEX ANALYSIS">COMPLEX ANALYSIS (3)</button>
+                    <button class="playground-filter-btn" data-category="FLOW & HARMONICS">FLOW & HARMONICS (3)</button>
                 </div>
             </div>
 
@@ -470,8 +480,6 @@
                 </div>
             </div>
         </div>
-        <!-- Back button -->
-        <button id="playground-back" class="back-button" style="position:fixed; top:20px; left:20px; z-index:100; background:transparent; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:8px 16px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:12px; backdrop-filter:blur(4px);">← Back to Home</button>
     </div>
 
     <!-- README MODAL OVERLAY -->
