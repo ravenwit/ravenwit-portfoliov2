@@ -497,7 +497,7 @@ export function triggerSocialBeadsSweep() {
     beads.forEach((bead, i) => {
         setTimeout(() => {
             bead.classList.add('light-sweep');
-            setTimeout(() => bead.classList.remove('light-sweep'), 650);
-        }, i * 85);
+            setTimeout(() => bead.classList.remove('light-sweep'), 1150);
+        }, i * 140);
     });
 }

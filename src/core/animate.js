@@ -47,51 +47,51 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                                 audioToggle.style.opacity = '1';
                             }
 
-                            // Light sweep across social links as hero settles (350ms after hero opacity starts)
+                            // Light sweep across social links as hero settles (450ms after hero opacity starts)
                             setTimeout(() => {
                                 import('../components/orbitalBeads.js').then(m => {
                                     if (m.triggerSocialBeadsSweep) m.triggerSocialBeadsSweep();
                                 });
-                            }, 350);
+                            }, 450);
                         }, 1000);
                     }
 
                     // Cyberdeck Pedestal Rise & Attention Choreography:
-                    // Reveal the dock after a 1000ms delay following Hero UI emergence (~2000ms from torus crystallization)
+                    // Reveal the dock after a relaxed delay following Hero UI emergence (~2400ms from torus crystallization)
                     const dockEl = document.getElementById('global-nav-dock');
 
                     setTimeout(() => {
                         if (dockEl) {
                             dockEl.classList.add('dock-revealed');
 
-                            // 1) Telemetry shimmer sweep as dock settles into place (450ms into rise)
+                            // 1) Telemetry shimmer sweep as dock settles into place (400ms into rise)
                             setTimeout(() => {
                                 const telemetryStrip = dockEl.querySelector('.dock-telemetry-strip');
                                 if (telemetryStrip) {
                                     telemetryStrip.classList.add('shimmer-active');
-                                    setTimeout(() => telemetryStrip.classList.remove('shimmer-active'), 900);
+                                    setTimeout(() => telemetryStrip.classList.remove('shimmer-active'), 1500);
                                 }
-                            }, 450);
+                            }, 400);
 
-                            // 2) Staggered Boot Pulse across button status pips (650ms into rise)
+                            // 2) Staggered Boot Pulse across button status pips (700ms into rise, 110ms stagger)
                             const pips = dockEl.querySelectorAll('.dock-btn .dock-pip');
                             pips.forEach((pip, idx) => {
                                 setTimeout(() => {
                                     pip.classList.add('boot-pulse');
-                                    setTimeout(() => pip.classList.remove('boot-pulse'), 500);
-                                }, 650 + idx * 55);
+                                    setTimeout(() => pip.classList.remove('boot-pulse'), 850);
+                                }, 700 + idx * 110);
                             });
 
-                            // 3) Momentary Hotkey Accent Highlights (750ms into rise)
+                            // 3) Momentary Hotkey Accent Highlights (850ms into rise, 110ms stagger)
                             const keys = dockEl.querySelectorAll('.dock-btn .dock-key');
                             keys.forEach((key, idx) => {
                                 setTimeout(() => {
                                     key.classList.add('boot-flash');
-                                    setTimeout(() => key.classList.remove('boot-flash'), 850);
-                                }, 750 + idx * 55);
+                                    setTimeout(() => key.classList.remove('boot-flash'), 1150);
+                                }, 850 + idx * 110);
                             });
                         }
-                    }, 2000);
+                    }, 2400);
                     const start = camera.position.clone();
                     const target = new THREE.Vector3(0, 0, 50);
                     let tt = 0;

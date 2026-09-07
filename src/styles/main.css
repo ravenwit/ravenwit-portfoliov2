@@ -235,10 +235,15 @@ canvas {
         border-color: rgba(0, 255, 255, 0.4);
         box-shadow: 0 0 8px rgba(0, 255, 255, 0.1);
     }
-    35% {
-        transform: scale(1.22);
+    30% {
+        transform: scale(1.18);
         border-color: #ffffff;
-        box-shadow: 0 0 24px rgba(0, 255, 255, 0.95), inset 0 0 10px rgba(0, 255, 255, 0.5);
+        box-shadow: 0 0 24px rgba(0, 255, 255, 0.9), inset 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+    60% {
+        transform: scale(1.08);
+        border-color: rgba(0, 255, 255, 0.75);
+        box-shadow: 0 0 16px rgba(0, 255, 255, 0.5);
     }
     100% {
         transform: scale(1);
@@ -248,7 +253,7 @@ canvas {
 }
 
 .orbital-bead.light-sweep {
-    animation: bead-light-sweep 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: bead-light-sweep 1.1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     z-index: 10;
 }
 
@@ -262,10 +267,15 @@ canvas {
         border-color: rgba(192, 132, 252, 0.6);
         box-shadow: 0 0 12px rgba(192, 132, 252, 0.2);
     }
-    35% {
-        transform: scale(1.22);
+    30% {
+        transform: scale(1.18);
         border-color: #ffffff;
-        box-shadow: 0 0 28px rgba(192, 132, 252, 1), inset 0 0 12px rgba(192, 132, 252, 0.6);
+        box-shadow: 0 0 28px rgba(192, 132, 252, 0.95), inset 0 0 12px rgba(192, 132, 252, 0.6);
+    }
+    60% {
+        transform: scale(1.08);
+        border-color: rgba(192, 132, 252, 0.8);
+        box-shadow: 0 0 18px rgba(192, 132, 252, 0.5);
     }
     100% {
         transform: scale(1);
@@ -275,7 +285,7 @@ canvas {
 }
 
 .document-bead.light-sweep {
-    animation: document-bead-light-sweep 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: document-bead-light-sweep 1.1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     z-index: 10;
 }
 
@@ -2553,7 +2563,7 @@ canvas {
     z-index: 1200;
     opacity: 0;
     pointer-events: none;
-    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s ease;
 }
 
 .global-nav-dock.dock-revealed {
@@ -2589,23 +2599,23 @@ canvas {
     position: absolute;
     top: 0;
     left: -100%;
-    width: 60%;
+    width: 80%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.85), transparent);
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 243, 255, 0.15) 25%, rgba(0, 243, 255, 0.85) 50%, rgba(0, 243, 255, 0.15) 75%, transparent 100%);
     transform: skewX(-20deg);
     pointer-events: none;
     opacity: 0;
 }
 
 .dock-telemetry-strip.shimmer-active::after {
-    animation: telemetry-shimmer 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: telemetry-shimmer 1.4s cubic-bezier(0.25, 1, 0.35, 1) forwards;
 }
 
 @keyframes telemetry-shimmer {
-    0% { left: -60%; opacity: 0; }
-    20% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { left: 160%; opacity: 0; }
+    0% { left: -80%; opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { left: 180%; opacity: 0; }
 }
 
 .dock-telemetry-strip strong {
@@ -2657,12 +2667,13 @@ canvas {
 
 @keyframes pip-boot-pulse {
     0% { transform: scale(1); filter: brightness(1); }
-    40% { transform: scale(1.8); filter: brightness(2.8); box-shadow: 0 0 14px currentColor; }
+    35% { transform: scale(1.6); filter: brightness(2.2); box-shadow: 0 0 14px currentColor; }
+    70% { transform: scale(1.2); filter: brightness(1.6); box-shadow: 0 0 8px currentColor; }
     100% { transform: scale(1); filter: brightness(1); }
 }
 
 .dock-pip.boot-pulse {
-    animation: pip-boot-pulse 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: pip-boot-pulse 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 .dock-key {
@@ -2678,12 +2689,13 @@ canvas {
 
 @keyframes hotkey-boot-flash {
     0% { filter: brightness(1); }
-    35% { filter: brightness(2.2); text-shadow: 0 0 10px currentColor; box-shadow: 0 0 8px currentColor; border-color: currentColor; }
+    30% { filter: brightness(2.2); text-shadow: 0 0 12px currentColor; box-shadow: 0 0 8px currentColor; border-color: currentColor; }
+    70% { filter: brightness(1.5); text-shadow: 0 0 6px currentColor; }
     100% { filter: brightness(1); }
 }
 
 .dock-key.boot-flash {
-    animation: hotkey-boot-flash 0.85s ease-out forwards;
+    animation: hotkey-boot-flash 1.1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 #nav-btn-hero .dock-key.boot-flash { color: #67e8f9; }
