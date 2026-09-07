@@ -2330,7 +2330,9 @@ canvas {
     justify-content: center;
     z-index: 100;
     backdrop-filter: blur(8px);
-    transition: all 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease, opacity 0.8s ease;
     box-shadow: 0 0 10px rgba(0, 255, 255, 0.1), inset 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
@@ -2494,8 +2496,9 @@ canvas {
     align-items: center;
     gap: 6px;
     z-index: 1200;
-    pointer-events: auto;
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
 }
 
 .dock-telemetry-strip {

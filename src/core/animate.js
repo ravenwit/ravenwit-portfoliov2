@@ -37,7 +37,24 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                     const heroEl = document.getElementById('ui-hero');
                     if (heroEl) {
                         heroEl.style.display = 'block'; // Ensure it's not display: none
-                        setTimeout(() => heroEl.style.opacity = 1, 1000);
+                        setTimeout(() => {
+                            heroEl.style.pointerEvents = 'auto';
+                            heroEl.style.opacity = '1';
+                        }, 1000);
+                    }
+                    const dockEl = document.getElementById('global-nav-dock');
+                    if (dockEl) {
+                        setTimeout(() => {
+                            dockEl.style.pointerEvents = 'auto';
+                            dockEl.style.opacity = '1';
+                        }, 1000);
+                    }
+                    const audioToggle = document.getElementById('audio-toggle');
+                    if (audioToggle) {
+                        setTimeout(() => {
+                            audioToggle.style.pointerEvents = 'auto';
+                            audioToggle.style.opacity = '1';
+                        }, 1000);
                     }
                     const start = camera.position.clone();
                     const target = new THREE.Vector3(0, 0, 50);
