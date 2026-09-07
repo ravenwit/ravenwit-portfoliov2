@@ -442,6 +442,10 @@ export function syncDockUI(phase) {
         'RESEARCH': '03 ARCHIVE',
         'PLAYGROUND': '04 PLAYGROUND'
     };
+    const dockEl = document.getElementById('global-nav-dock');
+    if (dockEl && !dockEl.classList.contains('dock-revealed') && phase !== 'LOADING' && phase !== 'HERO') {
+        dockEl.classList.add('dock-revealed');
+    }
     const sectorEl = document.getElementById('dock-active-sector-id');
     if (sectorEl && sectorMap[phase]) {
         sectorEl.textContent = sectorMap[phase];

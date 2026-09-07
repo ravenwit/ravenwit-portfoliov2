@@ -40,22 +40,58 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                         setTimeout(() => {
                             heroEl.style.pointerEvents = 'auto';
                             heroEl.style.opacity = '1';
+
+                            const audioToggle = document.getElementById('audio-toggle');
+                            if (audioToggle) {
+                                audioToggle.style.pointerEvents = 'auto';
+                                audioToggle.style.opacity = '1';
+                            }
+
+                            // Light sweep across social links as hero settles (350ms after hero opacity starts)
+                            setTimeout(() => {
+                                import('../components/orbitalBeads.js').then(m => {
+                                    if (m.triggerSocialBeadsSweep) m.triggerSocialBeadsSweep();
+                                });
+                            }, 350);
                         }, 1000);
                     }
+
+                    // Cyberdeck Pedestal Rise & Attention Choreography:
+                    // Reveal the dock after a 1000ms delay following Hero UI emergence (~2000ms from torus crystallization)
                     const dockEl = document.getElementById('global-nav-dock');
-                    if (dockEl) {
-                        setTimeout(() => {
-                            dockEl.style.pointerEvents = 'auto';
-                            dockEl.style.opacity = '1';
-                        }, 1000);
-                    }
-                    const audioToggle = document.getElementById('audio-toggle');
-                    if (audioToggle) {
-                        setTimeout(() => {
-                            audioToggle.style.pointerEvents = 'auto';
-                            audioToggle.style.opacity = '1';
-                        }, 1000);
-                    }
+
+                    setTimeout(() => {
+                        if (dockEl) {
+                            dockEl.classList.add('dock-revealed');
+
+                            // 1) Telemetry shimmer sweep as dock settles into place (450ms into rise)
+                            setTimeout(() => {
+                                const telemetryStrip = dockEl.querySelector('.dock-telemetry-strip');
+                                if (telemetryStrip) {
+                                    telemetryStrip.classList.add('shimmer-active');
+                                    setTimeout(() => telemetryStrip.classList.remove('shimmer-active'), 900);
+                                }
+                            }, 450);
+
+                            // 2) Staggered Boot Pulse across button status pips (650ms into rise)
+                            const pips = dockEl.querySelectorAll('.dock-btn .dock-pip');
+                            pips.forEach((pip, idx) => {
+                                setTimeout(() => {
+                                    pip.classList.add('boot-pulse');
+                                    setTimeout(() => pip.classList.remove('boot-pulse'), 500);
+                                }, 650 + idx * 55);
+                            });
+
+                            // 3) Momentary Hotkey Accent Highlights (750ms into rise)
+                            const keys = dockEl.querySelectorAll('.dock-btn .dock-key');
+                            keys.forEach((key, idx) => {
+                                setTimeout(() => {
+                                    key.classList.add('boot-flash');
+                                    setTimeout(() => key.classList.remove('boot-flash'), 850);
+                                }, 750 + idx * 55);
+                            });
+                        }
+                    }, 2000);
                     const start = camera.position.clone();
                     const target = new THREE.Vector3(0, 0, 50);
                     let tt = 0;

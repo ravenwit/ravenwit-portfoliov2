@@ -490,3 +490,14 @@ function hexToRgba(hex, alpha) {
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+// ── Light Sweep across Social Beads (Intro Sequence) ───────────
+export function triggerSocialBeadsSweep() {
+    const beads = document.querySelectorAll('.orbital-bead');
+    beads.forEach((bead, i) => {
+        setTimeout(() => {
+            bead.classList.add('light-sweep');
+            setTimeout(() => bead.classList.remove('light-sweep'), 650);
+        }, i * 85);
+    });
+}

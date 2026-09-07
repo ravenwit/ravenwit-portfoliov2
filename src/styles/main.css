@@ -228,6 +228,61 @@ canvas {
     opacity: 1;
 }
 
+/* Bead Light Sweep (Entrance Sequence) */
+@keyframes bead-light-sweep {
+    0% {
+        transform: scale(1);
+        border-color: rgba(0, 255, 255, 0.4);
+        box-shadow: 0 0 8px rgba(0, 255, 255, 0.1);
+    }
+    35% {
+        transform: scale(1.22);
+        border-color: #ffffff;
+        box-shadow: 0 0 24px rgba(0, 255, 255, 0.95), inset 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+    100% {
+        transform: scale(1);
+        border-color: rgba(0, 255, 255, 0.4);
+        box-shadow: 0 0 8px rgba(0, 255, 255, 0.1);
+    }
+}
+
+.orbital-bead.light-sweep {
+    animation: bead-light-sweep 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    z-index: 10;
+}
+
+.orbital-bead.light-sweep .bead-icon {
+    fill: #ffffff;
+}
+
+@keyframes document-bead-light-sweep {
+    0% {
+        transform: scale(1);
+        border-color: rgba(192, 132, 252, 0.6);
+        box-shadow: 0 0 12px rgba(192, 132, 252, 0.2);
+    }
+    35% {
+        transform: scale(1.22);
+        border-color: #ffffff;
+        box-shadow: 0 0 28px rgba(192, 132, 252, 1), inset 0 0 12px rgba(192, 132, 252, 0.6);
+    }
+    100% {
+        transform: scale(1);
+        border-color: rgba(192, 132, 252, 0.6);
+        box-shadow: 0 0 12px rgba(192, 132, 252, 0.2);
+    }
+}
+
+.document-bead.light-sweep {
+    animation: document-bead-light-sweep 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    z-index: 10;
+}
+
+.document-bead.light-sweep .bead-icon {
+    fill: #ffffff;
+}
+
 /* --- HUD --- */
 #hud {
     position: fixed;
@@ -2490,7 +2545,7 @@ canvas {
     position: fixed;
     bottom: 20px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, 30px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2498,10 +2553,18 @@ canvas {
     z-index: 1200;
     opacity: 0;
     pointer-events: none;
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+}
+
+.global-nav-dock.dock-revealed {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .dock-telemetry-strip {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -2517,9 +2580,32 @@ canvas {
     backdrop-filter: blur(8px);
     white-space: nowrap;
     max-width: 90vw;
-    overflow: hidden;
     text-overflow: ellipsis;
     transition: all 0.3s ease;
+}
+
+.dock-telemetry-strip::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.85), transparent);
+    transform: skewX(-20deg);
+    pointer-events: none;
+    opacity: 0;
+}
+
+.dock-telemetry-strip.shimmer-active::after {
+    animation: telemetry-shimmer 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes telemetry-shimmer {
+    0% { left: -60%; opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { left: 160%; opacity: 0; }
 }
 
 .dock-telemetry-strip strong {
@@ -2569,6 +2655,16 @@ canvas {
     transition: all 0.25s ease;
 }
 
+@keyframes pip-boot-pulse {
+    0% { transform: scale(1); filter: brightness(1); }
+    40% { transform: scale(1.8); filter: brightness(2.8); box-shadow: 0 0 14px currentColor; }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+.dock-pip.boot-pulse {
+    animation: pip-boot-pulse 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .dock-key {
     font-family: 'JetBrains Mono', monospace;
     font-size: 8px;
@@ -2579,6 +2675,23 @@ canvas {
     opacity: 0.8;
     color: #ffffff;
 }
+
+@keyframes hotkey-boot-flash {
+    0% { filter: brightness(1); }
+    35% { filter: brightness(2.2); text-shadow: 0 0 10px currentColor; box-shadow: 0 0 8px currentColor; border-color: currentColor; }
+    100% { filter: brightness(1); }
+}
+
+.dock-key.boot-flash {
+    animation: hotkey-boot-flash 0.85s ease-out forwards;
+}
+
+#nav-btn-hero .dock-key.boot-flash { color: #67e8f9; }
+#nav-btn-timeline .dock-key.boot-flash { color: #00f3ff; }
+#nav-btn-works .dock-key.boot-flash { color: #ffaa00; }
+#nav-btn-archive .dock-key.boot-flash { color: #c084fc; }
+#nav-btn-playground .dock-key.boot-flash { color: #10b981; }
+#nav-btn-terminal .dock-key.boot-flash { color: #34d399; }
 
 /* Themes per sector */
 .hero-dock-theme { color: #67e8f9; border-color: rgba(103, 232, 249, 0.2); }
