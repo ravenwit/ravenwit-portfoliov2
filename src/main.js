@@ -19,6 +19,7 @@ import { terminal } from './components/terminal.js';
 import { createVortex } from './components/vortexSingularity.js';
 import { initWorksCarousel } from './components/worksSection.js';
 import { initReadmeOverlay } from './components/readmeOverlay.js';
+import { initMobileController } from './mobile/mobileController.js';
 
 async function init() {
     const statusDisp = document.getElementById('status-display');
@@ -31,6 +32,12 @@ async function init() {
 
     window.addEventListener('click', (e) => {
         console.log("Global click registered on:", e.target, e.target.id, e.target.className);
+    });
+
+    STATE.isMobile = window.innerWidth <= 768;
+    window.STATE = STATE;
+    window.addEventListener('resize', () => {
+        STATE.isMobile = window.innerWidth <= 768;
     });
 
     // --- 0. FETCH DATA ---
@@ -160,7 +167,9 @@ async function init() {
     });
 
     import('./components/orbitalBeads.js').then(module => {
-        module.initOrbitalBeads();
+        if (!STATE.isMobile) {
+            module.initOrbitalBeads();
+        }
     });
 
     initHobbies();
@@ -226,6 +235,10 @@ async function init() {
     // --- 11. INIT WORKS CAROUSEL & README OVERLAY ---
     initWorksCarousel();
     initReadmeOverlay();
+
+    if (STATE.isMobile) {
+        initMobileController();
+    }
 
     // --- 12. WIRE BACK BUTTONS ---
     const timelineBackBtn = document.getElementById('timeline-back');

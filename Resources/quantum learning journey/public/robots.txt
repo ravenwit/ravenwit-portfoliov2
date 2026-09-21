@@ -1,0 +1,6 @@
+# Robots.txt for qucontext
+# Allow crawling for educational and scientific research indexing
+User-agent: *
+Allow: /
+
+Sitemap: https://qucontext.app/sitemap.xml

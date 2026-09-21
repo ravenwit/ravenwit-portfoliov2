@@ -20,6 +20,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
     function animate(timestamp) {
         requestAnimationFrame(animate);
+        if (STATE.isDrawerOpen) return; // Battery saving while reading mobile drawer
         timer.update(timestamp);
         updateScroll(timestamp);
         const dt = timer.getDelta(); const time = timer.getElapsed();
@@ -38,21 +39,16 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                     if (heroEl) {
                         heroEl.style.display = 'block'; // Ensure it's not display: none
                         setTimeout(() => {
-                            heroEl.style.pointerEvents = 'auto';
-                            heroEl.style.opacity = '1';
+                            if (STATE.phase === 'HERO') {
+                                heroEl.style.pointerEvents = 'auto';
+                                heroEl.style.opacity = '1';
 
-                            const audioToggle = document.getElementById('audio-toggle');
-                            if (audioToggle) {
-                                audioToggle.style.pointerEvents = 'auto';
-                                audioToggle.style.opacity = '1';
+                                const audioToggle = document.getElementById('audio-toggle');
+                                if (audioToggle) {
+                                    audioToggle.style.pointerEvents = 'auto';
+                                    audioToggle.style.opacity = '1';
+                                }
                             }
-
-                            // Light sweep across social links as hero settles (450ms after hero opacity starts)
-                            setTimeout(() => {
-                                import('../components/orbitalBeads.js').then(m => {
-                                    if (m.triggerSocialBeadsSweep) m.triggerSocialBeadsSweep();
-                                });
-                            }, 450);
                         }, 1000);
                     }
 

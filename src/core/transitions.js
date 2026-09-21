@@ -458,6 +458,12 @@ export function syncDockUI(phase) {
             btn.classList.remove('active');
         }
     });
+
+    if (STATE.isMobile) {
+        import('../mobile/mobileController.js').then(m => {
+            if (m.syncMobileSector) m.syncMobileSector(phase);
+        });
+    }
 }
 
 function unmountSector(phase, deps) {
@@ -476,6 +482,7 @@ function unmountSector(phase, deps) {
             audioToggle.style.opacity = '0';
             audioToggle.style.pointerEvents = 'none';
         }
+        if (torusMat) torusMat.visible = false;
     } else if (phase === 'TIMELINE') {
         ['hud', 'timeline-scale-container', 'radar-round-container', 'hobbies-ui-layer'].forEach(id => {
             const el = document.getElementById(id);

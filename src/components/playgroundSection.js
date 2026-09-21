@@ -3,6 +3,15 @@
 
 export const SIMULATION_EXPERIMENTS = [
     {
+        id: 'qucontext',
+        title: 'qucontext: Quantum Contextuality Lab',
+        category: 'QUANTUM & QFT',
+        subtitle: 'Boundary between classical physics, quantum mechanics, and PR boxes',
+        desc: 'Interactive laboratory for quantum contextuality, KCBS pentagrams, Tsirelson bounds, Pitowsky correlation polytopes, and physical theory hierarchies.',
+        file: '/qucontext',
+        tag: 'KCBS // TSIRELSON // POLYTOPES'
+    },
+    {
         id: 'qft-propagator',
         title: 'QFT Propagator',
         category: 'QUANTUM & QFT',
@@ -144,13 +153,20 @@ function renderPlaygroundGrid() {
                 <span class="playground-card-idx">EXP-${String(idx + 1).padStart(2, '0')}</span>
             </div>
             <h3 class="playground-card-title">${exp.title}</h3>
+            ${exp.subtitle ? `<div class="playground-card-subtitle">${exp.subtitle}</div>` : ''}
             <p class="playground-card-desc">${exp.desc}</p>
             <div class="playground-card-footer">
                 <span class="playground-category-pill">${exp.category}</span>
-                <button class="playground-launch-btn" data-file="${exp.file}" data-title="${exp.title}" aria-label="Launch ${exp.title}">
-                    <span>RUN EXPERIMENT</span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                </button>
+                <div class="playground-card-actions">
+                    <button class="playground-open-tab-btn" data-file="${exp.file}" data-title="${exp.title}" title="Open in new tab" aria-label="Open ${exp.title} in new tab">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        <span>NEW TAB</span>
+                    </button>
+                    <button class="playground-launch-btn" data-file="${exp.file}" data-title="${exp.title}" aria-label="Launch ${exp.title}">
+                        <span>RUN EXPERIMENT</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                </div>
             </div>
         </div>
     `).join('');
@@ -163,12 +179,27 @@ function renderPlaygroundGrid() {
     // Attach click listeners to cards and launch buttons
     gridEl.querySelectorAll('.playground-card').forEach(card => {
         card.addEventListener('click', (e) => {
+            // Prevent opening modal if new tab button was clicked
+            if (e.target.closest('.playground-open-tab-btn')) return;
             const file = card.dataset.simFile;
             const title = card.querySelector('.playground-card-title')?.textContent || 'Simulation';
             openSimulationModal(file, title);
         });
     });
+
+    // Attach click listeners to new tab buttons
+    gridEl.querySelectorAll('.playground-open-tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const file = btn.dataset.file;
+            if (file) {
+                window.open(file, '_blank');
+            }
+        });
+    });
 }
+
+let activeSimUrl = '';
 
 function setupPlaygroundListeners() {
     // Filter buttons
@@ -181,6 +212,16 @@ function setupPlaygroundListeners() {
             renderPlaygroundGrid();
         });
     });
+
+    // Modal New Tab button
+    const newTabBtn = document.getElementById('playground-modal-newtab');
+    if (newTabBtn) {
+        newTabBtn.addEventListener('click', () => {
+            if (activeSimUrl && activeSimUrl !== 'about:blank') {
+                window.open(activeSimUrl, '_blank');
+            }
+        });
+    }
 
     // Modal Close
     const closeBtn = document.getElementById('playground-modal-close');
@@ -226,6 +267,7 @@ export function openSimulationModal(fileUrl, title) {
     const titleEl = document.getElementById('playground-modal-title');
     if (!modal || !iframe) return;
 
+    activeSimUrl = fileUrl;
     if (titleEl) titleEl.textContent = title;
     iframe.src = fileUrl;
     modal.classList.add('active');
@@ -242,6 +284,7 @@ export function closeSimulationModal() {
     const iframe = document.getElementById('playground-iframe');
     if (!modal) return;
 
+    activeSimUrl = '';
     modal.classList.remove('active');
     if (iframe) iframe.src = 'about:blank';
 

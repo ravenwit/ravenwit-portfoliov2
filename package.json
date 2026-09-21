@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:qucontext": "cd \"Resources/quantum learning journey\" && npm run build && mkdir -p ../../public/qucontext && cp dist/index.html ../../public/qucontext/index.html && cp dist/index.html ../../public/qucontext.html",
+    "build": "npm run build:qucontext && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

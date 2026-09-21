@@ -13,6 +13,12 @@ export const STATE = {
     snapTargets: [],
     activeSnapIndex: -1,
     isSnapped: false,
-    breakoutAccumulator: 0
+    breakoutAccumulator: 0,
+    // Mobile State
+    isMobile: false,
+    mobileDialMode: 'MACRO', // 'MACRO' or 'MICRO'
+    activeMobileSector: 'HERO', // 'HERO', 'TIMELINE', 'WORKS', 'RESEARCH'
+    isDrawerOpen: false,
+    mobileActiveCardIndex: 0
 };
 

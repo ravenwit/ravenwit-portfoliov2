@@ -3381,6 +3381,17 @@ canvas {
     letter-spacing: 0.3px;
 }
 
+.playground-card-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    line-height: 1.45;
+    color: #10b981;
+    opacity: 0.88;
+    margin-top: -6px;
+    margin-bottom: 2px;
+    letter-spacing: 0.3px;
+}
+
 .playground-card-desc {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 11.5px;
@@ -3394,6 +3405,7 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     padding-top: 12px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     gap: 8px;
@@ -3411,6 +3423,38 @@ canvas {
     border-radius: 4px;
     padding: 3px 6px;
     white-space: nowrap;
+}
+
+.playground-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.playground-open-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 5px 9px;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: 'Space Grotesk', 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.playground-open-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+    transform: scale(1.04);
 }
 
 .playground-launch-btn {
