@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const ICON_MAP = {
+export const ICON_MAP = {
     'AdS/CFT Correspondence': '/icons/AdS_CFT_Correspondence.svg',
     'Holographic Principle': '/icons/Holographic_Principle.svg',
     'Gravitational Waves': '/icons/Gravitational_Waves.svg',

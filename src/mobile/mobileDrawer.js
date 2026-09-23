@@ -22,7 +22,7 @@ export function initMobileDrawer(stateChangeCallback) {
             <div class="mobile-drawer-title-wrap">
                 <span class="chrono-pulse-dot"></span>
                 <span id="mobile-drawer-title" class="mobile-drawer-title">ARSENAL MATRIX</span>
-                <span id="mobile-drawer-count" style="font-size: 10px; color: #00ffaa;">[121 ITEMS]</span>
+                <span id="mobile-drawer-count" style="font-size: 10px; color: var(--mobile-gold);">[121 ITEMS]</span>
             </div>
             <button id="mobile-drawer-close" class="mobile-drawer-close-btn" aria-label="Close Tactical Drawer">✕ CLOSE</button>
         </div>
@@ -123,7 +123,7 @@ function renderArsenalTab(tab) {
             const insDesc = document.getElementById('mobile-inspector-desc');
 
             if (insTitle && insDesc && name) {
-                insTitle.innerHTML = `<span style="color:#00ffaa;">[NODE LOCKED]</span> ${name}`;
+                insTitle.innerHTML = `<span style="color:var(--mobile-quantum);">[NODE]</span> ${name}`;
                 insDesc.innerHTML = `Skill Matrix: <strong>${tab}</strong> · Telemetry coordinates verified and active.`;
             }
         });
@@ -146,7 +146,7 @@ export async function openDocumentationReader(filePath = '/klein-gordon.md', tit
     const body = document.getElementById('mobile-drawer-body');
     if (body) {
         body.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #00ffff; font-family: 'JetBrains Mono', monospace; font-size: 12px; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 200px; color: var(--mobile-quantum); font-family: var(--mobile-font-mono); font-size: 12px; gap: 8px;">
                 <span class="chrono-pulse-dot"></span>
                 <span>DECRYPTING QUANTUM ARCHIVE...</span>
             </div>

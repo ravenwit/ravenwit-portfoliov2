@@ -7,10 +7,10 @@ import { showExhibit } from '../components/worksSection.js';
 
 const EXHIBIT_META = [
     {
-        title: 'MEGH // ACOUSTIC SYNTHESIS',
+        title: 'MEGH // CLOUD STORAGE VAULT',
         badge: 'EXHIBIT 01/03',
-        tag: 'SPEECH & AUDIO AI',
-        desc: 'Real-time neural acoustic model and speech synthesis waveform simulator.'
+        tag: 'CLOUD CRYPTOGRAPHY',
+        desc: 'Zero-knowledge multi-cloud aggregator pooling 52GB across 5 free tiers.'
     },
     {
         title: 'GEO-FNO // ATMOSPHERIC OPERATOR',
@@ -79,26 +79,19 @@ export function setMobileExhibit(index) {
         if (index === 0) {
             // Megh
             controlsBarEl.innerHTML = `
-                <button id="mobile-megh-trigger" class="mobile-ctrl-btn">
-                    <span>▶</span>
-                    <span>TRIGGER AUDIO</span>
-                </button>
+                <a href="https://megh-vault.vercel.app" target="_blank" rel="noopener" class="mobile-ctrl-btn" style="text-decoration:none;">
+                    <span>↗</span>
+                    <span>VISIT VAULT</span>
+                </a>
                 <button id="mobile-exhibit-info-btn" class="mobile-ctrl-btn">
                     <span>ⓘ</span>
                     <span>INFO</span>
                 </button>
             `;
-            const audioBtn = document.getElementById('mobile-megh-trigger');
-            if (audioBtn) {
-                audioBtn.addEventListener('click', () => {
-                    const desktopPlay = document.querySelector('.play-btn, #audio-play-btn');
-                    if (desktopPlay) desktopPlay.click();
-                });
-            }
         } else if (index === 1) {
             // GeoFNO
             controlsBarEl.innerHTML = `
-                <span style="font-size: 10px; color: #00ffff; letter-spacing: 1px;">TOUCH DRAG TO ROTATE 3D GLOBE</span>
+                <span style="font-size: 10px; color: var(--mobile-quantum); letter-spacing: 0.05em; font-family: var(--mobile-font-mono);">TOUCH DRAG TO ROTATE 3D GLOBE</span>
                 <button id="mobile-exhibit-info-btn" class="mobile-ctrl-btn">
                     <span>ⓘ</span>
                     <span>INFO</span>

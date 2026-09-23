@@ -37,7 +37,20 @@ async function init() {
     STATE.isMobile = window.innerWidth <= 768;
     window.STATE = STATE;
     window.addEventListener('resize', () => {
+        const wasMobile = STATE.isMobile;
         STATE.isMobile = window.innerWidth <= 768;
+        if (!wasMobile && STATE.isMobile) {
+            initMobileController();
+            const mRoot = document.getElementById('mobile-app-root');
+            if (mRoot) mRoot.style.display = 'flex';
+            const mDial = document.getElementById('chrono-dial-console');
+            if (mDial) mDial.style.display = 'flex';
+        } else if (wasMobile && !STATE.isMobile) {
+            const mRoot = document.getElementById('mobile-app-root');
+            if (mRoot) mRoot.style.display = 'none';
+            const mDial = document.getElementById('chrono-dial-console');
+            if (mDial) mDial.style.display = 'none';
+        }
     });
 
     // --- 0. FETCH DATA ---

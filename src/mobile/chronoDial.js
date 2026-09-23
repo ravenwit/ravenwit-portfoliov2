@@ -1,60 +1,71 @@
 // ==========================================================================
-// Spacetime Portfolio — Relativistic Chrono-Dial Component (Branch: mobile2)
-// Knurled Bezel, Polar Kinematics, Critically Damped Snap, Dual-Mode Engine
+// Spacetime Portfolio — Relativistic Chrono-Dial Dock (Branch: mobile2)
+// 5-Detent Knurled Rotary Bezel, Polar Kinematics, Critically Damped Snap
+// Controls 5 Main Pages: BIO, TIMELINE, WORKS, ARSENAL, LAB
 // ==========================================================================
 
 import { STATE } from '../state.js';
 
 export const SECTORS = [
-    { id: 'HERO', label: 'ORIGIN', code: '00' },
-    { id: 'TIMELINE', label: 'TIMELINE', code: '01' },
-    { id: 'WORKS', label: 'HIGHLIGHTS', code: '02' },
-    { id: 'RESEARCH', label: 'ARCHIVE', code: '03' }
+    { id: 'BIO', label: 'BIO', code: '01', sub: 'ORIGIN' },
+    { id: 'TIMELINE', label: 'TIMELINE', code: '02', sub: '2011-2026' },
+    { id: 'WORKS', label: 'WORKS', code: '03', sub: 'EXHIBITS' },
+    { id: 'ARSENAL', label: 'ARSENAL', code: '04', sub: 'SKILLS' },
+    { id: 'EXPERIMENTS', label: 'LAB', code: '05', sub: 'SIMS' }
 ];
 
 let canvas, ctx;
 let activeSectorIndex = 0;
-let dialMode = 'MACRO'; // 'MACRO' or 'MICRO'
-let currentAngle = 0; // Normalized dial position [0, 1]
-let targetAngle = 0;
+let currentNorm = 0; // Normalized dial position [0, 1] mapped across the 5 sectors
+let targetNorm = 0;
 let isDragging = false;
 let startTouchAngle = 0;
-let startDialAngle = 0;
+let startDialNorm = 0;
 let lastTouchTime = 0;
 let angularVelocity = 0;
 let animationFrameId = null;
 
-// Callbacks
-let sectorChangeCallback = null;
-let microScrubCallback = null;
+// Callback for tab switching
+let tabChangeCallback = null;
 
 // Telemetry DOM elements
-let elSectorCode, elSectorName, elCoordTime, elProperTime, elResetBadge;
+let elSectorCode, elSectorName, elCoordTime, elProperTime;
 
-export function initChronoDial(onSectorChange, onMicroScrub) {
-    sectorChangeCallback = onSectorChange;
-    microScrubCallback = onMicroScrub;
+export function initChronoDial(onTabChange) {
+    tabChangeCallback = onTabChange;
 
     const consoleContainer = document.getElementById('chrono-dial-console');
     if (!consoleContainer) return;
 
     consoleContainer.style.display = 'flex';
     consoleContainer.innerHTML = `
+        <!-- Top Telemetry Strip -->
         <div class="chrono-telemetry-strip">
             <div class="chrono-telemetry-left">
                 <span class="chrono-pulse-dot"></span>
-                <span id="chrono-sector-code">00</span>
-                <span id="chrono-sector-name">ORIGIN</span>
-                <span id="chrono-mode-tag" style="color: rgba(0,255,255,0.6); font-size: 8px;">[MACRO]</span>
+                <span id="chrono-sector-code" class="chrono-code-tag">01</span>
+                <span id="chrono-sector-name" class="chrono-name-tag">BIO</span>
+                <span class="chrono-mode-tag">[TAB DOCK]</span>
             </div>
             <div class="chrono-telemetry-metrics">
                 <span>t: <strong id="chrono-t" class="chrono-metric-tag">0.00</strong></span>
                 <span>&tau;: <strong id="chrono-tau" class="chrono-metric-tag">0.00</strong></span>
-                <button id="chrono-reset-btn" class="chrono-reset-badge" aria-label="Reset to Sector Mode">⟲ SECTOR</button>
             </div>
         </div>
+
+        <!-- Rotary Dial Bezel Canvas Stage -->
         <div class="chrono-dial-stage" id="chrono-dial-stage">
             <canvas id="chronoDialCanvas"></canvas>
+        </div>
+
+        <!-- 5 Direct 1-Tap Detent Buttons -->
+        <div class="chrono-detents-bar" id="chrono-detents-bar">
+            ${SECTORS.map((s, idx) => `
+                <button class="chrono-detent-btn ${idx === 0 ? 'active' : ''}" data-idx="${idx}" data-id="${s.id}" aria-label="Switch to ${s.label}">
+                    <span class="detent-pip"></span>
+                    <span class="detent-label">${s.label}</span>
+                </button>
+            `).join('')}
         </div>
     `;
 
@@ -63,37 +74,78 @@ export function initChronoDial(onSectorChange, onMicroScrub) {
     elSectorName = document.getElementById('chrono-sector-name');
     elCoordTime = document.getElementById('chrono-t');
     elProperTime = document.getElementById('chrono-tau');
-    elResetBadge = document.getElementById('chrono-reset-btn');
 
     canvas = document.getElementById('chronoDialCanvas');
     ctx = canvas.getContext('2d');
 
-    // Setup canvas resolution
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Bind touch gestures on dial stage
+    // Bind pointer gestures on dial stage (covers touch, mouse, and stylus)
     const stage = document.getElementById('chrono-dial-stage');
-    stage.addEventListener('touchstart', onTouchStart, { passive: false });
-    stage.addEventListener('touchmove', onTouchMove, { passive: false });
-    stage.addEventListener('touchend', onTouchEnd, { passive: false });
-    stage.addEventListener('touchcancel', onTouchEnd, { passive: false });
+    if (stage) {
+        stage.addEventListener('pointerdown', onPointerDown, { passive: false });
+        window.addEventListener('pointermove', onPointerMove, { passive: false });
+        window.addEventListener('pointerup', onPointerUp, { passive: false });
+        window.addEventListener('pointercancel', onPointerUp, { passive: false });
 
-    // Mode reset button
-    elResetBadge.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setDialMode('MACRO');
-        triggerHaptic(15);
-    });
+        // Touch fallbacks for older mobile webkit
+        stage.addEventListener('touchstart', onTouchStart, { passive: false });
+        stage.addEventListener('touchmove', onTouchMove, { passive: false });
+        stage.addEventListener('touchend', onTouchEnd, { passive: false });
+        stage.addEventListener('touchcancel', onTouchEnd, { passive: false });
+    }
+
+    // Bind direct 1-tap detent buttons with multi-event listening (pointerdown, touchend, click)
+    const detentsBar = consoleContainer.querySelector('#chrono-detents-bar');
+    if (detentsBar) {
+        let lastTapTime = 0;
+        const onBarTap = (e) => {
+            const now = performance.now();
+            if (now - lastTapTime < 120) return; // Prevent dual fire from pointerdown + click
+            lastTapTime = now;
+
+            let idx = -1;
+            const btn = e.target.closest('.chrono-detent-btn');
+            if (btn) {
+                idx = parseInt(btn.getAttribute('data-idx'), 10);
+            } else {
+                // Spatial coordinate fallback: divide bar width into 5 equal slots
+                const rect = detentsBar.getBoundingClientRect();
+                const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+                if (typeof clientX === 'number' && rect.width > 0) {
+                    const norm = (clientX - rect.left) / rect.width;
+                    idx = Math.max(0, Math.min(SECTORS.length - 1, Math.floor(norm * SECTORS.length)));
+                }
+            }
+
+            if (!isNaN(idx) && idx >= 0 && idx < SECTORS.length) {
+                if (idx !== activeSectorIndex) {
+                    triggerHaptic(15);
+                    setSector(idx);
+                } else {
+                    // Tapping current tab scrolls its view to top
+                    const activeView = document.querySelector('.mobile-tab-view[style*="display: block"], .mobile-tab-view:not([style*="display: none"])');
+                    if (activeView) {
+                        activeView.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                    triggerHaptic(8);
+                }
+            }
+        };
+
+        detentsBar.addEventListener('pointerdown', onBarTap, { passive: true });
+        detentsBar.addEventListener('touchend', onBarTap, { passive: true });
+        detentsBar.addEventListener('click', onBarTap);
+    }
 
     // Initial position
-    targetAngle = getSectorAngle(0);
-    currentAngle = targetAngle;
+    targetNorm = getSectorNorm(0);
+    currentNorm = targetNorm;
     startRenderLoop();
 
-    // Expose for external API / testing
+    // Expose for external calls
     window.setMobileSector = setSector;
-    window.setMobileDialMode = setDialMode;
 }
 
 function resizeCanvas() {
@@ -106,134 +158,151 @@ function resizeCanvas() {
 }
 
 // --------------------------------------------------------------------------
-// POLAR TOUCH KINEMATICS
+// POLAR TOUCH & POINTER KINEMATICS
 // --------------------------------------------------------------------------
-function getTouchAngle(touch) {
+function getPointerAngle(evt) {
     const rect = canvas.getBoundingClientRect();
     const x0 = rect.left + rect.width / 2;
-    // Anchor center slightly below stage for a comfortable sweep
-    const y0 = rect.top + rect.height + 70;
-    const dx = touch.clientX - x0;
-    const dy = touch.clientY - y0;
+    // Virtual pivot below stage for comfortable ergonomic thumb arc
+    const y0 = rect.top + rect.height + 60;
+    const clientX = evt.clientX ?? (evt.touches && evt.touches[0] ? evt.touches[0].clientX : x0);
+    const clientY = evt.clientY ?? (evt.touches && evt.touches[0] ? evt.touches[0].clientY : y0);
+    const dx = clientX - x0;
+    const dy = clientY - y0;
     return Math.atan2(dy, dx);
 }
 
-function onTouchStart(e) {
-    e.preventDefault();
-    if (e.touches.length === 0) return;
+let hasMovedSignificantly = false;
+let startPointerX = 0;
+let startPointerY = 0;
+
+function onPointerDown(e) {
     isDragging = true;
-    startTouchAngle = getTouchAngle(e.touches[0]);
-    startDialAngle = currentAngle;
+    hasMovedSignificantly = false;
+    startPointerX = e.clientX;
+    startPointerY = e.clientY;
+    startTouchAngle = getPointerAngle(e);
+    startDialNorm = currentNorm;
     lastTouchTime = performance.now();
     angularVelocity = 0;
 }
 
-function onTouchMove(e) {
-    if (!isDragging || e.touches.length === 0) return;
-    e.preventDefault();
+function onPointerMove(e) {
+    if (!isDragging) return;
+    if (Math.hypot(e.clientX - startPointerX, e.clientY - startPointerY) > 6) {
+        hasMovedSignificantly = true;
+    }
 
-    const touchAngle = getTouchAngle(e.touches[0]);
+    const touchAngle = getPointerAngle(e);
     const dTheta = touchAngle - startTouchAngle;
     const now = performance.now();
     const dt = Math.max((now - lastTouchTime) / 1000, 0.008);
 
-    // Calculate angular velocity with deadband
-    if (Math.abs(dTheta) > 0.015) {
+    if (Math.abs(dTheta) > 0.01) {
         angularVelocity = (dTheta / dt);
-        // Velocity clamping (max 12 rad/s)
-        angularVelocity = Math.max(-12.0, Math.min(12.0, angularVelocity));
+        angularVelocity = Math.max(-10.0, Math.min(10.0, angularVelocity));
     }
-
     lastTouchTime = now;
 
-    // Map angular delta: full travel is roughly 1.6 radians
-    const travelScale = 0.65;
-    let newAngle = startDialAngle + (dTheta * travelScale);
+    // Full thumb sweep across arc (~1.4 radians) maps to [0, 1]
+    const travelScale = 0.75;
+    let newNorm = startDialNorm + (dTheta * travelScale);
+    newNorm = Math.max(-0.06, Math.min(1.06, newNorm));
 
-    if (dialMode === 'MACRO') {
-        newAngle = Math.max(-0.08, Math.min(1.08, newAngle));
-        currentAngle = newAngle;
-        targetAngle = newAngle;
-    } else {
-        // Micro-scrub mode: continuous fine scrub
-        newAngle = Math.max(0, Math.min(1.0, newAngle));
-        currentAngle = newAngle;
-        targetAngle = newAngle;
-        dispatchMicroScrub(currentAngle);
-    }
+    currentNorm = newNorm;
+    targetNorm = newNorm;
 }
 
-function onTouchEnd(e) {
+function onPointerUp(e) {
     if (!isDragging) return;
     isDragging = false;
 
-    if (dialMode === 'MACRO') {
-        // Snap to nearest of the 4 sectors with momentum
-        const momentumOffset = angularVelocity * 0.04;
-        const projectedAngle = currentAngle + momentumOffset;
-        
-        let bestIndex = 0;
-        let minDiff = 999;
-        for (let i = 0; i < SECTORS.length; i++) {
-            const secAngle = getSectorAngle(i);
-            const diff = Math.abs(projectedAngle - secAngle);
-            if (diff < minDiff) {
-                minDiff = diff;
-                bestIndex = i;
+    // If tap without significant drag, resolve detent directly from tap position
+    if (!hasMovedSignificantly) {
+        const tapAngle = getPointerAngle(e);
+        // Bezel arc runs from approx -1.95 rad (left) to -1.18 rad (right) relative to center bottom
+        // Map tap x-position across stage width [0, 1]
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width > 0) {
+            const tapNorm = (e.clientX - rect.left) / rect.width;
+            const tapIndex = Math.max(0, Math.min(SECTORS.length - 1, Math.floor(tapNorm * SECTORS.length)));
+            if (tapIndex !== activeSectorIndex) {
+                triggerHaptic(18);
+                setSector(tapIndex);
+                return;
             }
         }
+    }
 
-        targetAngle = getSectorAngle(bestIndex);
-        if (bestIndex !== activeSectorIndex) {
-            triggerHaptic(18);
-            setSector(bestIndex);
-        } else {
-            triggerHaptic(8);
+    // Snap to nearest of the 5 detents with momentum
+    const momentumOffset = angularVelocity * 0.035;
+    const projectedNorm = currentNorm + momentumOffset;
+
+    let bestIndex = 0;
+    let minDiff = 999;
+    for (let i = 0; i < SECTORS.length; i++) {
+        const secNorm = getSectorNorm(i);
+        const diff = Math.abs(projectedNorm - secNorm);
+        if (diff < minDiff) {
+            minDiff = diff;
+            bestIndex = i;
         }
+    }
+
+    targetNorm = getSectorNorm(bestIndex);
+    if (bestIndex !== activeSectorIndex) {
+        triggerHaptic(18);
+        setSector(bestIndex);
     } else {
-        // Micro-scrub release snap if needed
         triggerHaptic(8);
     }
 }
 
-function getSectorAngle(index) {
+function onTouchStart(e) {
+    if (e.touches.length === 0) return;
+    onPointerDown(e.touches[0]);
+}
+
+function onTouchMove(e) {
+    if (e.touches.length === 0) return;
+    onPointerMove(e.touches[0]);
+}
+
+function onTouchEnd(e) {
+    onPointerUp(e.changedTouches ? e.changedTouches[0] : e);
+}
+
+function getSectorNorm(index) {
     return index / (SECTORS.length - 1);
 }
 
 export function setSector(index) {
     if (index < 0 || index >= SECTORS.length) return;
     activeSectorIndex = index;
-    targetAngle = getSectorAngle(index);
+    targetNorm = getSectorNorm(index);
 
     const sec = SECTORS[index];
     if (elSectorCode) elSectorCode.innerText = sec.code;
     if (elSectorName) elSectorName.innerText = sec.label;
 
-    if (sectorChangeCallback) {
-        sectorChangeCallback(sec.id, index);
-    }
-
-    // Automatically transition to MICRO mode after sector settles
-    setTimeout(() => {
-        if (!isDragging && activeSectorIndex === index) {
-            setDialMode('MICRO');
+    // Update active detent button state
+    const detentBtns = document.querySelectorAll('.chrono-detent-btn');
+    detentBtns.forEach((btn, idx) => {
+        if (idx === index) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
         }
-    }, 450);
-}
+    });
 
-export function setDialMode(mode) {
-    dialMode = mode;
-    STATE.mobileDialMode = mode;
-    const modeTag = document.getElementById('chrono-mode-tag');
-    if (modeTag) {
-        modeTag.innerText = `[${mode}]`;
-        modeTag.style.color = mode === 'MICRO' ? '#00ffaa' : 'rgba(0,255,255,0.6)';
-    }
-}
+    // Update telemetry metrics based on tab
+    const tValues = [0.0, 5.2, 9.8, 12.4, 14.0];
+    const t = tValues[index] || (index * 3.5);
+    const tau = t * 0.87;
+    updateChronoTelemetry(t, tau);
 
-function dispatchMicroScrub(val) {
-    if (microScrubCallback) {
-        microScrubCallback(SECTORS[activeSectorIndex].id, val);
+    if (tabChangeCallback) {
+        tabChangeCallback(sec.id, index);
     }
 }
 
@@ -242,36 +311,38 @@ export function updateChronoTelemetry(t, tau) {
     if (elProperTime) elProperTime.innerText = Number(tau).toFixed(2);
 }
 
-function triggerHaptic(duration = 12) {
+function triggerHaptic(durationMs = 15) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try {
-            navigator.vibrate(duration);
-        } catch (err) {
-            // Silently ignore browser restrictions
-        }
+            navigator.vibrate(durationMs);
+        } catch (_) {}
     }
 }
 
 // --------------------------------------------------------------------------
-// RENDER LOOP & KNURLED BEZEL DRAWING
+// 60FPS CANVASES RENDER LOOP (Knurled Bezel & Detent Phosphor Arcs)
 // --------------------------------------------------------------------------
 function startRenderLoop() {
-    function loop() {
-        animationFrameId = requestAnimationFrame(loop);
+    let lastTime = performance.now();
 
-        // Critically damped spring snap: dAngle = target - current
-        if (!isDragging) {
-            const springK = 0.22;
-            currentAngle += (targetAngle - currentAngle) * springK;
-        }
+    function render(now) {
+        animationFrameId = requestAnimationFrame(render);
+        if (!ctx || !canvas) return;
 
-        renderDialGraphics();
+        const dt = Math.min((now - lastTime) / 1000, 0.05);
+        lastTime = now;
+
+        // Critically damped spring towards targetNorm
+        const springSpeed = isDragging ? 28.0 : 16.0;
+        currentNorm += (targetNorm - currentNorm) * (1.0 - Math.exp(-springSpeed * dt));
+
+        drawDial(currentNorm);
     }
-    loop();
+
+    render(performance.now());
 }
 
-function renderDialGraphics() {
-    if (!ctx || !canvas) return;
+function drawDial(norm) {
     const rect = canvas.getBoundingClientRect();
     const w = rect.width;
     const h = rect.height;
@@ -279,118 +350,87 @@ function renderDialGraphics() {
     ctx.clearRect(0, 0, w, h);
 
     const cx = w / 2;
-    const cy = h + 65;
-    const radius = Math.min(w * 0.46, 175);
+    const cy = h + 42; // Virtual center below canvas
+    const rOuter = h + 36;
+    const rInner = rOuter - 22;
 
-    // Start & End Angles for Bezel Arc
-    const startArc = -Math.PI * 0.82;
-    const endArc = -Math.PI * 0.18;
-    const totalArc = endArc - startArc;
+    // Arc boundaries
+    const arcSpan = Math.PI * 0.65; // ~117 degrees total sweep
+    const baseAngle = -Math.PI / 2;
+    const startArc = baseAngle - arcSpan / 2;
+    const endArc = baseAngle + arcSpan / 2;
 
-    // 1. Draw Background Metal Track Arc
-    ctx.save();
+    // 1. Background Arc Track
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, startArc, endArc);
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = 'rgba(8, 16, 24, 0.9)';
+    ctx.arc(cx, cy, rOuter, startArc, endArc);
+    ctx.strokeStyle = 'rgba(236, 231, 219, 0.12)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, startArc, endArc);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.25)';
+    ctx.arc(cx, cy, rInner, startArc, endArc);
+    ctx.strokeStyle = 'rgba(236, 231, 219, 0.06)';
+    ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.restore();
 
-    // 2. Draw 40 Knurled Teeth along the arc
-    const totalTeeth = 42;
-    ctx.save();
-    for (let i = 0; i <= totalTeeth; i++) {
-        const t = i / totalTeeth;
-        const angle = startArc + t * totalArc;
-        const isMajor = i % 14 === 0;
+    // 2. Knurled Gear Teeth
+    const teethCount = 36;
+    for (let i = 0; i <= teethCount; i++) {
+        const f = i / teethCount;
+        const theta = startArc + f * arcSpan;
+        const isMajor = i % 7 === 0;
 
-        const innerR = radius - (isMajor ? 12 : 6);
-        const outerR = radius + (isMajor ? 12 : 6);
-
-        const x1 = cx + Math.cos(angle) * innerR;
-        const y1 = cy + Math.sin(angle) * innerR;
-        const x2 = cx + Math.cos(angle) * outerR;
-        const y2 = cy + Math.sin(angle) * outerR;
+        const len = isMajor ? 9 : 4;
+        const x1 = cx + (rOuter - len) * Math.cos(theta);
+        const y1 = cy + (rOuter - len) * Math.sin(theta);
+        const x2 = cx + rOuter * Math.cos(theta);
+        const y2 = cy + rOuter * Math.sin(theta);
 
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
-        ctx.lineWidth = isMajor ? 2.2 : 1.2;
-        ctx.strokeStyle = isMajor ? 'rgba(0, 255, 255, 0.7)' : 'rgba(0, 255, 255, 0.2)';
+        ctx.strokeStyle = isMajor ? 'rgba(111, 220, 247, 0.45)' : 'rgba(236, 231, 219, 0.12)';
+        ctx.lineWidth = isMajor ? 1.5 : 1;
         ctx.stroke();
     }
-    ctx.restore();
 
-    // 3. Draw the 4 Sector Detents & Phosphor Labels
-    ctx.save();
+    // 3. 5 Detent Pips & Glow
     for (let i = 0; i < SECTORS.length; i++) {
-        const t = getSectorAngle(i);
-        const angle = startArc + t * totalArc;
-        const isActive = activeSectorIndex === i;
+        const secNorm = getSectorNorm(i);
+        const theta = startArc + secNorm * arcSpan;
+        const isActive = i === activeSectorIndex;
 
-        const detentR = radius;
-        const dx = cx + Math.cos(angle) * detentR;
-        const dy = cy + Math.sin(angle) * detentR;
+        const pipR = rOuter - 11;
+        const px = cx + pipR * Math.cos(theta);
+        const py = cy + pipR * Math.sin(theta);
 
-        // Glowing Detent Pip
         ctx.beginPath();
-        ctx.arc(dx, dy, isActive ? 5 : 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = isActive ? '#00ffff' : 'rgba(0, 255, 255, 0.4)';
+        ctx.arc(px, py, isActive ? 4 : 2, 0, Math.PI * 2);
+        ctx.fillStyle = isActive ? '#6fdcf7' : 'rgba(236, 231, 219, 0.28)';
         if (isActive) {
-            ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#6fdcf7';
+            ctx.shadowBlur = 6;
+        } else {
+            ctx.shadowBlur = 0;
         }
         ctx.fill();
         ctx.shadowBlur = 0;
-
-        // Label above detent
-        const labelR = radius - 24;
-        const lx = cx + Math.cos(angle) * labelR;
-        const ly = cy + Math.sin(angle) * labelR;
-
-        ctx.font = `600 ${isActive ? '9px' : '8px'} 'JetBrains Mono', monospace`;
-        ctx.fillStyle = isActive ? '#00ffff' : 'rgba(255, 255, 255, 0.45)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(SECTORS[i].label, lx, ly);
     }
-    ctx.restore();
 
-    // 4. Draw Active Knurled Thumb Indicator (Needle Bezel)
-    ctx.save();
-    const clampedVal = Math.max(0, Math.min(1, currentAngle));
-    const cursorAngle = startArc + clampedVal * totalArc;
+    // 4. Dial Needle / Active Sector Cursor
+    const needleTheta = startArc + norm * arcSpan;
+    const nx1 = cx + (rInner - 4) * Math.cos(needleTheta);
+    const ny1 = cy + (rInner - 4) * Math.sin(needleTheta);
+    const nx2 = cx + (rOuter + 3) * Math.cos(needleTheta);
+    const ny2 = cy + (rOuter + 3) * Math.sin(needleTheta);
 
-    const needleInnerR = radius - 18;
-    const needleOuterR = radius + 18;
-    const nx1 = cx + Math.cos(cursorAngle) * needleInnerR;
-    const ny1 = cy + Math.sin(cursorAngle) * needleInnerR;
-    const nx2 = cx + Math.cos(cursorAngle) * needleOuterR;
-    const ny2 = cy + Math.sin(cursorAngle) * needleOuterR;
-
-    // Outer Glow Needle
     ctx.beginPath();
     ctx.moveTo(nx1, ny1);
     ctx.lineTo(nx2, ny2);
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = dialMode === 'MICRO' ? '#00ffaa' : '#00ffff';
-    ctx.shadowColor = dialMode === 'MICRO' ? '#00ffaa' : '#00ffff';
-    ctx.shadowBlur = 14;
+    ctx.strokeStyle = '#e8b45c';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(232, 180, 92, 0.5)';
+    ctx.shadowBlur = 6;
     ctx.stroke();
-
-    // Center Core Needle
-    ctx.beginPath();
-    ctx.moveTo(nx1, ny1);
-    ctx.lineTo(nx2, ny2);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#ffffff';
-    ctx.stroke();
-    ctx.restore();
+    ctx.shadowBlur = 0;
 }

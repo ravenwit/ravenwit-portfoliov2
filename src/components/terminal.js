@@ -55,6 +55,7 @@ export class TerminalController {
 
         this.buildDynamicVFS();
         this.initEventListeners();
+        this.toggle = this.toggleTerminal.bind(this);
     }
 
     buildDynamicVFS() {

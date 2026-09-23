@@ -30,32 +30,26 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
 
             if (STATE.loadProgress >= 100) {
                 if (STATE.temperature > CONFIG.minTemp) {
-                    STATE.temperature *= CONFIG.coolingRate;
+                    STATE.temperature = Math.max(CONFIG.minTemp, STATE.temperature * CONFIG.coolingRate - 2.0);
                 } else {
                     STATE.temperature = CONFIG.minTemp;
                     STATE.phase = 'HERO';
 
                     const heroEl = document.getElementById('ui-hero');
                     if (heroEl) {
-                        heroEl.style.display = 'block'; // Ensure it's not display: none
-                        setTimeout(() => {
-                            if (STATE.phase === 'HERO') {
-                                heroEl.style.pointerEvents = 'auto';
-                                heroEl.style.opacity = '1';
+                        heroEl.style.display = 'block';
+                        heroEl.style.pointerEvents = 'auto';
+                        heroEl.style.opacity = '1';
 
-                                const audioToggle = document.getElementById('audio-toggle');
-                                if (audioToggle) {
-                                    audioToggle.style.pointerEvents = 'auto';
-                                    audioToggle.style.opacity = '1';
-                                }
-                            }
-                        }, 1000);
+                        const audioToggle = document.getElementById('audio-toggle');
+                        if (audioToggle) {
+                            audioToggle.style.pointerEvents = 'auto';
+                            audioToggle.style.opacity = '1';
+                        }
                     }
 
                     // Cyberdeck Pedestal Rise & Attention Choreography:
-                    // Reveal the dock after a relaxed delay following Hero UI emergence (~2400ms from torus crystallization)
                     const dockEl = document.getElementById('global-nav-dock');
-
                     setTimeout(() => {
                         if (dockEl) {
                             dockEl.classList.add('dock-revealed');
@@ -87,7 +81,7 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
                                 }, 850 + idx * 110);
                             });
                         }
-                    }, 2400);
+                    }, 100);
                     const start = camera.position.clone();
                     const target = new THREE.Vector3(0, 0, 50);
                     let tt = 0;
@@ -480,8 +474,8 @@ export function startAnimationLoop(torusMesh, torusMat, gridMat, starsMat, nodeG
             }
         }
 
-        // Critical Render Pass 2: The separated 50vw WebGL layer for the Topology
-        if (baseResearchMesh && baseResearchMesh.visible) {
+        // Critical Render Pass 2: The separated 50vw WebGL layer for the Topology (Desktop Only)
+        if (!STATE.isMobile && baseResearchMesh && baseResearchMesh.visible) {
             if (researchControls) researchControls.update();
             if (researchRenderer && researchScene && researchCamera) {
                 researchRenderer.render(researchScene, researchCamera);

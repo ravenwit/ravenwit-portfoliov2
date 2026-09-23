@@ -111,9 +111,14 @@ export function initScroll() {
         }
     }
 
-    const NATIVE_SCROLL_SELECTORS = '.card-logs, .hud-card.expanded, #readme-modal-overlay, .archive-catalog-panel, #archive-catalog-scroll, .playground-panel, #playground-bento-grid, #playground-modal, .playground-iframe-container, #terminal-overlay';
+    const NATIVE_SCROLL_SELECTORS = '.card-logs, .hud-card.expanded, #readme-modal-overlay, .archive-catalog-panel, #archive-catalog-scroll, .playground-panel, #playground-bento-grid, #playground-modal, .playground-iframe-container, #terminal-overlay, #mobile-app-root, .mobile-tab-view, .mobile-tab-viewport, .mobile-archive-drawer, .archive-drawer-list, .mobile-sim-modal';
 
     window.addEventListener('wheel', (e) => {
+        // In mobile mode, allow full native DOM scrolling
+        if (STATE.isMobile || window.innerWidth <= 768) {
+            return;
+        }
+
         // If scrolling inside any scrollable overlay or panel, allow natural DOM scroll
         if (e.target.closest(NATIVE_SCROLL_SELECTORS)) {
             return;
@@ -132,13 +137,18 @@ export function initScroll() {
     let touchStartY = 0;
 
     window.addEventListener('touchstart', (e) => {
+        // In mobile mode, allow full native DOM touch scrolling
+        if (STATE.isMobile || window.innerWidth <= 768 || e.target.closest(NATIVE_SCROLL_SELECTORS)) {
+            return;
+        }
         if (e.touches.length > 0) {
             touchStartY = e.touches[0].clientY;
         }
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
-        if (e.target.closest(NATIVE_SCROLL_SELECTORS)) {
+        // In mobile mode, allow full native DOM touch scrolling
+        if (STATE.isMobile || window.innerWidth <= 768 || e.target.closest(NATIVE_SCROLL_SELECTORS)) {
             return;
         }
         e.preventDefault();

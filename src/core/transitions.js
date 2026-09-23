@@ -428,6 +428,8 @@ export function initiateResearchToHero() {
 // === UNIFIED GLOBAL SECTOR ROUTER ===
 
 export function syncDockUI(phase) {
+    if (STATE.isMobile) return;
+
     const EXHIBIT_TAGS = [
         '02 HIGHLIGHTS // EXHIBIT 01: MEGH VAULT',
         '02 HIGHLIGHTS // EXHIBIT 02: GEO-FNO TORUS',
@@ -458,12 +460,6 @@ export function syncDockUI(phase) {
             btn.classList.remove('active');
         }
     });
-
-    if (STATE.isMobile) {
-        import('../mobile/mobileController.js').then(m => {
-            if (m.syncMobileSector) m.syncMobileSector(phase);
-        });
-    }
 }
 
 function unmountSector(phase, deps) {
@@ -672,7 +668,17 @@ function mountSector(targetPhase, deps) {
 }
 
 export function navigateToSector(targetSector) {
-    if (STATE.phase === targetSector || STATE.transitioning || STATE.phase === 'LOADING') return;
+    if (STATE.phase === targetSector || STATE.transitioning) return;
+    if (STATE.phase === 'LOADING') {
+        if (STATE.loadProgress >= 100) {
+            STATE.temperature = 0.005;
+            STATE.phase = 'HERO';
+            const dockEl = document.getElementById('global-nav-dock');
+            if (dockEl) dockEl.classList.add('dock-revealed');
+        } else {
+            return;
+        }
+    }
 
     // Special cinematic Doppler warp for HERO -> TIMELINE
     if (STATE.phase === 'HERO' && targetSector === 'TIMELINE') {
