@@ -13,10 +13,10 @@ const EXHIBIT_META = [
         desc: 'Zero-knowledge multi-cloud aggregator pooling 52GB across 5 free tiers.'
     },
     {
-        title: 'GEO-FNO // ATMOSPHERIC OPERATOR',
+        title: 'GEO-FNO // FOURIER NEURAL OPERATOR',
         badge: 'EXHIBIT 02/03',
         tag: 'PDE OPERATOR LEARNING',
-        desc: 'Fourier Neural Operator on spherical geometry predicting atmospheric fluid flow dynamics.'
+        desc: 'Geometric Fourier Neural Operator mapping non-linear Navier-Stokes fluid vorticity with zero-shot resolution.'
     },
     {
         title: 'ISING // THERMODYNAMIC LATTICE',
@@ -91,7 +91,7 @@ export function setMobileExhibit(index) {
         } else if (index === 1) {
             // GeoFNO
             controlsBarEl.innerHTML = `
-                <span style="font-size: 10px; color: var(--mobile-quantum); letter-spacing: 0.05em; font-family: var(--mobile-font-mono);">TOUCH DRAG TO ROTATE 3D GLOBE</span>
+                <span style="font-size: 10px; color: var(--mobile-quantum); letter-spacing: 0.05em; font-family: var(--mobile-font-mono);">TOUCH TO INJECT VORTEX // SELECT MODES</span>
                 <button id="mobile-exhibit-info-btn" class="mobile-ctrl-btn">
                     <span>ⓘ</span>
                     <span>INFO</span>

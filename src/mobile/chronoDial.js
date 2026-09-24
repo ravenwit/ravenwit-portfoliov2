@@ -7,7 +7,7 @@
 import { STATE } from '../state.js';
 
 export const SECTORS = [
-    { id: 'BIO', label: 'BIO', code: '01', sub: 'ORIGIN' },
+    { id: 'BIO', label: 'HOME', code: '01', sub: 'ORIGIN' },
     { id: 'TIMELINE', label: 'TIMELINE', code: '02', sub: '2011-2026' },
     { id: 'WORKS', label: 'WORKS', code: '03', sub: 'EXHIBITS' },
     { id: 'ARSENAL', label: 'ARSENAL', code: '04', sub: 'SKILLS' },
@@ -44,7 +44,7 @@ export function initChronoDial(onTabChange) {
             <div class="chrono-telemetry-left">
                 <span class="chrono-pulse-dot"></span>
                 <span id="chrono-sector-code" class="chrono-code-tag">01</span>
-                <span id="chrono-sector-name" class="chrono-name-tag">BIO</span>
+                <span id="chrono-sector-name" class="chrono-name-tag">HOME</span>
                 <span class="chrono-mode-tag">[TAB DOCK]</span>
             </div>
             <div class="chrono-telemetry-metrics">
@@ -81,62 +81,44 @@ export function initChronoDial(onTabChange) {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Bind pointer gestures on dial stage (covers touch, mouse, and stylus)
+    // Bind pointer gestures exclusively if available, otherwise touch fallback
     const stage = document.getElementById('chrono-dial-stage');
     if (stage) {
-        stage.addEventListener('pointerdown', onPointerDown, { passive: false });
-        window.addEventListener('pointermove', onPointerMove, { passive: false });
-        window.addEventListener('pointerup', onPointerUp, { passive: false });
-        window.addEventListener('pointercancel', onPointerUp, { passive: false });
-
-        // Touch fallbacks for older mobile webkit
-        stage.addEventListener('touchstart', onTouchStart, { passive: false });
-        stage.addEventListener('touchmove', onTouchMove, { passive: false });
-        stage.addEventListener('touchend', onTouchEnd, { passive: false });
-        stage.addEventListener('touchcancel', onTouchEnd, { passive: false });
+        if (window.PointerEvent) {
+            stage.addEventListener('pointerdown', onPointerDown, { passive: false });
+            window.addEventListener('pointermove', onPointerMove, { passive: false });
+            window.addEventListener('pointerup', onPointerUp, { passive: false });
+            window.addEventListener('pointercancel', onPointerUp, { passive: false });
+        } else {
+            stage.addEventListener('touchstart', onTouchStart, { passive: false });
+            stage.addEventListener('touchmove', onTouchMove, { passive: false });
+            stage.addEventListener('touchend', onTouchEnd, { passive: false });
+            stage.addEventListener('touchcancel', onTouchEnd, { passive: false });
+        }
     }
 
-    // Bind direct 1-tap detent buttons with multi-event listening (pointerdown, touchend, click)
+    // Bind direct 1-tap detent buttons
     const detentsBar = consoleContainer.querySelector('#chrono-detents-bar');
     if (detentsBar) {
-        let lastTapTime = 0;
-        const onBarTap = (e) => {
-            const now = performance.now();
-            if (now - lastTapTime < 120) return; // Prevent dual fire from pointerdown + click
-            lastTapTime = now;
-
-            let idx = -1;
-            const btn = e.target.closest('.chrono-detent-btn');
-            if (btn) {
-                idx = parseInt(btn.getAttribute('data-idx'), 10);
-            } else {
-                // Spatial coordinate fallback: divide bar width into 5 equal slots
-                const rect = detentsBar.getBoundingClientRect();
-                const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
-                if (typeof clientX === 'number' && rect.width > 0) {
-                    const norm = (clientX - rect.left) / rect.width;
-                    idx = Math.max(0, Math.min(SECTORS.length - 1, Math.floor(norm * SECTORS.length)));
-                }
-            }
-
-            if (!isNaN(idx) && idx >= 0 && idx < SECTORS.length) {
-                if (idx !== activeSectorIndex) {
-                    triggerHaptic(15);
-                    setSector(idx);
-                } else {
-                    // Tapping current tab scrolls its view to top
-                    const activeView = document.querySelector('.mobile-tab-view[style*="display: block"], .mobile-tab-view:not([style*="display: none"])');
-                    if (activeView) {
-                        activeView.scrollTo({ top: 0, behavior: 'smooth' });
+        const btns = detentsBar.querySelectorAll('.chrono-detent-btn');
+        btns.forEach(btn => {
+            const handleSelect = (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.getAttribute('data-idx'), 10);
+                if (!isNaN(idx) && idx >= 0 && idx < SECTORS.length) {
+                    if (idx !== activeSectorIndex) {
+                        triggerHaptic(15);
+                        setSector(idx);
+                    } else {
+                        const activeView = document.querySelector('.mobile-tab-view');
+                        if (activeView) activeView.scrollTo({ top: 0, behavior: 'smooth' });
+                        triggerHaptic(8);
                     }
-                    triggerHaptic(8);
                 }
-            }
-        };
-
-        detentsBar.addEventListener('pointerdown', onBarTap, { passive: true });
-        detentsBar.addEventListener('touchend', onBarTap, { passive: true });
-        detentsBar.addEventListener('click', onBarTap);
+            };
+            btn.addEventListener('pointerdown', (e) => e.stopPropagation(), { passive: true });
+            btn.addEventListener('click', handleSelect);
+        });
     }
 
     // Initial position
@@ -204,8 +186,8 @@ function onPointerMove(e) {
     }
     lastTouchTime = now;
 
-    // Full thumb sweep across arc (~1.4 radians) maps to [0, 1]
-    const travelScale = 0.75;
+    // Full thumb sweep across arc (~2.04 radians = 0.65*PI) maps 1:1 to [0, 1]
+    const travelScale = 0.49;
     let newNorm = startDialNorm + (dTheta * travelScale);
     newNorm = Math.max(-0.06, Math.min(1.06, newNorm));
 
@@ -219,12 +201,10 @@ function onPointerUp(e) {
 
     // If tap without significant drag, resolve detent directly from tap position
     if (!hasMovedSignificantly) {
-        const tapAngle = getPointerAngle(e);
-        // Bezel arc runs from approx -1.95 rad (left) to -1.18 rad (right) relative to center bottom
-        // Map tap x-position across stage width [0, 1]
         const rect = canvas.getBoundingClientRect();
         if (rect.width > 0) {
-            const tapNorm = (e.clientX - rect.left) / rect.width;
+            const clientX = e.clientX ?? (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : rect.left + rect.width / 2);
+            const tapNorm = (clientX - rect.left) / rect.width;
             const tapIndex = Math.max(0, Math.min(SECTORS.length - 1, Math.floor(tapNorm * SECTORS.length)));
             if (tapIndex !== activeSectorIndex) {
                 triggerHaptic(18);
@@ -234,8 +214,9 @@ function onPointerUp(e) {
         }
     }
 
-    // Snap to nearest of the 5 detents with momentum
-    const momentumOffset = angularVelocity * 0.035;
+    // Snap to nearest of the 5 detents with damped momentum
+    // Spacing between sectors is 0.25; clamp momentum to +/- 0.14 so it cannot skip past an adjacent sector
+    const momentumOffset = Math.max(-0.14, Math.min(0.14, angularVelocity * 0.012));
     const projectedNorm = currentNorm + momentumOffset;
 
     let bestIndex = 0;
@@ -275,6 +256,16 @@ function onTouchEnd(e) {
 function getSectorNorm(index) {
     return index / (SECTORS.length - 1);
 }
+
+export function setLiveSwipeNorm(norm) {
+    targetNorm = Math.max(-0.06, Math.min(1.06, norm));
+}
+
+export function getActiveSectorIndex() {
+    return activeSectorIndex;
+}
+
+export { getSectorNorm, triggerHaptic };
 
 export function setSector(index) {
     if (index < 0 || index >= SECTORS.length) return;

@@ -97,6 +97,57 @@
     }
 
     /* ----------------------------------------------------------------------
+       BOOT SPLASH SCREEN (ANIMATED KINETIC SVG LOGO)
+       ---------------------------------------------------------------------- */
+    .mobile-splash-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: radial-gradient(circle at 50% 40%, #0d0f1e 0%, #06060c 85%, #030306 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.6s ease;
+        pointer-events: all;
+    }
+
+    .mobile-splash-screen.fade-out {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .splash-logo-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .splash-logo-container svg#logo-anim {
+        width: 140px;
+        height: 140px;
+        filter: drop-shadow(0 0 30px rgba(111, 220, 247, 0.35));
+    }
+
+    .splash-caption {
+        font-family: var(--mobile-font-mono);
+        font-size: 13px;
+        letter-spacing: 0.25em;
+        color: var(--mobile-quantum);
+        font-weight: 700;
+        opacity: 0.9;
+        animation: splashCaptionFade 1.6s ease-in-out forwards;
+    }
+
+    @keyframes splashCaptionFade {
+        0% { opacity: 0; transform: translateY(6px); }
+        50% { opacity: 0; transform: translateY(6px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ----------------------------------------------------------------------
        3. TOP APP BAR
        ---------------------------------------------------------------------- */
     .mobile-top-bar {
@@ -122,16 +173,17 @@
         gap: 10px;
     }
 
-    .mobile-top-logo {
-        font-family: var(--mobile-font-mono);
-        font-weight: 700;
-        font-size: 11px;
-        color: var(--mobile-gold);
-        background: rgba(232, 180, 92, 0.1);
-        border: 1px solid rgba(232, 180, 92, 0.28);
-        padding: 3px 8px;
-        border-radius: 999px;
-        letter-spacing: 0.06em;
+    .mobile-top-logo-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-top-logo-img {
+        width: 25px;
+        height: 25px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 10px rgba(111, 220, 247, 0.45));
     }
 
     .mobile-top-tab-badge {
@@ -142,30 +194,26 @@
         letter-spacing: 0.04em;
     }
 
-    .mobile-cli-toggle-btn {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--mobile-line);
-        color: var(--mobile-muted);
-        padding: 5px 12px;
-        border-radius: 999px;
-        font-family: var(--mobile-font-mono);
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
+    .mobile-top-status-indicator {
         display: flex;
         align-items: center;
-        min-height: 32px;
-        transition: all 0.2s ease;
+        gap: 6px;
+        font-family: var(--mobile-font-mono);
+        font-size: 8.5px;
+        color: var(--mobile-quantum);
+        letter-spacing: 0.05em;
+        background: rgba(111, 220, 247, 0.08);
+        border: 1px solid rgba(111, 220, 247, 0.25);
+        padding: 4px 9px;
+        border-radius: 999px;
     }
 
-    .mobile-cli-toggle-btn:active {
-        background: rgba(111, 220, 247, 0.12);
-        color: var(--mobile-ink);
-        border-color: rgba(111, 220, 247, 0.3);
+    .top-status-text {
+        font-weight: 600;
     }
 
     /* ----------------------------------------------------------------------
-       4. TAB CONTENT VIEWPORT
+       4. TAB CONTENT VIEWPORT & 1:1 GEARED SWIPE TRACK
        ---------------------------------------------------------------------- */
     .mobile-tab-viewport {
         flex: 1;
@@ -176,18 +224,24 @@
         touch-action: pan-y;
     }
 
-    .mobile-tab-view {
-        position: absolute;
-        inset: 0;
-        width: 100%;
+    .mobile-tab-track {
+        display: flex;
+        width: 500%;
         height: 100%;
+        will-change: transform;
+        transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .mobile-tab-view {
+        width: 20%;
+        height: 100%;
+        flex-shrink: 0;
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
-        touch-action: pan-y;
         overscroll-behavior-y: contain;
         min-height: 0;
-        padding: 16px 16px calc(115px + env(safe-area-inset-bottom)) 16px;
+        padding: 16px 16px calc(125px + env(safe-area-inset-bottom)) 16px;
         box-sizing: border-box;
         user-select: text;
         -webkit-user-select: text;
@@ -524,260 +578,443 @@
     }
 
     /* ----------------------------------------------------------------------
-       7. PAGE 01: HERO & BIO STYLES (QUCONTEXT EDITORIAL BIO)
+       7. PAGE 01: HOME & QUANTUM IDENTITY STYLES
        ---------------------------------------------------------------------- */
+    .mobile-home-container,
     .mobile-bio-container {
         display: flex;
         flex-direction: column;
         gap: 20px;
     }
 
-    .mobile-bio-status-bar {
+    /* Living Quantum Wavefunction Hero Card */
+    .home-quantum-hero-card {
+        background: linear-gradient(180deg, rgba(14, 15, 26, 0.90) 0%, rgba(8, 8, 15, 0.96) 100%);
+        border: 1px solid rgba(236, 231, 219, 0.14);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        position: relative;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+
+    .home-canvas-wrap {
+        position: relative;
+        width: 100%;
+        height: 130px;
+        background: #030308;
+        overflow: hidden;
+        border-bottom: 1px solid rgba(236, 231, 219, 0.08);
+    }
+
+    #home-quantum-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+        cursor: crosshair;
+    }
+
+    .home-canvas-overlay {
+        position: absolute;
+        top: 8px;
+        left: 10px;
+        right: 10px;
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid var(--mobile-line);
-        border-radius: 8px;
-        padding: 8px 12px;
+        align-items: center;
+        pointer-events: none;
+    }
+
+    .home-canvas-tag {
         font-family: var(--mobile-font-mono);
-        font-size: 11px;
-    }
-
-    .mobile-bio-status {
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        font-size: 8.5px;
         color: var(--mobile-quantum);
-        font-weight: 600;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        background: rgba(6, 6, 12, 0.72);
+        padding: 3px 7px;
+        border-radius: 4px;
+        border: 1px solid rgba(111, 220, 247, 0.3);
     }
 
-    .mobile-bio-tau {
+    .home-canvas-hint {
+        font-family: var(--mobile-font-mono);
+        font-size: 8px;
         color: var(--mobile-gold);
-        font-weight: 600;
+        letter-spacing: 0.05em;
+        background: rgba(6, 6, 12, 0.72);
+        padding: 3px 7px;
+        border-radius: 4px;
+        border: 1px solid rgba(232, 180, 92, 0.25);
     }
 
-    .mobile-bio-card {
-        background: rgba(11, 11, 20, 0.75);
-        border: 1px solid var(--mobile-line);
-        border-radius: 16px;
-        padding: 20px;
+    /* Identity and Official SVG Monogram */
+    .home-identity-block {
+        padding: 16px 16px 12px 16px;
         display: flex;
-        flex-direction: column;
-        gap: 16px;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        align-items: flex-start;
+        gap: 14px;
     }
 
-    .mobile-bio-id-row {
-        display: flex;
-        align-items: center;
-        gap: 16px;
+    .home-avatar-container {
+        position: relative;
+        width: 66px;
+        height: 66px;
+        flex-shrink: 0;
     }
 
-    .mobile-bio-avatar {
-        width: 58px;
-        height: 58px;
+    .home-avatar-ring {
+        position: absolute;
+        inset: -4px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #6fdcf7 0%, #a78bfa 100%);
+        border: 1px dashed rgba(111, 220, 247, 0.45);
+        animation: rotateOrbitalRing 24s linear infinite;
+    }
+
+    @keyframes rotateOrbitalRing {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .home-avatar-disc {
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(20, 22, 38, 0.95), rgba(8, 9, 16, 0.98));
+        border: 1.5px solid rgba(111, 220, 247, 0.5);
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
-        flex-shrink: 0;
-        box-shadow: 0 4px 18px rgba(111, 220, 247, 0.25);
+        box-shadow: 0 0 20px rgba(111, 220, 247, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
     }
 
-    .mobile-bio-monogram {
-        color: #06060c;
-        font-family: var(--mobile-font-display);
-        font-weight: 700;
-        font-size: 20px;
-        letter-spacing: 0.04em;
+    .home-avatar-logo {
+        width: 42px;
+        height: 42px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 10px rgba(111, 220, 247, 0.5));
     }
 
-    .mobile-bio-title-wrap {
+    .home-hero-text {
         display: flex;
         flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+        flex: 1;
     }
 
-    .mobile-bio-tagline {
+    .home-status-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 2px;
+    }
+
+    .home-status-badge {
         font-family: var(--mobile-font-mono);
-        font-size: 10px;
-        color: var(--mobile-gold);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-    }
-
-    .mobile-bio-name {
-        font-family: var(--mobile-font-display);
-        font-size: 26px;
-        font-weight: 500;
-        color: var(--mobile-ink);
-        letter-spacing: -0.02em;
-        margin: 3px 0 2px 0;
-    }
-
-    .mobile-bio-alias {
-        font-size: 12px;
-        color: var(--mobile-muted);
-        font-family: var(--mobile-font-sans);
-    }
-
-    .mobile-bio-role {
-        font-size: 12px;
+        font-size: 8.5px;
         color: var(--mobile-quantum);
-        font-weight: 500;
-        margin-top: 3px;
+        letter-spacing: 0.06em;
+        font-weight: 700;
     }
 
-    .mobile-bio-actions {
+    .home-hero-title {
+        font-family: var(--mobile-font-display);
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+        margin: 0;
+        line-height: 1.15;
+    }
+
+    .home-hero-alias {
+        font-family: var(--mobile-font-mono);
+        font-size: 11px;
+        color: var(--mobile-gold);
+        margin: 0;
+    }
+
+    .home-hero-subtitle {
+        font-family: var(--mobile-font-sans);
+        font-size: 12px;
+        color: var(--mobile-ink);
+        font-weight: 500;
+        line-height: 1.35;
+        margin-top: 2px;
+    }
+
+    .home-hero-institution {
+        font-size: 11px;
+        color: var(--mobile-muted);
+        line-height: 1.3;
+    }
+
+    /* Actions and Social Connectors */
+    .home-action-row {
+        padding: 0 16px 14px 16px;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
     }
 
-    .mobile-social-quanta {
+    .home-social-chips {
+        padding: 0 16px 14px 16px;
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
+        border-top: 1px solid rgba(236, 231, 219, 0.08);
+        padding-top: 12px;
     }
 
-    .mobile-quantum-chip {
+    .home-chip {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.04);
         border: 1px solid var(--mobile-line);
-        color: var(--mobile-ink);
-        padding: 8px 14px;
         border-radius: 999px;
+        padding: 6px 12px;
         font-family: var(--mobile-font-sans);
-        font-size: 12px;
-        font-weight: 500;
+        font-size: 11.5px;
+        color: var(--mobile-muted);
         text-decoration: none;
-        min-height: 38px;
-        transition: all 0.18s ease;
+        transition: all 0.2s ease;
     }
 
-    .mobile-quantum-chip:active {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: var(--mobile-line-bright);
+    .home-chip:active {
+        background: rgba(111, 220, 247, 0.1);
+        border-color: rgba(111, 220, 247, 0.35);
+        color: var(--mobile-quantum);
     }
 
-    .mobile-text-card {
-        background: rgba(11, 11, 20, 0.65);
-        border: 1px solid var(--mobile-line);
-        border-radius: 14px;
-        padding: 18px;
-        color: var(--mobile-ink);
-        font-size: 14px;
-        line-height: 1.65;
-        font-family: var(--mobile-font-sans);
-    }
-
-    .mobile-text-card p {
-        margin: 0 0 12px 0;
-    }
-
-    .mobile-text-card p:last-child {
-        margin-bottom: 0;
-    }
-
-    .mobile-bio-lead {
-        color: var(--mobile-ink);
-        font-size: 15px;
-        font-weight: 400;
-        line-height: 1.6;
-    }
-
-    .mobile-pillars-grid {
+    /* Paradigm Section Block */
+    .home-section-block {
         display: flex;
         flex-direction: column;
         gap: 10px;
     }
 
-    .mobile-pillar-card {
-        background: rgba(11, 11, 20, 0.5);
-        border: 1px solid var(--mobile-line);
-        border-radius: 12px;
-        padding: 14px;
-    }
-
-    .mobile-pillar-tag {
-        font-family: var(--mobile-font-mono);
-        font-size: 10px;
-        color: var(--mobile-quantum);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        margin-bottom: 4px;
-    }
-
-    .mobile-pillar-title {
-        font-family: var(--mobile-font-sans);
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--mobile-ink);
-        margin-bottom: 6px;
-    }
-
-    .mobile-pillar-desc {
-        font-size: 12px;
-        color: var(--mobile-muted);
-        line-height: 1.5;
-    }
-
-    .mobile-quick-nav-grid {
-        display: grid;
-        grid-template-columns: 1fr;
+    .home-narrative-card {
+        background: rgba(14, 15, 26, 0.74);
+        border: 1px solid rgba(236, 231, 219, 0.12);
+        border-radius: 16px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
         gap: 10px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--mobile-muted);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
     }
 
-    .mobile-quick-nav-card {
+    .narrative-lead {
+        color: var(--mobile-ink);
+        font-weight: 500;
+        font-size: 13.5px;
+    }
+
+    /* Living Research Vectors */
+    .home-vectors-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .home-vector-card {
+        background: rgba(14, 15, 26, 0.78);
+        border: 1px solid rgba(236, 231, 219, 0.13);
+        border-radius: 16px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .vector-header {
         display: flex;
         align-items: center;
-        gap: 12px;
-        background: rgba(11, 11, 20, 0.55);
-        border: 1px solid var(--mobile-line);
-        border-radius: 12px;
-        padding: 14px;
-        color: var(--mobile-ink);
-        cursor: pointer;
-        text-align: left;
-        min-height: 48px;
-        transition: all 0.18s ease;
+        justify-content: space-between;
     }
 
-    .mobile-quick-nav-card:active {
-        background: rgba(111, 220, 247, 0.08);
-        border-color: rgba(111, 220, 247, 0.3);
+    .vector-badge {
+        font-family: var(--mobile-font-mono);
+        font-size: 9px;
+        font-weight: 700;
+        color: var(--mobile-quantum);
+        letter-spacing: 0.08em;
     }
 
-    .quick-nav-icon {
-        font-size: 20px;
+    .vector-metric {
+        font-family: var(--mobile-font-mono);
+        font-size: 9px;
+        color: var(--mobile-gold);
+        font-weight: 700;
+        background: rgba(232, 180, 92, 0.1);
+        border: 1px solid rgba(232, 180, 92, 0.25);
+        padding: 2px 6px;
+        border-radius: 4px;
     }
 
-    .quick-nav-content {
-        flex: 1;
-    }
-
-    .quick-nav-title {
+    .vector-title {
         font-family: var(--mobile-font-display);
         font-size: 15px;
         font-weight: 600;
         color: var(--mobile-ink);
+        margin: 0;
+        line-height: 1.3;
     }
 
-    .quick-nav-desc {
+    .vector-desc {
         font-size: 12px;
+        color: var(--mobile-muted);
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .qec-mini-lattice {
+        display: grid;
+        grid-template-columns: repeat(2, 54px);
+        gap: 8px;
+        justify-content: center;
+        padding: 12px;
+        background: rgba(6, 6, 12, 0.75);
+        border-radius: 12px;
+        border: 1px dashed rgba(111, 220, 247, 0.25);
+        margin-top: 4px;
+    }
+
+    .qec-plaquette {
+        width: 54px;
+        height: 54px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mobile-font-mono);
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        user-select: none;
+    }
+
+    .qec-plaquette.x-stab {
+        background: rgba(111, 220, 247, 0.1);
+        border: 1px solid rgba(111, 220, 247, 0.35);
+        color: var(--mobile-quantum);
+    }
+
+    .qec-plaquette.z-stab {
+        background: rgba(67, 105, 238, 0.12);
+        border: 1px solid rgba(67, 105, 238, 0.35);
+        color: #7b9cff;
+    }
+
+    .qec-plaquette.active {
+        background: rgba(232, 180, 92, 0.25) !important;
+        border-color: var(--mobile-gold) !important;
+        color: #ffd685 !important;
+        box-shadow: 0 0 16px rgba(232, 180, 92, 0.45);
+        transform: scale(1.06);
+    }
+
+    .vector-interactive-hint {
+        text-align: center;
+        font-family: var(--mobile-font-mono);
+        font-size: 8.5px;
+        color: var(--mobile-gold);
+        letter-spacing: 0.06em;
+        margin-top: 2px;
+    }
+
+    .vector-telemetry-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        background: rgba(6, 6, 12, 0.5);
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .vec-tel-item {
+        font-family: var(--mobile-font-mono);
+        font-size: 9.5px;
         color: var(--mobile-muted);
     }
 
-    .quick-nav-arrow {
-        font-size: 16px;
+    .vec-tel-item strong {
+        color: var(--mobile-ink);
+    }
+
+    /* Fast Exploration Portals */
+    .home-portals-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .home-portal-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(14, 15, 26, 0.74);
+        border: 1px solid rgba(236, 231, 219, 0.12);
+        border-radius: 12px;
+        padding: 12px 14px;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .home-portal-card:active {
+        background: rgba(111, 220, 247, 0.08);
+        border-color: rgba(111, 220, 247, 0.35);
+        transform: scale(0.985);
+    }
+
+    .portal-code {
+        font-family: var(--mobile-font-mono);
+        font-size: 11px;
+        font-weight: 700;
         color: var(--mobile-quantum);
-        font-weight: bold;
+        width: 24px;
+    }
+
+    .portal-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+    }
+
+    .portal-info strong {
+        font-family: var(--mobile-font-display);
+        font-size: 13px;
+        color: var(--mobile-ink);
+    }
+
+    .portal-info span {
+        font-size: 11px;
+        color: var(--mobile-muted);
+    }
+
+    .portal-arrow {
+        font-size: 14px;
+        color: var(--mobile-quantum);
+        transition: transform 0.2s ease;
+    }
+
+    .home-portal-card:active .portal-arrow {
+        transform: translateX(3px);
     }
 
     /* ----------------------------------------------------------------------
@@ -956,32 +1193,116 @@
         gap: 20px;
     }
 
+    /* High-Contrast Segmented Capsule Switcher */
     .mobile-highlight-nav {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 6px;
-        margin-top: 8px;
+        margin-top: 10px;
+        background: rgba(13, 14, 24, 0.88);
+        border: 1px solid rgba(236, 231, 219, 0.16);
+        border-radius: 14px;
+        padding: 5px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.25);
     }
 
     .mobile-hl-btn {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--mobile-line);
+        background: transparent;
+        border: 1px solid transparent;
         color: var(--mobile-muted);
-        padding: 8px 4px;
-        border-radius: 999px;
+        padding: 8px 6px;
+        border-radius: 10px;
         font-family: var(--mobile-font-sans);
-        font-size: 11px;
-        font-weight: 500;
+        font-size: 11.5px;
+        font-weight: 600;
         cursor: pointer;
         min-height: 38px;
-        transition: all 0.18s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        user-select: none;
+    }
+
+    .mobile-hl-btn .hl-pill-code {
+        font-family: var(--mobile-font-mono);
+        font-size: 9px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--mobile-quantum);
+        padding: 1px 5px;
+        border-radius: 4px;
+        transition: all 0.22s ease;
+    }
+
+    .mobile-hl-btn .hl-pill-label {
+        letter-spacing: 0.05em;
+        font-weight: 600;
     }
 
     .mobile-hl-btn.active {
-        background: rgba(111, 220, 247, 0.12);
-        border-color: rgba(111, 220, 247, 0.4);
-        color: var(--mobile-quantum);
-        font-weight: 600;
+        background: rgba(111, 220, 247, 0.18);
+        border: 1px solid rgba(111, 220, 247, 0.5);
+        color: #ffffff;
+        box-shadow: 0 2px 12px rgba(111, 220, 247, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .mobile-hl-btn.active .hl-pill-code {
+        background: var(--mobile-quantum);
+        color: #06060c;
+        box-shadow: 0 0 6px rgba(111, 220, 247, 0.6);
+    }
+
+    /* Tactile 3D Micro-interaction & Specular Glass highlights */
+    .mobile-bio-card,
+    .home-quantum-hero-card,
+    .home-vector-card,
+    .home-portal-card,
+    .milestone-content,
+    .mobile-highlight-card,
+    .mobile-sim-card {
+        position: relative;
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+        will-change: transform;
+    }
+
+    .mobile-bio-card:active,
+    .home-vector-card:active,
+    .milestone-content:active,
+    .mobile-highlight-card:active,
+    .mobile-sim-card:active {
+        transform: scale(0.986);
+        border-color: rgba(236, 231, 219, 0.24);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(236, 231, 219, 0.15);
+    }
+
+    /* Staggered entry animation */
+    @keyframes mobileTabFadeUp {
+        0% {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .mobile-section-header {
+        animation: mobileTabFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .mobile-highlight-card,
+    .home-quantum-hero-card,
+    .mobile-bio-card,
+    .mobile-timeline-container,
+    .mobile-arsenal-container {
+        animation: mobileTabFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+    }
+
+    .interactive-touch-zone {
+        touch-action: none !important;
     }
 
     .mobile-highlight-card {
@@ -1033,121 +1354,179 @@
         margin: 0;
     }
 
-    /* Megh Cloud Storage Schematic */
-    .megh-storage-schematic {
-        background: rgba(6, 6, 12, 0.85);
+    /* ----------------------------------------------------------------------
+       EXHIBIT 01: MEGH CRYPTOGRAPHIC ORBITAL VAULT
+       ---------------------------------------------------------------------- */
+    .megh-visual-box {
+        background: rgba(6, 6, 12, 0.9);
         border: 1px solid var(--mobile-line);
         border-radius: 14px;
-        padding: 16px;
+        padding: 12px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
+        align-items: center;
     }
 
-    .megh-vault-indicator {
+    .megh-canvas-wrap {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #megh-vault-canvas {
+        width: 100%;
+        max-width: 320px;
+        height: 150px;
+        border-radius: 10px;
+        background: radial-gradient(circle at center, rgba(111, 220, 247, 0.04) 0%, transparent 70%);
+    }
+
+    .megh-vault-badge {
         display: flex;
         align-items: center;
-        gap: 12px;
-    }
-
-    .vault-lock-icon {
-        font-size: 22px;
-        line-height: 1;
-    }
-
-    .vault-stats {
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-    }
-
-    .vault-capacity {
+        justify-content: space-between;
+        width: 100%;
+        padding: 6px 6px 0 6px;
         font-family: var(--mobile-font-mono);
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--mobile-gold);
+        font-size: 10px;
+    }
+
+    .vault-status-indicator {
+        color: var(--mobile-quantum);
+        font-weight: 600;
         letter-spacing: 0.04em;
     }
 
-    .vault-cipher {
-        font-family: var(--mobile-font-mono);
-        font-size: 9px;
-        color: var(--mobile-quantum);
-        letter-spacing: 0.05em;
+    .vault-sum-text {
+        color: var(--mobile-gold);
+        font-weight: 700;
+        letter-spacing: 0.03em;
     }
 
     .megh-provider-pill-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        display: flex;
+        flex-wrap: wrap;
         gap: 6px;
+        justify-content: center;
+        width: 100%;
     }
 
     .megh-provider-chip {
-        display: flex;
-        align-items: center;
-        gap: 7px;
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid var(--mobile-line);
-        border-radius: 8px;
-        padding: 7px 10px;
+        border-radius: 999px;
+        padding: 5px 10px;
         font-size: 11px;
         color: var(--mobile-ink);
-        font-family: var(--mobile-font-sans);
+        font-family: var(--mobile-font-mono);
+        cursor: pointer;
+        transition: all 0.2s ease;
     }
 
-    .provider-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        flex-shrink: 0;
+    .megh-provider-chip.active {
+        background: rgba(111, 220, 247, 0.16);
+        border-color: var(--mobile-quantum);
+        color: var(--mobile-quantum);
+        box-shadow: 0 0 10px rgba(111, 220, 247, 0.3);
     }
 
-    .provider-dot.google { background: #4285F4; }
-    .provider-dot.mega { background: #D9272E; }
-    .provider-dot.b2 { background: #0076CE; }
-    .provider-dot.onedrive { background: #0078D4; }
-    .provider-dot.dropbox { background: #0061FE; }
-
-    /* Geo-FNO & General Preview Box */
-    .hl-preview-box {
-        background: rgba(6, 6, 12, 0.85);
+    /* ----------------------------------------------------------------------
+       EXHIBIT 02: GEO-FNO 2D FOURIER SPECTRAL VORTICITY ENGINE
+       ---------------------------------------------------------------------- */
+    .geofno-visual-box {
+        background: rgba(6, 6, 12, 0.9);
         border: 1px solid var(--mobile-line);
-        border-radius: 12px;
-        height: 120px;
+        border-radius: 14px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .geofno-canvas-wrap {
+        position: relative;
+        width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        position: relative;
-        overflow: hidden;
     }
 
-    .geofno-sphere-graphic {
-        width: 70px;
-        height: 70px;
-        border: 2px solid rgba(111, 220, 247, 0.45);
-        border-radius: 50%;
-        position: relative;
+    #geofno-vorticity-canvas {
+        width: 100%;
+        max-width: 320px;
+        height: 150px;
+        border-radius: 10px;
+        background: #06060c;
+        border: 1px solid rgba(236, 231, 219, 0.08);
+    }
+
+    .geofno-hint-overlay {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        font-family: var(--mobile-font-mono);
+        font-size: 8.5px;
+        color: var(--mobile-muted);
+        letter-spacing: 0.05em;
+        background: rgba(6, 6, 12, 0.7);
+        padding: 2px 6px;
+        border-radius: 4px;
+        pointer-events: none;
+    }
+
+    .geofno-mode-bar {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 2px 4px;
     }
 
-    .sphere-latitude {
-        position: absolute;
-        border: 1px dashed rgba(232, 180, 92, 0.5);
-        border-radius: 50%;
+    .mode-bar-label {
+        font-family: var(--mobile-font-mono);
+        font-size: 10px;
+        color: var(--mobile-faint);
+        letter-spacing: 0.05em;
     }
 
-    .sphere-latitude.lat-1 { width: 90%; height: 50%; }
-    .sphere-latitude.lat-2 { width: 50%; height: 90%; }
-    .sphere-latitude.lat-3 { width: 70%; height: 70%; }
+    .geofno-mode-pills {
+        display: flex;
+        gap: 6px;
+    }
 
-    /* Live 2D Ising Canvas inside Exhibit */
-    .hl-ising-interactive {
-        background: rgba(6, 6, 12, 0.85);
+    .mode-pill {
+        background: rgba(255, 255, 255, 0.04);
         border: 1px solid var(--mobile-line);
-        border-radius: 12px;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 10px;
+        color: var(--mobile-muted);
+        font-family: var(--mobile-font-mono);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .mode-pill.active {
+        background: rgba(232, 180, 92, 0.15);
+        border-color: var(--mobile-gold);
+        color: var(--mobile-gold);
+        font-weight: 600;
+        box-shadow: 0 0 8px rgba(232, 180, 92, 0.25);
+    }
+
+    /* ----------------------------------------------------------------------
+       EXHIBIT 03: 2D ISING INTERACTIVE CANVAS
+       ---------------------------------------------------------------------- */
+    .hl-ising-interactive {
+        background: rgba(6, 6, 12, 0.9);
+        border: 1px solid var(--mobile-line);
+        border-radius: 14px;
         padding: 14px;
         display: flex;
         flex-direction: column;
@@ -1166,12 +1545,22 @@
         position: relative !important;
         top: auto !important;
         left: auto !important;
-        width: 128px !important;
-        height: 128px !important;
-        border: 1px solid var(--mobile-quantum);
-        border-radius: 6px;
+        width: 130px !important;
+        height: 130px !important;
+        border: 1px solid var(--mobile-line);
+        border-radius: 8px;
         image-rendering: pixelated;
         z-index: 2 !important;
+        background: #06060c;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    }
+
+    .ising-touch-hint {
+        font-family: var(--mobile-font-mono);
+        font-size: 9px;
+        color: var(--mobile-muted);
+        letter-spacing: 0.05em;
+        text-align: center;
     }
 
     .ising-telemetry-overlay {
@@ -1540,35 +1929,44 @@
         white-space: nowrap;
     }
 
-    /* Fixed Docked Skill Telemetry Inspector */
+    /* Viewport-Docked Skill Telemetry Inspector Sheet */
+    .mobile-arsenal-inspector-sheet,
     .mobile-arsenal-inspector.fixed-docked {
         position: fixed !important;
-        bottom: calc(118px + env(safe-area-inset-bottom)) !important;
+        bottom: calc(104px + env(safe-area-inset-bottom)) !important;
         left: 14px !important;
         right: 14px !important;
-        z-index: 145 !important;
-        background: rgba(11, 11, 20, 0.94) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(236, 231, 219, 0.18) !important;
-        border-radius: 14px !important;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+        z-index: 200 !important;
+        background: rgba(12, 13, 22, 0.96) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        border: 1px solid rgba(111, 220, 247, 0.32) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(111, 220, 247, 0.12) !important;
         padding: 12px 14px !important;
         display: flex;
         flex-direction: column;
         gap: 8px;
-        animation: inspectorPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        transform: translateY(120%);
+        opacity: 0;
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
+        pointer-events: none;
     }
 
-    @keyframes inspectorPop {
-        from {
-            opacity: 0;
-            transform: translateY(12px) scale(0.98);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+    .mobile-arsenal-inspector-sheet.visible,
+    .mobile-arsenal-inspector.fixed-docked.visible {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .inspector-sheet-handle {
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(236, 231, 219, 0.25);
+        align-self: center;
+        margin-bottom: 2px;
     }
 
     .inspector-header {

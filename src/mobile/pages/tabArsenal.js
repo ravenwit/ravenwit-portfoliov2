@@ -4,6 +4,7 @@
 // ==========================================================================
 
 import { ICON_MAP } from '../../components/hobbies.js';
+import { triggerHaptic } from '../chronoDial.js';
 
 let arsenalData = [];
 let activeCategory = 'ALL';
@@ -38,21 +39,6 @@ export async function renderTabArsenal(container, onNavigateTab) {
             <!-- Skills Matrix Container -->
             <div class="mobile-arsenal-grid" id="arsenal-grid">
                 <div class="mobile-loading-skeleton">Loading Arsenal Matrices...</div>
-            </div>
-
-            <!-- Docked Fixed Skill Telemetry Inspector -->
-            <div class="mobile-arsenal-inspector fixed-docked" id="arsenal-inspector" style="display: none;">
-                <div class="inspector-header">
-                    <div class="inspector-badge">NODE TELEMETRY</div>
-                    <button class="inspector-close-btn" id="inspector-close-btn" aria-label="Close Inspector">✕</button>
-                </div>
-                <div class="inspector-body">
-                    <div class="inspector-icon-wrap" id="inspector-icon-wrap"></div>
-                    <div class="inspector-content">
-                        <div class="inspector-title" id="inspector-skill-title">Select a node</div>
-                        <div class="inspector-desc" id="inspector-skill-desc">Domain & timeframe</div>
-                    </div>
-                </div>
             </div>
         </div>
     `;
@@ -164,15 +150,21 @@ function renderSkills(container) {
 
     gridEl.innerHTML = html;
 
-    // Attach click inspection
+    // Attach click inspection to Viewport-Docked Floating Inspector
     const cells = gridEl.querySelectorAll('.mobile-skill-cell');
-    const inspector = container.querySelector('#arsenal-inspector');
-    const closeBtn = container.querySelector('#inspector-close-btn');
+    const inspector = document.getElementById('arsenal-inspector');
+    const closeBtn = document.getElementById('inspector-close-btn');
 
     if (closeBtn && inspector) {
         closeBtn.onclick = (e) => {
             e.stopPropagation();
-            inspector.style.display = 'none';
+            triggerHaptic(6);
+            inspector.classList.remove('visible');
+            setTimeout(() => {
+                if (!inspector.classList.contains('visible')) {
+                    inspector.style.display = 'none';
+                }
+            }, 250);
             cells.forEach(c => c.classList.remove('active'));
             selectedSkill = null;
         };
@@ -180,6 +172,7 @@ function renderSkills(container) {
 
     cells.forEach(cell => {
         cell.onclick = () => {
+            triggerHaptic(10);
             cells.forEach(c => c.classList.remove('active'));
             cell.classList.add('active');
 
@@ -189,9 +182,9 @@ function renderSkills(container) {
 
             selectedSkill = { name, category: cat, timeRange: range };
 
-            const insTitle = container.querySelector('#inspector-skill-title');
-            const insDesc = container.querySelector('#inspector-skill-desc');
-            const insIcon = container.querySelector('#inspector-icon-wrap');
+            const insTitle = document.getElementById('inspector-skill-title');
+            const insDesc = document.getElementById('inspector-skill-desc');
+            const insIcon = document.getElementById('inspector-icon-wrap');
 
             if (insTitle && insDesc) {
                 insTitle.textContent = name;
@@ -207,6 +200,9 @@ function renderSkills(container) {
 
             if (inspector) {
                 inspector.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    inspector.classList.add('visible');
+                });
             }
         };
     });
