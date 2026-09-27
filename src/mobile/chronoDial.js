@@ -45,7 +45,6 @@ export function initChronoDial(onTabChange) {
                 <span class="chrono-pulse-dot"></span>
                 <span id="chrono-sector-code" class="chrono-code-tag">01</span>
                 <span id="chrono-sector-name" class="chrono-name-tag">HOME</span>
-                <span class="chrono-mode-tag">[TAB DOCK]</span>
             </div>
             <div class="chrono-telemetry-metrics">
                 <span>t: <strong id="chrono-t" class="chrono-metric-tag">0.00</strong></span>
@@ -186,8 +185,8 @@ function onPointerMove(e) {
     }
     lastTouchTime = now;
 
-    // Full thumb sweep across arc (~2.04 radians = 0.65*PI) maps 1:1 to [0, 1]
-    const travelScale = 0.49;
+    // Full thumb sweep across arc calibrated for smooth 5-sector navigation
+    const travelScale = 0.36;
     let newNorm = startDialNorm + (dTheta * travelScale);
     newNorm = Math.max(-0.06, Math.min(1.06, newNorm));
 
@@ -215,8 +214,8 @@ function onPointerUp(e) {
     }
 
     // Snap to nearest of the 5 detents with damped momentum
-    // Spacing between sectors is 0.25; clamp momentum to +/- 0.14 so it cannot skip past an adjacent sector
-    const momentumOffset = Math.max(-0.14, Math.min(0.14, angularVelocity * 0.012));
+    // Spacing between sectors is 0.25; clamp momentum to +/- 0.07 so intentional swipes land reliably on target sector (e.g. WORKS at index 2)
+    const momentumOffset = Math.max(-0.07, Math.min(0.07, angularVelocity * 0.008));
     const projectedNorm = currentNorm + momentumOffset;
 
     let bestIndex = 0;

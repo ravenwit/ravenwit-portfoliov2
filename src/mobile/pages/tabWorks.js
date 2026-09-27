@@ -3,6 +3,8 @@
 // 3 Living Interactive Exhibits (Megh, Geo-FNO, Ising) + Quantum Archive
 // ==========================================================================
 
+import { triggerHaptic } from '../chronoDial.js';
+
 let activeHighlight = 0; // 0: Megh, 1: Geo-FNO, 2: Ising
 let archiveOpen = false;
 let researchData = [];
@@ -181,28 +183,32 @@ function renderHighlightCard(container) {
                     <span class="hl-number">EXHIBIT 01 / 03</span>
                     <span class="hl-tag">CLOUD SYSTEMS & CRYPTOGRAPHY</span>
                 </div>
-                <h2 class="hl-title">MEGH // ENCRYPTED CLOUD VAULT</h2>
+                <h2 class="hl-title">MEGH · ENCRYPTED CLOUD VAULT</h2>
                 <p class="hl-desc">
-                    Client-side encrypted zero-knowledge storage vault aggregating free tiers across Google Drive, Dropbox, Backblaze B2, MEGA, and OneDrive into a unified 52 GB virtual storage pool.
+                    Client-side encrypted zero-knowledge storage vault aggregating free tiers across Google Drive, Dropbox, Backblaze B2, MEGA, OneDrive, and more into an expanding unified storage pool.
                 </p>
 
-                <!-- Interactive Cryptographic Orbital Visualizer -->
+                <!-- Interactive Cryptographic Holographic Visualizer -->
                 <div class="hl-preview-box megh-visual-box">
                     <div class="megh-canvas-wrap">
-                        <canvas id="megh-vault-canvas" width="320" height="150" class="interactive-touch-zone"></canvas>
+                        <canvas id="megh-vault-canvas" width="320" height="175" class="interactive-touch-zone"></canvas>
+                        <div class="megh-hint-overlay">
+                            <span>TOUCH CANVASES TO INJECT ENCRYPTED SHARDS</span>
+                        </div>
                         <div class="megh-vault-badge">
-                            <span class="vault-status-indicator">● AES-256-GCM ACTIVE</span>
-                            <span class="vault-sum-text" id="megh-capacity-display">52 GB UNIFIED POOL</span>
+                            <span class="vault-status-indicator">● AES-256-GCM / REED-SOLOMON</span>
+                            <span class="vault-sum-text" id="megh-capacity-display">52+ GB EXPANDING POOL</span>
                         </div>
                     </div>
 
-                    <!-- 5 Provider Shard Chips -->
+                    <!-- Provider Shard Chips -->
                     <div class="megh-provider-pill-grid" id="megh-chips-grid">
                         <button class="megh-provider-chip gdrive" data-provider="gdrive" data-gb="15">GDrive · 15GB</button>
                         <button class="megh-provider-chip dropbox" data-provider="dropbox" data-gb="2">Dropbox · 2GB</button>
                         <button class="megh-provider-chip b2" data-provider="b2" data-gb="10">Backblaze · 10GB</button>
                         <button class="megh-provider-chip mega" data-provider="mega" data-gb="20">MEGA · 20GB</button>
                         <button class="megh-provider-chip onedrive" data-provider="onedrive" data-gb="5">OneDrive · 5GB</button>
+                        <button class="megh-provider-chip more" style="border-style: dashed; opacity: 0.85;">+ More Coming</button>
                     </div>
                 </div>
 
@@ -213,7 +219,7 @@ function renderHighlightCard(container) {
                     </div>
                     <div class="hl-spec-item">
                         <span class="spec-label">UNIFIED CAPACITY</span>
-                        <span class="spec-val">52 GB Free Pool (15+2+10+20+5)</span>
+                        <span class="spec-val">52+ GB Multi-Cloud Pool</span>
                     </div>
                     <div class="hl-spec-item">
                         <span class="spec-label">SHARDING</span>
@@ -221,7 +227,7 @@ function renderHighlightCard(container) {
                     </div>
                     <div class="hl-spec-item">
                         <span class="spec-label">STORAGE PROVIDERS</span>
-                        <span class="spec-val">5 Multi-Cloud Free Tiers</span>
+                        <span class="spec-val">Multi-Cloud Storage (Expanding)</span>
                     </div>
                 </div>
 
@@ -370,7 +376,7 @@ function renderHighlightCard(container) {
 }
 
 // --------------------------------------------------------------------------
-// EXHIBIT 01: MEGH CRYPTOGRAPHIC ORBITAL ENGINE
+// EXHIBIT 01: MEGH HOLOGRAPHIC CRYPTOGRAPHIC ENGINE
 // --------------------------------------------------------------------------
 function setupMeghVaultVisualizer(stage) {
     meghCanvas = stage.querySelector('#megh-vault-canvas');
@@ -380,120 +386,238 @@ function setupMeghVaultVisualizer(stage) {
     const rect = meghCanvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     meghCanvas.width = (rect.width || 320) * dpr;
-    meghCanvas.height = 150 * dpr;
+    meghCanvas.height = 175 * dpr;
     meghCtx.scale(dpr, dpr);
 
     const w = meghCanvas.width / dpr;
     const h = meghCanvas.height / dpr;
     const cx = w / 2;
-    const cy = h / 2;
+    const cy = h / 2 - 4;
 
+    // 5 Storage Pods (Pentagonal geometry, symmetric distribution, 52 GB total pool)
     const providers = [
-        { id: 'gdrive', name: 'GDrive', gb: 15, color: '#6fdcf7', angle: 0 },
-        { id: 'dropbox', name: 'Dropbox', gb: 2, color: '#3d94ff', angle: (2 * Math.PI) / 5 },
-        { id: 'b2', name: 'B2', gb: 10, color: '#fb5c7a', angle: (4 * Math.PI) / 5 },
-        { id: 'mega', name: 'MEGA', gb: 20, color: '#ff4d4d', angle: (6 * Math.PI) / 5 },
-        { id: 'onedrive', name: 'OneDrive', gb: 5, color: '#e8b45c', angle: (8 * Math.PI) / 5 }
+        { id: 'mega', name: 'MEGA', gb: 20, color: '#ff4d4d', angle: -Math.PI / 2 },
+        { id: 'gdrive', name: 'GDrive', gb: 15, color: '#6fdcf7', angle: -Math.PI / 2 + (2 * Math.PI) / 5 },
+        { id: 'onedrive', name: 'OneDrive', gb: 5, color: '#e8b45c', angle: -Math.PI / 2 + (4 * Math.PI) / 5 },
+        { id: 'dropbox', name: 'Dropbox', gb: 2, color: '#3d94ff', angle: -Math.PI / 2 + (6 * Math.PI) / 5 },
+        { id: 'b2', name: 'Backblaze', gb: 10, color: '#fb5c7a', angle: -Math.PI / 2 + (8 * Math.PI) / 5 }
     ];
 
-    // Encrypted packet particles streaming towards center vault
+    // Dynamic data packets flowing along laser bus lines
     const packets = [];
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 30; i++) {
         packets.push({
             pIdx: Math.floor(Math.random() * 5),
             progress: Math.random(),
-            speed: 0.006 + Math.random() * 0.008,
-            jitter: (Math.random() - 0.5) * 6
+            speed: 0.007 + Math.random() * 0.009,
+            byteTag: (Math.floor(Math.random() * 256)).toString(16).toUpperCase().padStart(2, '0')
         });
     }
 
-    let pulseTime = 0;
+    // Touch-injected shard bursts
+    let dynamicShards = [];
 
-    function renderMegh(now) {
-        pulseTime += 0.025;
+    // Telemetry ticker state
+    let hexBlock = '0x' + Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0');
+    let frameCount = 0;
+    let rotationOuter = 0;
+    let rotationInner = 0;
+
+    function drawHexagon(ctx, x, y, radius, rotation, strokeColor, lineWidth = 1, lineDash = []) {
+        ctx.save();
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = rotation + (i * Math.PI / 3);
+            const vx = x + radius * Math.cos(angle);
+            const vy = y + radius * Math.sin(angle);
+            if (i === 0) ctx.moveTo(vx, vy);
+            else ctx.lineTo(vx, vy);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.setLineDash(lineDash);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function renderMegh() {
+        frameCount++;
+        rotationOuter += 0.006;
+        rotationInner -= 0.01;
+
+        if (frameCount % 18 === 0) {
+            hexBlock = '0x' + Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0');
+        }
+
         meghCtx.clearRect(0, 0, w, h);
 
-        const orbitRadius = Math.min(w * 0.38, 56);
+        const busRadius = Math.min(w * 0.38, 64);
 
-        // 1. Orbital Ring Track
+        // 1. Draw Circular Grid & Perimeter
         meghCtx.beginPath();
-        meghCtx.arc(cx, cy, orbitRadius, 0, Math.PI * 2);
-        meghCtx.strokeStyle = 'rgba(236, 231, 219, 0.08)';
+        meghCtx.arc(cx, cy, busRadius, 0, Math.PI * 2);
+        meghCtx.strokeStyle = 'rgba(111, 220, 247, 0.06)';
         meghCtx.lineWidth = 1;
-        meghCtx.setLineDash([4, 4]);
         meghCtx.stroke();
-        meghCtx.setLineDash([]);
 
-        // 2. Draw Packet Particles
+        // 2. Draw 5 Laser Data Bus Pipelines
+        providers.forEach((p, idx) => {
+            const px = cx + busRadius * Math.cos(p.angle);
+            const py = cy + busRadius * Math.sin(p.angle);
+            const isSelected = meghSelectedProvider === idx;
+
+            // Laser conduit
+            meghCtx.beginPath();
+            meghCtx.moveTo(cx, cy);
+            meghCtx.lineTo(px, py);
+            meghCtx.strokeStyle = isSelected ? p.color : 'rgba(111, 220, 247, 0.14)';
+            meghCtx.lineWidth = isSelected ? 2 : 1;
+            if (isSelected) {
+                meghCtx.shadowColor = p.color;
+                meghCtx.shadowBlur = 10;
+            }
+            meghCtx.stroke();
+            meghCtx.shadowBlur = 0;
+        });
+
+        // 3. Render Shard Packets Traveling along bus lines
         packets.forEach(pkt => {
-            pkt.progress += pkt.speed;
+            pkt.progress += pkt.speed * (meghSelectedProvider !== null && pkt.pIdx === meghSelectedProvider ? 1.6 : 1.0);
             if (pkt.progress >= 1.0) {
                 pkt.progress = 0;
                 pkt.pIdx = meghSelectedProvider !== null ? meghSelectedProvider : Math.floor(Math.random() * 5);
+                pkt.byteTag = (Math.floor(Math.random() * 256)).toString(16).toUpperCase().padStart(2, '0');
             }
 
             const p = providers[pkt.pIdx];
-            const pTheta = p.angle + pulseTime * 0.2;
-            const px = cx + orbitRadius * Math.cos(pTheta);
-            const py = cy + orbitRadius * Math.sin(pTheta);
+            const px = cx + busRadius * Math.cos(p.angle);
+            const py = cy + busRadius * Math.sin(p.angle);
 
-            // Interpolate towards center vault
-            const curX = px + (cx - px) * pkt.progress + Math.cos(pkt.progress * Math.PI) * pkt.jitter;
-            const curY = py + (cy - py) * pkt.progress + Math.sin(pkt.progress * Math.PI) * pkt.jitter;
+            // Interpolate position along laser line
+            const curX = cx + (px - cx) * pkt.progress;
+            const curY = cy + (py - cy) * pkt.progress;
 
-            meghCtx.beginPath();
-            meghCtx.arc(curX, curY, 2, 0, Math.PI * 2);
+            // Micro-shard rectangle aligned with trajectory
+            meghCtx.save();
+            meghCtx.translate(curX, curY);
+            meghCtx.rotate(p.angle);
             meghCtx.fillStyle = p.color;
             meghCtx.shadowColor = p.color;
-            meghCtx.shadowBlur = 4;
-            meghCtx.fill();
-            meghCtx.shadowBlur = 0;
+            meghCtx.shadowBlur = 6;
+            meghCtx.fillRect(-3, -1.5, 6, 3);
+            meghCtx.restore();
         });
 
-        // 3. Draw Provider Satellite Nodes
+        // 4. Render User-Injected Interactive Shards
+        for (let i = dynamicShards.length - 1; i >= 0; i--) {
+            const s = dynamicShards[i];
+            s.progress += s.speed;
+            const targetP = providers[s.targetIdx];
+            const targetX = cx + busRadius * Math.cos(targetP.angle);
+            const targetY = cy + busRadius * Math.sin(targetP.angle);
+
+            const sx = s.startX + (targetX - s.startX) * s.progress;
+            const sy = s.startY + (targetY - s.startY) * s.progress;
+
+            meghCtx.save();
+            meghCtx.beginPath();
+            meghCtx.arc(sx, sy, 2.5 * (1 - s.progress * 0.4), 0, Math.PI * 2);
+            meghCtx.fillStyle = targetP.color;
+            meghCtx.shadowColor = targetP.color;
+            meghCtx.shadowBlur = 8;
+            meghCtx.fill();
+            meghCtx.restore();
+
+            if (s.progress >= 1.0) {
+                dynamicShards.splice(i, 1);
+            }
+        }
+
+        // 5. Draw 5 Cloud Pods (High-Tech Nodes)
         providers.forEach((p, idx) => {
-            const pTheta = p.angle + pulseTime * 0.2;
-            const px = cx + orbitRadius * Math.cos(pTheta);
-            const py = cy + orbitRadius * Math.sin(pTheta);
+            const px = cx + busRadius * Math.cos(p.angle);
+            const py = cy + busRadius * Math.sin(p.angle);
             const isSelected = meghSelectedProvider === idx;
 
-            meghCtx.beginPath();
-            meghCtx.arc(px, py, isSelected ? 8 : 5, 0, Math.PI * 2);
-            meghCtx.fillStyle = p.color;
-            meghCtx.shadowColor = p.color;
-            meghCtx.shadowBlur = isSelected ? 10 : 4;
-            meghCtx.fill();
-            meghCtx.shadowBlur = 0;
+            // Outer pulse halo
+            if (isSelected) {
+                meghCtx.beginPath();
+                meghCtx.arc(px, py, 13, 0, Math.PI * 2);
+                meghCtx.strokeStyle = p.color;
+                meghCtx.lineWidth = 1.5;
+                meghCtx.stroke();
+            }
 
-            // Small label
-            meghCtx.font = '9px "JetBrains Mono", monospace';
-            meghCtx.fillStyle = 'rgba(236, 231, 219, 0.75)';
-            meghCtx.textAlign = 'center';
-            meghCtx.fillText(p.name, px, py + (py > cy ? 13 : -8));
+            // Pod Body
+            meghCtx.save();
+            meghCtx.beginPath();
+            meghCtx.arc(px, py, isSelected ? 8 : 6, 0, Math.PI * 2);
+            meghCtx.fillStyle = 'rgba(11, 13, 24, 0.95)';
+            meghCtx.strokeStyle = p.color;
+            meghCtx.lineWidth = 1.5;
+            meghCtx.shadowColor = p.color;
+            meghCtx.shadowBlur = isSelected ? 12 : 5;
+            meghCtx.fill();
+            meghCtx.stroke();
+            meghCtx.restore();
         });
 
-        // 4. Central AES-256 Vault Core
-        const corePulse = 14 + Math.sin(pulseTime * 2) * 2;
+        // 6. Draw Central Cryptographic Vault Core
+        // Outer rotating security shield hexagon
+        drawHexagon(meghCtx, cx, cy, 32, rotationOuter, 'rgba(111, 220, 247, 0.35)', 1, [4, 4]);
+
+        // Inner counter-rotating cipher hexagon
+        drawHexagon(meghCtx, cx, cy, 25, rotationInner, 'rgba(111, 220, 247, 0.65)', 1.2);
+
+        // Core Vault Circle with radial gradient
+        const coreRad = 19;
+        const coreGrad = meghCtx.createRadialGradient(cx, cy, 2, cx, cy, coreRad);
+        coreGrad.addColorStop(0, 'rgba(17, 24, 48, 0.98)');
+        coreGrad.addColorStop(0.8, 'rgba(11, 13, 24, 0.95)');
+        coreGrad.addColorStop(1, 'rgba(111, 220, 247, 0.4)');
+
+        meghCtx.save();
         meghCtx.beginPath();
-        meghCtx.arc(cx, cy, corePulse, 0, Math.PI * 2);
-        meghCtx.fillStyle = 'rgba(11, 11, 20, 0.9)';
-        meghCtx.strokeStyle = '#6fdcf7';
+        meghCtx.arc(cx, cy, coreRad, 0, Math.PI * 2);
+        meghCtx.fillStyle = coreGrad;
+        meghCtx.strokeStyle = 'rgba(111, 220, 247, 0.8)';
         meghCtx.lineWidth = 1.5;
-        meghCtx.shadowColor = 'rgba(111, 220, 247, 0.6)';
-        meghCtx.shadowBlur = 8;
+        meghCtx.shadowColor = 'rgba(111, 220, 247, 0.5)';
+        meghCtx.shadowBlur = 12;
         meghCtx.fill();
         meghCtx.stroke();
-        meghCtx.shadowBlur = 0;
-
-        meghCtx.font = '10px sans-serif';
-        meghCtx.textAlign = 'center';
-        meghCtx.textBaseline = 'middle';
-        meghCtx.fillText('🔒', cx, cy);
+        meghCtx.restore();
 
         meghAnimId = requestAnimationFrame(renderMegh);
     }
 
     meghAnimId = requestAnimationFrame(renderMegh);
+
+    // Interactive Touch/Pointer Sharding Injection
+    function injectShards(evt) {
+        const cRect = meghCanvas.getBoundingClientRect();
+        const clientX = evt.clientX ?? (evt.touches && evt.touches[0] ? evt.touches[0].clientX : cx);
+        const clientY = evt.clientY ?? (evt.touches && evt.touches[0] ? evt.touches[0].clientY : cy);
+        const touchX = clientX - cRect.left;
+        const touchY = clientY - cRect.top;
+
+        triggerHaptic(8);
+
+        // Burst 5 parity-coded shards, one to each cloud provider
+        for (let i = 0; i < 5; i++) {
+            dynamicShards.push({
+                startX: touchX,
+                startY: touchY,
+                targetIdx: i,
+                progress: 0,
+                speed: 0.025 + Math.random() * 0.015
+            });
+        }
+    }
+
+    meghCanvas.addEventListener('pointerdown', injectShards);
+    meghCanvas.addEventListener('touchstart', injectShards, { passive: true });
 
     // Interactive Provider Chips
     const chipsGrid = stage.querySelector('#megh-chips-grid');
@@ -510,7 +634,7 @@ function setupMeghVaultVisualizer(stage) {
                     meghSelectedProvider = idx;
                     chip.classList.add('active');
                     const p = providers[idx];
-                    if (capDisp) capDisp.innerText = `SHARD ALLOCATION: ${p.name} · ${p.gb} GB`;
+                    if (capDisp) capDisp.innerText = `BUS FOCUSED: ${p.name.toUpperCase()} · ${p.gb} GB POOL`;
                 }
             });
         });

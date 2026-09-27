@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { CalcProvider, useCalc } from "./state/store";
 import { Shell } from "./components/Shell";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ConsoleView } from "./views/ConsoleView";
 import { WindingView } from "./views/WindingView";
 import { TheoryView } from "./views/TheoryView";
@@ -39,7 +40,9 @@ function Router() {
         exit={{ opacity: 0, y: -6 }}
         transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
       >
-        {page()}
+        <ErrorBoundary>
+          {page()}
+        </ErrorBoundary>
       </motion.div>
     </AnimatePresence>
   );

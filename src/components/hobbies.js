@@ -15,6 +15,7 @@ export const ICON_MAP = {
     'Neural Networks': '/icons/Neural_Networks.svg',
     'Keras': '/icons/Keras.svg',
     'TensorFlow': '/icons/TensorFlow.svg',
+    'PyTorch': '/icons/PyTorch.svg',
     'Scipy': '/icons/Scipy.svg',
     'Numpy': '/icons/Numpy.svg',
     'Pandas': '/icons/Pandas.svg',

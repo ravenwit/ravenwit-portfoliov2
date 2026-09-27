@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { cn } from "../utils/cn";
@@ -8,20 +8,34 @@ export function TeX({
   block = false,
   className,
 }: {
-  children: string;
+  children: ReactNode;
   block?: boolean;
   className?: string;
 }) {
-  const html = useMemo(
-    () =>
-      katex.renderToString(children, {
+  const textContent = useMemo(() => {
+    if (typeof children === "string") return children;
+    if (typeof children === "number") return String(children);
+    if (Array.isArray(children)) {
+      return children
+        .map((c) => (c == null ? "" : typeof c === "string" ? c : String(c)))
+        .join("");
+    }
+    return children != null ? String(children) : "";
+  }, [children]);
+
+  const html = useMemo(() => {
+    try {
+      return katex.renderToString(textContent, {
         displayMode: block,
         throwOnError: false,
         trust: true,
         strict: false,
-      }),
-    [children, block]
-  );
+      });
+    } catch (err) {
+      console.error("KaTeX rendering error for:", textContent, err);
+      return `<span class="katex-error text-rose font-mono text-xs">${textContent}</span>`;
+    }
+  }, [textContent, block]);
 
   if (block) {
     return (

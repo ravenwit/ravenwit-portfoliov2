@@ -106,9 +106,9 @@ function setupAppShell() {
                 <span class="mobile-top-tab-badge" id="mobile-top-tab-name">HOME // 01</span>
             </div>
             <div class="mobile-top-right">
-                <div class="mobile-top-status-indicator">
-                    <span class="chrono-pulse-dot"></span>
-                    <span class="mobile-status-text">ONLINE</span>
+                <div class="mobile-top-location">
+                    <span class="location-dot"></span>
+                    <span class="mobile-location-text">COLOGNE, DE</span>
                 </div>
             </div>
         </header>
@@ -124,18 +124,25 @@ function setupAppShell() {
             </div>
         </main>
 
-        <!-- Viewport-Docked Arsenal Skill Inspector (Mounted outside transformed track) -->
+        <!-- Viewport-Docked Arsenal Skill Inspector Backdrop & Sheet -->
+        <div class="mobile-inspector-backdrop" id="arsenal-inspector-backdrop" style="display: none;"></div>
         <div class="mobile-arsenal-inspector-sheet" id="arsenal-inspector" style="display: none;">
             <div class="inspector-sheet-handle"></div>
             <div class="inspector-header">
-                <div class="inspector-badge">NODE TELEMETRY</div>
+                <div class="inspector-badge" id="inspector-category-badge">SKILL SPECIFICATION</div>
                 <button class="inspector-close-btn" id="inspector-close-btn" aria-label="Close Inspector">✕</button>
             </div>
             <div class="inspector-body">
                 <div class="inspector-icon-wrap" id="inspector-icon-wrap"></div>
                 <div class="inspector-content">
-                    <div class="inspector-title" id="inspector-skill-title">Select a node</div>
+                    <div class="inspector-title-row">
+                        <div class="inspector-title" id="inspector-skill-title">Select a skill</div>
+                        <span class="inspector-type-pill" id="inspector-type-pill" style="display: none;"></span>
+                    </div>
                     <div class="inspector-desc" id="inspector-skill-desc">Domain & timeframe</div>
+                    <div class="inspector-meta-row" id="inspector-meta-row">
+                        <span class="inspector-range-tag" id="inspector-range-tag" style="display: none;"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -298,10 +305,17 @@ export function switchTab(tabId, tabIndex = -1, updateDial = true) {
     // Close Arsenal inspector if navigating away from Arsenal
     if (tabId !== 'ARSENAL') {
         const inspector = document.getElementById('arsenal-inspector');
+        const backdrop = document.getElementById('arsenal-inspector-backdrop');
         if (inspector) {
             inspector.classList.remove('visible');
             setTimeout(() => {
                 if (inspector) inspector.style.display = 'none';
+            }, 250);
+        }
+        if (backdrop) {
+            backdrop.classList.remove('visible');
+            setTimeout(() => {
+                if (backdrop) backdrop.style.display = 'none';
             }, 250);
         }
     }

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build:qucontext": "cd \"Resources/quantum learning journey\" && npm run build && mkdir -p ../../public/qucontext && cp dist/index.html ../../public/qucontext/index.html && cp dist/index.html ../../public/qucontext.html",
-    "build": "npm run build:qucontext && vite build",
+    "build:tauism": "cd \"Resources/Tauism\" && npm run build && mkdir -p ../../public/tauism && cp dist/index.html ../../public/tauism/index.html && cp dist/index.html ../../public/tauism.html",
+    "build": "npm run build:qucontext && npm run build:tauism && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

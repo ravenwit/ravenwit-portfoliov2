@@ -177,6 +177,14 @@
           "end": "Present"
         },
         "type": "tool"
+      },
+      {
+        "name": "PyTorch",
+        "time_range": {
+          "start": "2025",
+          "end": "Present"
+        },
+        "type": "tool"
       }
     ]
   },

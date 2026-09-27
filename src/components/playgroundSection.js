@@ -44,6 +44,15 @@ export const SIMULATION_EXPERIMENTS = [
         tag: 'QED // CROSS SECTION'
     },
     {
+        id: 'tauism',
+        title: 'Tauism: Fiber Bundle Manifold Lab',
+        category: 'TOPOLOGY',
+        subtitle: 'Frenet-Serret parametric surface generator & topological twist evaluation',
+        desc: 'Interactive 3D manifold laboratory exploring fiber bundle embeddings in R³ via master parametric equations, SO(2) twist actions, Möbius strips, and Klein bottle immersions.',
+        file: '/tauism',
+        tag: 'FIBER BUNDLE // SO(2) // MANIFOLDS'
+    },
+    {
         id: 'mobius-traverse',
         title: 'Möbius Geodesic Traverse',
         category: 'TOPOLOGY',
